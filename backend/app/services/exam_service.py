@@ -312,6 +312,44 @@ async def get_student_attempt_status(session: AsyncSession, user_id: uuid.UUID) 
     }
 
 
+async def get_student_attempt_stats(
+    session: AsyncSession, user_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, dict[str, int | bool]]:
+    if not user_ids:
+        return {}
+
+    config = await get_exam_config(session)
+    max_attempts = config.max_attempts
+
+    submitted_result = await session.execute(
+        select(Attempt.user_id, func.count())
+        .where(
+            Attempt.user_id.in_(user_ids),
+            Attempt.status == AttemptStatus.SUBMITTED,
+        )
+        .group_by(Attempt.user_id)
+    )
+    used_map = {row[0]: row[1] for row in submitted_result.all()}
+
+    open_result = await session.execute(
+        select(Attempt.user_id).where(
+            Attempt.user_id.in_(user_ids),
+            Attempt.status == AttemptStatus.IN_PROGRESS,
+        )
+    )
+    open_set = {row[0] for row in open_result.all()}
+
+    return {
+        user_id: {
+            "attempts_used": used_map.get(user_id, 0),
+            "attempts_max": max_attempts,
+            "attempts_remaining": max(0, max_attempts - used_map.get(user_id, 0)),
+            "has_open_attempt": user_id in open_set,
+        }
+        for user_id in user_ids
+    }
+
+
 async def allow_new_attempt(session: AsyncSession, user_id: uuid.UUID) -> None:
     result = await session.execute(
         select(Attempt).where(

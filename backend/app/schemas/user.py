@@ -26,6 +26,10 @@ class AdminUserResponse(BaseModel):
     must_change_password: bool
     created_at: datetime
     last_login_at: datetime | None
+    attempts_used: int | None = None
+    attempts_max: int | None = None
+    attempts_remaining: int | None = None
+    has_open_attempt: bool | None = None
 
     model_config = {"from_attributes": True}
 

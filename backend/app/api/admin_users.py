@@ -14,7 +14,7 @@ from app.schemas.user import (
     PaginatedUsersResponse,
     ResetPasswordResponse,
 )
-from app.services import user_service
+from app.services import exam_service, user_service
 
 router = APIRouter(prefix="/admin/users", tags=["admin-users"])
 
@@ -31,8 +31,16 @@ async def list_users(
     users, total = await user_service.list_users(
         db, page=page, page_size=page_size, search=search, role=role
     )
+    student_ids = [u.id for u in users if u.role == UserRole.STUDENT]
+    attempt_stats = await exam_service.get_student_attempt_stats(db, student_ids)
+    items: list[AdminUserResponse] = []
+    for user in users:
+        base = AdminUserResponse.model_validate(user)
+        if user.role == UserRole.STUDENT and user.id in attempt_stats:
+            base = base.model_copy(update=attempt_stats[user.id])
+        items.append(base)
     return PaginatedUsersResponse(
-        items=[AdminUserResponse.model_validate(u) for u in users],
+        items=items,
         total=total,
         page=page,
         page_size=page_size,

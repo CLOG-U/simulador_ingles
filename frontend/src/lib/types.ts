@@ -80,6 +80,10 @@ export interface AdminUser {
   must_change_password: boolean;
   created_at: string;
   last_login_at: string | null;
+  attempts_used?: number | null;
+  attempts_max?: number | null;
+  attempts_remaining?: number | null;
+  has_open_attempt?: boolean | null;
 }
 
 export interface VerbItem {
