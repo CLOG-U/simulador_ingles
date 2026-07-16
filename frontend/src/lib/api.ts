@@ -25,6 +25,14 @@ interface ErrorBody {
   request_id?: string;
 }
 
+function isPublicPath() {
+  return window.location.pathname === "/login";
+}
+
+export function isAuthPublicPath() {
+  return isPublicPath();
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
@@ -36,7 +44,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && !isPublicPath()) {
       onUnauthorized?.();
     }
     let body: ErrorBody = {};

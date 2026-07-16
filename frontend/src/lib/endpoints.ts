@@ -7,7 +7,9 @@ import type {
   UserMe,
   VerbItem,
 } from "./types";
-import { apiFetch } from "./api";
+import { apiFetch, ApiError } from "./api";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
 export { apiFetch, ApiError } from "./api";
 
@@ -18,7 +20,26 @@ export const authApi = {
       body: JSON.stringify({ username, password }),
     }),
   logout: () => apiFetch<{ status: string }>("/auth/logout", { method: "POST" }),
-  me: () => apiFetch<UserMe>("/auth/me"),
+  me: async (): Promise<UserMe | null> => {
+    const response = await fetch(`${API_BASE}/auth/me`, {
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (response.status === 401) {
+      return null;
+    }
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({}))) as {
+        code?: string;
+        message?: string;
+      };
+      throw new ApiError(
+        body.code ?? "UNKNOWN",
+        body.message ?? "Error de conexión con el servidor",
+      );
+    }
+    return response.json() as Promise<UserMe>;
+  },
   changePassword: (current_password: string, new_password: string) =>
     apiFetch<{ status: string }>("/auth/change-password", {
       method: "POST",
