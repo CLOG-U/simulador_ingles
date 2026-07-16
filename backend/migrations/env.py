@@ -44,12 +44,7 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     connect_args: dict = {}
     if settings.database_ssl_required:
-        import ssl
-
-        if os.environ.get("ADMIN_ALLOW_INSECURE_SSL") == "1":
-            connect_args["ssl"] = ssl._create_unverified_context()
-        else:
-            connect_args["ssl"] = ssl.create_default_context()
+        connect_args["ssl"] = True
 
     connectable = create_async_engine(
         settings.database_url_async,

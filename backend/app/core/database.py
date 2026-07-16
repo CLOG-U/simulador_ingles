@@ -7,9 +7,7 @@ from app.core.config import settings
 
 connect_args: dict = {}
 if settings.database_ssl_required:
-    import ssl
-
-    connect_args["ssl"] = ssl.create_default_context()
+    connect_args["ssl"] = True
 
 engine = create_async_engine(
     settings.database_url_async,
