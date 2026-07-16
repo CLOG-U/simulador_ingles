@@ -8,37 +8,53 @@ import type {
   VerbItem,
 } from "./types";
 import { apiFetch, ApiError } from "./api";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from "./tokenStorage";
 
 export { apiFetch, ApiError } from "./api";
 
+type LoginResult = {
+  user: UserMe;
+  must_change_password: boolean;
+  access_token: string;
+  refresh_token: string;
+};
+
 export const authApi = {
-  login: (username: string, password: string) =>
-    apiFetch<{ user: UserMe; must_change_password: boolean }>("/auth/login", {
+  login: async (username: string, password: string) => {
+    const result = await apiFetch<LoginResult>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
-    }),
-  logout: () => apiFetch<{ status: string }>("/auth/logout", { method: "POST" }),
-  me: async (): Promise<UserMe | null> => {
-    const response = await fetch(`${API_BASE}/auth/me`, {
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
     });
-    if (response.status === 401) {
+    setAuthTokens(result.access_token, result.refresh_token);
+    return result;
+  },
+  logout: async () => {
+    const refreshToken = getRefreshToken();
+    try {
+      await apiFetch<{ status: string }>("/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+    } finally {
+      clearAuthTokens();
+    }
+  },
+  me: async (): Promise<UserMe | null> => {
+    if (!getAccessToken() && !getRefreshToken()) {
       return null;
     }
-    if (!response.ok) {
-      const body = (await response.json().catch(() => ({}))) as {
-        code?: string;
-        message?: string;
-      };
-      throw new ApiError(
-        body.code ?? "UNKNOWN",
-        body.message ?? "Error de conexión con el servidor",
-      );
+    try {
+      return await apiFetch<UserMe>("/auth/me");
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "UNAUTHORIZED") {
+        return null;
+      }
+      // 401 ya limpia tokens en apiFetch; otras fallas de auth → sin sesión
+      if (err instanceof ApiError && !getAccessToken()) {
+        return null;
+      }
+      throw err;
     }
-    return response.json() as Promise<UserMe>;
   },
   changePassword: (current_password: string, new_password: string) =>
     apiFetch<{ status: string }>("/auth/change-password", {

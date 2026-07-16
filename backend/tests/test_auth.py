@@ -53,6 +53,15 @@ async def test_login_success(auth_client, student_user):
     assert data["user"]["username"] == "estudiante1"
     assert data["must_change_password"] is True
     assert "access_token" in response.cookies
+    assert isinstance(data["access_token"], str) and data["access_token"]
+    assert isinstance(data["refresh_token"], str) and data["refresh_token"]
+
+    me = await auth_client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {data['access_token']}"},
+    )
+    assert me.status_code == 200
+    assert me.json()["username"] == "estudiante1"
 
 
 @pytest.mark.integration

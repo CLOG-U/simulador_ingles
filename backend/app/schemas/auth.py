@@ -31,3 +31,17 @@ class UserMeResponse(BaseModel):
 class LoginResponse(BaseModel):
     user: UserMeResponse
     must_change_password: bool
+    # También en body: en Render frontend/API son hosts distintos y las
+    # cookies cross-site a menudo no llegan (sobre todo en móvil).
+    access_token: str
+    refresh_token: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str | None = None
+
+
+class RefreshResponse(BaseModel):
+    user: UserMeResponse
+    access_token: str
+    refresh_token: str
