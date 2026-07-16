@@ -77,14 +77,33 @@ export const adminApi = {
     if (params?.page) q.set("page", String(params.page));
     return apiFetch<{ items: AdminUser[]; total: number }>(`/admin/users?${q}`);
   },
-  createUser: (data: { username: string; full_name: string; role: string }) =>
+  createUser: (data: {
+    username: string;
+    full_name: string;
+    role: string;
+    password?: string;
+  }) =>
     apiFetch<{ user: AdminUser; temporary_password: string }>("/admin/users", {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  resetPassword: (userId: string) =>
+  updateUser: (
+    userId: string,
+    data: {
+      username?: string;
+      full_name?: string;
+      password?: string;
+      is_active?: boolean;
+    },
+  ) =>
+    apiFetch<AdminUser>(`/admin/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  resetPassword: (userId: string, password?: string) =>
     apiFetch<{ temporary_password: string }>(`/admin/users/${userId}/reset-password`, {
       method: "POST",
+      body: JSON.stringify(password ? { password } : {}),
     }),
   allowNewAttempt: (userId: string) =>
     apiFetch<{ status: string }>(`/admin/users/${userId}/allow-new-attempt`, { method: "POST" }),

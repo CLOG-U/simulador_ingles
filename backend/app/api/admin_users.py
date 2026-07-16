@@ -7,6 +7,7 @@ from app.api.deps import require_admin
 from app.core.database import get_db
 from app.models import User, UserRole
 from app.schemas.user import (
+    AdminResetPasswordRequest,
     AdminUserCreate,
     AdminUserCreateResponse,
     AdminUserResponse,
@@ -59,6 +60,7 @@ async def create_user(
         username=body.username,
         full_name=body.full_name,
         role=body.role,
+        password=body.password,
     )
     return AdminUserCreateResponse(
         user=AdminUserResponse.model_validate(user),
@@ -88,7 +90,9 @@ async def update_user(
         db,
         actor_id=admin.id,
         user=user,
+        username=body.username,
         full_name=body.full_name,
+        password=body.password,
         is_active=body.is_active,
     )
     return AdminUserResponse.model_validate(updated)
@@ -124,7 +128,13 @@ async def reset_password(
     user_id: uuid.UUID,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
+    body: AdminResetPasswordRequest | None = None,
 ):
     user = await user_service.get_user(db, user_id)
-    temp_password = await user_service.reset_password(db, actor_id=admin.id, user=user)
+    temp_password = await user_service.reset_password(
+        db,
+        actor_id=admin.id,
+        user=user,
+        password=body.password if body else None,
+    )
     return ResetPasswordResponse(temporary_password=temp_password)

@@ -10,11 +10,18 @@ class AdminUserCreate(BaseModel):
     username: str = Field(min_length=2, max_length=64)
     full_name: str = Field(min_length=2, max_length=255)
     role: UserRole = UserRole.STUDENT
+    password: str | None = Field(default=None, min_length=8, max_length=128)
 
 
 class AdminUserUpdate(BaseModel):
+    username: str | None = Field(default=None, min_length=2, max_length=64)
     full_name: str | None = Field(default=None, min_length=2, max_length=255)
+    password: str | None = Field(default=None, min_length=8, max_length=128)
     is_active: bool | None = None
+
+
+class AdminResetPasswordRequest(BaseModel):
+    password: str | None = Field(default=None, min_length=8, max_length=128)
 
 
 class AdminUserResponse(BaseModel):
