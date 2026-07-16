@@ -36,3 +36,13 @@ def require_role(*roles: UserRole):
 
 require_admin = require_role(UserRole.ADMIN)
 require_student = require_role(UserRole.STUDENT)
+
+
+async def require_student_ready(current_user: User = Depends(require_student)) -> User:
+    if current_user.must_change_password:
+        raise AppError(
+            "PASSWORD_CHANGE_REQUIRED",
+            "Debes cambiar tu contraseña antes de continuar.",
+            status_code=403,
+        )
+    return current_user

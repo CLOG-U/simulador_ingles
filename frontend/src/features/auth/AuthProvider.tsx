@@ -6,7 +6,7 @@ import { authApi } from "../../lib/endpoints";
 interface AuthContextValue {
   user: UserMe | null | undefined;
   isLoading: boolean;
-  refetch: () => void;
+  refetch: () => Promise<unknown>;
   logout: () => Promise<void>;
 }
 
@@ -18,7 +18,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["auth", "me"],
     queryFn: authApi.me,
     retry: false,
-    staleTime: 60_000,
+    staleTime: 10_000,
+    refetchOnWindowFocus: true,
   });
 
   const logout = async () => {
@@ -32,9 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user: user ?? null,
         isLoading,
-        refetch: () => {
-          void refetch();
-        },
+        refetch: () => refetch(),
         logout,
       }}
     >

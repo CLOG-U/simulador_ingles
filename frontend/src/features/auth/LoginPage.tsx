@@ -53,6 +53,10 @@ export function LoginPage() {
       <main className="mx-auto max-w-md px-4 py-8">
         <form onSubmit={handleSubmit(onSubmit)} className="card space-y-4" noValidate>
           <h2 className="text-lg font-semibold">Iniciar sesión</h2>
+          <p className="text-sm text-gray-600">
+            Si es tu primer acceso, usa la contraseña temporal del profesor. Al entrar deberás
+            cambiarla por una personal.
+          </p>
           {error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-danger" role="alert">
               {error}

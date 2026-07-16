@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, require_student
+from app.api.deps import get_current_user, require_student_ready
 from app.core.database import get_db
 from app.models import User
 from app.schemas.exam import SaveAnswerRequest
@@ -19,7 +19,7 @@ async def exam_config(db: AsyncSession = Depends(get_db)):
 
 @router.post("/attempts")
 async def start_attempt(
-    student: User = Depends(require_student),
+    student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
 ):
     attempt = await exam_service.create_or_get_attempt(db, student)
@@ -29,7 +29,7 @@ async def start_attempt(
 
 @router.get("/attempts/status")
 async def attempt_status(
-    student: User = Depends(require_student),
+    student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
 ):
     return await exam_service.get_student_attempt_status(db, student.id)
@@ -37,7 +37,7 @@ async def attempt_status(
 
 @router.get("/attempts/current")
 async def current_attempt(
-    student: User = Depends(require_student),
+    student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
 ):
     attempt = await exam_service.get_open_attempt(db, student.id)
@@ -49,7 +49,7 @@ async def current_attempt(
 @router.get("/attempts/{attempt_id}")
 async def get_attempt(
     attempt_id: uuid.UUID,
-    student: User = Depends(require_student),
+    student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
 ):
     attempt = await exam_service.get_attempt_for_user(db, attempt_id=attempt_id, user_id=student.id)
@@ -62,7 +62,7 @@ async def save_answer(
     attempt_id: uuid.UUID,
     question_id: uuid.UUID,
     body: SaveAnswerRequest,
-    student: User = Depends(require_student),
+    student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
 ):
     attempt = await exam_service.get_attempt_for_user(db, attempt_id=attempt_id, user_id=student.id)
@@ -78,7 +78,7 @@ async def save_answer(
 @router.post("/attempts/{attempt_id}/submit")
 async def submit_attempt(
     attempt_id: uuid.UUID,
-    student: User = Depends(require_student),
+    student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
 ):
     attempt = await exam_service.get_attempt_for_user(db, attempt_id=attempt_id, user_id=student.id)
