@@ -4,7 +4,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../../components/AppShell";
 import { ApiError } from "../../lib/api";
 import { examApi } from "../../lib/endpoints";
-import type { ExamQuestion } from "../../lib/types";
+import type { Attempt, ExamQuestion } from "../../lib/types";
+
+type AnswerSet = { base: string; past: string; spanish: string };
 
 type SaveStatus = "idle" | "pending" | "saving" | "saved" | "offline";
 
@@ -16,12 +18,20 @@ function fieldKey(field: string): "base" | "past" | "spanish" {
   return "spanish";
 }
 
-function emptyAnswers() {
+function emptyAnswers(): AnswerSet {
   return { base: "", past: "", spanish: "" };
 }
 
-function serializeAnswers(answers: { base: string; past: string; spanish: string }) {
+function serializeAnswers(answers: AnswerSet) {
   return JSON.stringify(answers);
+}
+
+function answersFromQuestion(question: ExamQuestion): AnswerSet {
+  return {
+    base: question.answers.base ?? "",
+    past: question.answers.past ?? "",
+    spanish: question.answers.spanish ?? "",
+  };
 }
 
 export function ExamStartRedirect() {
@@ -65,12 +75,14 @@ export function ExamStartRedirect() {
 export function ExamPage() {
   const { attemptId = "" } = useParams();
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState(emptyAnswers);
+  const [localAnswers, setLocalAnswers] = useState<Record<string, AnswerSet>>({});
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [showSubmit, setShowSubmit] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const debounceRef = useRef<number | null>(null);
-  const lastSavedRef = useRef("");
-  const dirtyRef = useRef(false);
+  const lastSavedRef = useRef<Record<string, string>>({});
+  const localAnswersRef = useRef<Record<string, AnswerSet>>({});
+  const savingRef = useRef<Promise<void> | null>(null);
   const savedTimeoutRef = useRef<number | null>(null);
   const queryClient = useQueryClient();
 
@@ -86,9 +98,27 @@ export function ExamPage() {
       payload,
     }: {
       questionId: string;
-      payload: { base: string; past: string; spanish: string };
+      payload: AnswerSet;
     }) => examApi.saveAnswer(attemptId, questionId, payload),
-    onSuccess: () => {
+    onSuccess: (_data, { questionId, payload }) => {
+      queryClient.setQueryData<Attempt>(["attempt", attemptId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          questions: old.questions.map((q) =>
+            q.id === questionId
+              ? {
+                  ...q,
+                  answers: {
+                    base: payload.base || null,
+                    past: payload.past || null,
+                    spanish: payload.spanish || null,
+                  },
+                }
+              : q,
+          ),
+        };
+      });
       setSaveStatus("saved");
       if (savedTimeoutRef.current) window.clearTimeout(savedTimeoutRef.current);
       savedTimeoutRef.current = window.setTimeout(() => setSaveStatus("idle"), 2000);
@@ -108,66 +138,111 @@ export function ExamPage() {
     [attempt],
   );
   const question: ExamQuestion | undefined = questions[index];
+  const answers = question ? (localAnswers[question.id] ?? emptyAnswers()) : emptyAnswers();
 
   useEffect(() => {
-    if (!question) return;
-    const next = {
-      base: question.answers.base ?? "",
-      past: question.answers.past ?? "",
-      spanish: question.answers.spanish ?? "",
-    };
-    setAnswers(next);
-    lastSavedRef.current = serializeAnswers(next);
-    dirtyRef.current = false;
-    setSaveStatus("idle");
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-  }, [question?.id]);
+    localAnswersRef.current = localAnswers;
+  }, [localAnswers]);
+
+  useEffect(() => {
+    if (!attempt) return;
+    const initial: Record<string, AnswerSet> = {};
+    const saved: Record<string, string> = {};
+    for (const q of attempt.questions) {
+      const next = answersFromQuestion(q);
+      initial[q.id] = next;
+      saved[q.id] = serializeAnswers(next);
+    }
+    setLocalAnswers(initial);
+    localAnswersRef.current = initial;
+    lastSavedRef.current = saved;
+  }, [attempt?.id]);
 
   const persistAnswers = useCallback(
-    async (questionId: string, payload: { base: string; past: string; spanish: string }) => {
+    async (questionId: string, payload: AnswerSet) => {
       const serialized = serializeAnswers(payload);
-      if (serialized === lastSavedRef.current) {
-        dirtyRef.current = false;
+      if (serialized === lastSavedRef.current[questionId]) {
         setSaveStatus("idle");
         return;
       }
+
       setSaveStatus("saving");
       try {
         await saveMutation.mutateAsync({ questionId, payload });
-        lastSavedRef.current = serialized;
-        dirtyRef.current = false;
+        lastSavedRef.current[questionId] = serialized;
       } catch {
         setSaveStatus("offline");
+        throw new Error("save failed");
       }
     },
     [saveMutation],
   );
 
+  const flushSave = useCallback(
+    async (questionId: string) => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      const payload = localAnswersRef.current[questionId];
+      if (!payload) return;
+
+      if (savingRef.current) {
+        try {
+          await savingRef.current;
+        } catch {
+          /* prior save failed */
+        }
+      }
+
+      const serialized = serializeAnswers(payload);
+      if (serialized === lastSavedRef.current[questionId]) return;
+
+      const savePromise = persistAnswers(questionId, payload);
+      savingRef.current = savePromise;
+      try {
+        await savePromise;
+      } finally {
+        if (savingRef.current === savePromise) {
+          savingRef.current = null;
+        }
+      }
+    },
+    [persistAnswers],
+  );
+
   const scheduleSave = useCallback(
-    (questionId: string, payload: { base: string; past: string; spanish: string }) => {
-      dirtyRef.current = true;
+    (questionId: string) => {
       setSaveStatus("pending");
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
       debounceRef.current = window.setTimeout(() => {
-        void persistAnswers(questionId, payload);
+        void flushSave(questionId);
       }, SAVE_DEBOUNCE_MS);
     },
-    [persistAnswers],
+    [flushSave],
   );
 
-  const flushSave = useCallback(
-    (questionId: string, payload: { base: string; past: string; spanish: string }) => {
-      if (debounceRef.current) window.clearTimeout(debounceRef.current);
-      if (!dirtyRef.current) return;
-      void persistAnswers(questionId, payload);
-    },
-    [persistAnswers],
-  );
+  const flushAllSaves = useCallback(async () => {
+    if (!questions.length) return;
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    for (const q of questions) {
+      await flushSave(q.id);
+    }
+  }, [flushSave, questions]);
+
+  const goToIndex = async (nextIndex: number) => {
+    if (!question || nextIndex === index || isNavigating) return;
+    setIsNavigating(true);
+    try {
+      await flushSave(question.id);
+      setIndex(nextIndex);
+      setSaveStatus("idle");
+    } finally {
+      setIsNavigating(false);
+    }
+  };
 
   const emptyCount = questions.reduce((acc, q) => {
+    const source = localAnswers[q.id] ?? answersFromQuestion(q);
     const req = q.required_fields.map((f) => fieldKey(f.field));
-    const source = q.id === question?.id ? answers : q.answers;
-    const empty = req.filter((k) => !(source[k as keyof typeof source] ?? "").trim()).length;
+    const empty = req.filter((k) => !source[k].trim()).length;
     return acc + empty;
   }, 0);
 
@@ -182,7 +257,7 @@ export function ExamPage() {
   const statusLabel =
     saveStatus === "pending"
       ? ""
-      : saveStatus === "saving"
+      : saveStatus === "saving" || isNavigating
         ? "Guardando…"
         : saveStatus === "saved"
           ? "Guardado"
@@ -216,10 +291,11 @@ export function ExamPage() {
                 value={answers[key]}
                 onChange={(e) => {
                   const next = { ...answers, [key]: e.target.value };
-                  setAnswers(next);
-                  scheduleSave(question.id, next);
+                  setLocalAnswers((prev) => ({ ...prev, [question.id]: next }));
+                  localAnswersRef.current = { ...localAnswersRef.current, [question.id]: next };
+                  scheduleSave(question.id);
                 }}
-                onBlur={() => flushSave(question.id, answers)}
+                onBlur={() => void flushSave(question.id)}
               />
             </div>
           );
@@ -231,10 +307,8 @@ export function ExamPage() {
           <button
             key={q.id}
             type="button"
-            onClick={() => {
-              flushSave(question.id, answers);
-              setIndex(i);
-            }}
+            disabled={isNavigating}
+            onClick={() => void goToIndex(i)}
             className={`min-h-11 min-w-11 rounded-lg border px-3 ${
               i === index ? "border-brand-primary bg-brand-primary text-white" : "bg-white"
             }`}
@@ -249,30 +323,25 @@ export function ExamPage() {
         <button
           type="button"
           className="min-h-11 rounded-xl border px-4"
-          disabled={index === 0}
-          onClick={() => {
-            flushSave(question.id, answers);
-            setIndex((i) => i - 1);
-          }}
+          disabled={index === 0 || isNavigating}
+          onClick={() => void goToIndex(index - 1)}
         >
           Anterior
         </button>
         <button
           type="button"
           className="min-h-11 rounded-xl border px-4"
-          disabled={index >= questions.length - 1}
-          onClick={() => {
-            flushSave(question.id, answers);
-            setIndex((i) => i + 1);
-          }}
+          disabled={index >= questions.length - 1 || isNavigating}
+          onClick={() => void goToIndex(index + 1)}
         >
           Siguiente
         </button>
         <button
           type="button"
           className="btn-primary"
-          onClick={() => {
-            flushSave(question.id, answers);
+          disabled={isNavigating}
+          onClick={async () => {
+            await flushSave(question.id);
             setShowSubmit(true);
           }}
         >
@@ -299,6 +368,7 @@ export function ExamPage() {
                 type="button"
                 className="btn-primary"
                 onClick={async () => {
+                  await flushAllSaves();
                   await submitMutation.mutateAsync();
                   window.location.href = `/student/result/${attemptId}`;
                 }}
