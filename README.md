@@ -83,10 +83,10 @@ Ver `plan.md` sección 16.
 |------|--------|
 | 0 — Aprobación pedagógica | Pendiente del propietario |
 | 1 — Base técnica | Completada |
-| 2 — Autenticación y usuarios | Pendiente |
-| 3 — Motor de evaluación | Pendiente |
-| 4 — Interfaces | Pendiente |
-| 5 — Calidad y lanzamiento | Pendiente |
+| 2 — Autenticación y usuarios | Completada |
+| 3 — Motor de evaluación | Completada |
+| 4 — Interfaces | Completada |
+| 5 — Calidad y lanzamiento | En progreso |
 
 ## CI
 
