@@ -1,5 +1,12 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+def normalize_database_url(url: str) -> str:
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url.removeprefix("postgres://")
+    if url.startswith("postgresql://"):
+        url = "postgresql+asyncpg://" + url.removeprefix("postgresql://")
+    return url
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
@@ -13,6 +20,14 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     max_login_attempts: int = 5
     lockout_minutes: int = 15
+
+    @property
+    def database_url_async(self) -> str:
+        return normalize_database_url(self.database_url)
+
+    @property
+    def database_ssl_required(self) -> bool:
+        return self.environment == "production" or "supabase.co" in self.database_url
 
     @property
     def cors_origins_list(self) -> list[str]:
