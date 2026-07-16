@@ -1,3 +1,5 @@
+# Solo API (desarrollo / builds locales).
+# En Render usa el Dockerfile de la raíz del repo (API + frontend embebido).
 FROM python:3.12-slim
 
 WORKDIR /app

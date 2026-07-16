@@ -5,8 +5,12 @@
 | Pieza | Servicio Render | Nombre sugerido |
 |-------|-----------------|-----------------|
 | Base de datos | Supabase (externo) | — |
-| Backend API | Web Service (Docker) | `simulador-api` |
-| Frontend | Static Site | `simulador` |
+| App (API + frontend) | Web Service (Docker) | `simulador-api` |
+
+Un solo servicio sirve la API y el frontend. Así:
+
+- `/admin`, `/student`, etc. **no** devuelven Not Found (fallback SPA en FastAPI)
+- Las cookies de sesión son **mismo origen** (el login deja de fallar con 401 después del 200)
 
 ## 1. Supabase (cuando tengas la URL)
 
@@ -18,42 +22,46 @@
 > **Render + Supabase:** la conexión directa `db.xxx.supabase.co` suele fallar con
 > `OSError: [Errno 101] Network is unreachable` porque usa IPv6. El pooler sí funciona.
 
-## 2. Backend en Render
+## 2. Web Service en Render
 
-En **New → Web Service**:
+En **New → Web Service** (o actualiza el existente):
 
 | Campo | Valor |
 |-------|-------|
 | Name | `simulador-api` |
-| Root Directory | `backend` |
+| Root Directory | *(vacío / raíz del repo)* |
+| Dockerfile Path | `./Dockerfile` |
 | Runtime | **Docker** |
 | Plan | Free |
 
-**Variables de entorno** (pegar desde `.env.production`):
+> Si el servicio viejo tenía Root Directory = `backend`, cámbialo a vacío y usa el
+> `Dockerfile` de la raíz. Ese build incluye el frontend.
+
+**Variables de entorno:**
 
 ```
 ENVIRONMENT=production
 DATABASE_URL=<tu url de supabase>
 SECRET_KEY=<string aleatorio largo>
-CORS_ORIGINS=https://simulador.onrender.com
+CORS_ORIGINS=https://simulador-api.onrender.com
 LOG_LEVEL=INFO
 ```
 
-**Start Command:** déjalo vacío — el `Dockerfile` ya ejecuta `scripts/render_start.sh` (migraciones + seed + uvicorn).
+Usa la URL exacta que Render asigne al servicio (sin barra final).
 
 **Health check path:** `/api/v1/health/live`
 
-Tras el primer deploy exitoso, abre **Shell** en Render y crea el profesor:
+La app completa queda en:
 
-```bash
-python -m scripts.create_admin
+```
+https://simulador-api.onrender.com
 ```
 
-> **Plan free sin Shell:** usa una de las opciones de la sección siguiente.
+(login en `/login`, API en `/api/v1/...`).
 
-### Opción A — Variables de entorno en Render (recomendada sin Shell)
+### Crear profesor (sin Shell)
 
-Añade temporalmente en Render → Environment:
+Añade temporalmente en Environment:
 
 ```
 ADMIN_USERNAME=profesor
@@ -61,83 +69,30 @@ ADMIN_FULL_NAME=Profesor Principal
 ADMIN_PASSWORD=tu_clave_segura_min_8
 ```
 
-Haz **Manual Deploy**. Al arrancar, el backend crea el admin automáticamente.
+Haz **Manual Deploy**. Tras confirmar el login, **borra** esas 3 variables y vuelve a desplegar.
 
-**Importante:** después de confirmar que funciona el login, **borra** esas 3 variables y vuelve a desplegar.
+## 3. Cookies de auth
 
-### Opción B — Desde tu PC (con Supabase accesible)
+En `ENVIRONMENT=production` el backend setea cookies con `Secure` y `SameSite=None`
+(por si aún usas un frontend aparte). Con el frontend embebido, el navegador envía
+las cookies en el mismo sitio sin problemas.
 
-```powershell
-cd backend
-$env:DATABASE_URL="postgresql+asyncpg://postgres:...@db.xxx.supabase.co:5432/postgres"
-$env:ENVIRONMENT="production"
-$env:ADMIN_USERNAME="profesor"
-$env:ADMIN_FULL_NAME="Profesor Principal"
-$env:ADMIN_PASSWORD="tu_clave_segura"
-python -m scripts.create_admin
-```
+## 4. Static Site aparte (opcional, no recomendado)
 
-## 3. Frontend en Render
+Si mantienes un Static Site separado, necesitas rewrite `/* → /index.html` en
+Redirects/Rewrites y `VITE_API_BASE_URL=https://<api>/api/v1`. Eso vuelve a ser
+cross-site y es la causa habitual de login 200 + luego 401 / Not Found.
 
-En **New → Static Site**:
+Preferible: usar solo la URL del Web Service.
 
-| Campo | Valor |
-|-------|-------|
-| Name | `simulador` |
-| Root Directory | `frontend` |
-| Build Command | `npm install && npm run build` |
-| Publish Directory | `dist` |
-
-**Variable de entorno (build):**
-
-```
-VITE_API_BASE_URL=https://simulador-api.onrender.com/api/v1
-```
-
-Reemplaza la URL por la que te asigne Render al backend.
-
-### Rewrite SPA (obligatorio)
-
-React Router necesita que todas las rutas sirvan `index.html`. El `render.yaml` ya define:
-
-| Source | Destination | Action |
-|--------|-------------|--------|
-| `/*` | `/index.html` | Rewrite |
-
-Si el blueprint no aplicó la regla sola, en el Static Site ve a **Redirects/Rewrites** y añádela manualmente. Sin esto, rutas como `/admin/dashboard` devuelven **Not Found** al recargar o al entrar tras el login.
-
-## 4. Cookies de auth (cross-site en Render)
-
-Frontend y API viven en hosts distintos (`*.onrender.com`). Con `SameSite=Lax` el navegador **no** envía las cookies en las peticiones cross-site, así que el login puede devolver 200 y el siguiente `GET` protegido falla con 401.
-
-En `ENVIRONMENT=production` el backend setea cookies con:
-
-- `Secure`
-- `SameSite=None`
-
-En development siguen siendo `SameSite=Lax` (sin `Secure`).
-
-Tras cambiar esto, **redeploy** backend y frontend.
-
-## 5. Ajuste final de CORS
-
-Cuando tengas la URL real del frontend, actualiza en el backend:
-
-```
-CORS_ORIGINS=https://simulador.onrender.com
-```
-
-Sin barra final. Si Render te da otro nombre (`simulador-xxxx.onrender.com`), usa esa URL exacta.
-
-## 6. Verificación
+## 5. Verificación
 
 1. `https://simulador-api.onrender.com/api/v1/health/live` → `{"status":"ok"}`
-2. `https://simulador-api.onrender.com/api/v1/health/ready` → `{"status":"ready"}` (confirma Supabase)
-3. Abrir frontend → login profesor → crear estudiante → examen
-4. Tras login, en DevTools → Network: las peticiones a la API deben llevar cookie `access_token` y las respuestas `Set-Cookie` deben incluir `SameSite=None; Secure`
+2. `https://simulador-api.onrender.com/api/v1/health/ready` → `{"status":"ready"}`
+3. Abrir `https://simulador-api.onrender.com/login` → entrar como profesor
+4. Tras login, `/admin` debe cargar (no Not Found) y las peticiones llevan cookie `access_token`
 
 ## Notas
 
-- El plan free del backend **se duerme** tras inactividad; la primera carga puede tardar ~1 minuto
-- El frontend estático **no se duerme**
-- Puedes desplegar primero solo el backend y probar `/health/ready` antes del frontend
+- El plan free **se duerme** tras inactividad; la primera carga puede tardar ~1 minuto
+- Tras este cambio, haz **Manual Deploy** del Web Service si Render no redeploya solo
