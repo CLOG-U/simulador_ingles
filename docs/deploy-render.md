@@ -43,11 +43,16 @@ En **New → Web Service** (o actualiza el existente):
 ENVIRONMENT=production
 DATABASE_URL=<tu url de supabase>
 SECRET_KEY=<string aleatorio largo>
-CORS_ORIGINS=https://simulador-api.onrender.com
+CORS_ORIGINS=https://simulador-api-8jwy.onrender.com
 LOG_LEVEL=INFO
 ```
 
-Usa la URL exacta que Render asigne al servicio (sin barra final).
+Usa la URL exacta del Web Service **sin barra final**.
+Si pones `https://...onrender.com/` (con `/`), CORS puede fallar.
+El backend ya normaliza la barra, pero conviene dejarla bien en Render.
+
+El frontend compilado va en `backend/app/static`, así que funciona aunque el
+servicio tenga Root Directory = `backend`.
 
 **Health check path:** `/api/v1/health/live`
 

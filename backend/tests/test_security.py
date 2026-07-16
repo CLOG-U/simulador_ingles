@@ -34,6 +34,14 @@ def test_hash_token_is_deterministic():
     assert hash_token("abc") != hash_token("xyz")
 
 
+def test_cors_origins_strip_trailing_slash():
+    settings = Settings(cors_origins="https://simulador-api-8jwy.onrender.com/, http://localhost:5173/")
+    assert settings.cors_origins_list == [
+        "https://simulador-api-8jwy.onrender.com",
+        "http://localhost:5173",
+    ]
+
+
 def test_cookie_flags_development():
     settings = Settings(environment="development")
     assert settings.cookie_secure is False
