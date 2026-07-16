@@ -1,5 +1,4 @@
-# Solo API (desarrollo / builds locales).
-# En Render usa el Dockerfile de la raíz del repo (API + frontend embebido).
+# Backend API (Render Web Service con Root Directory = backend).
 FROM python:3.12-slim
 
 WORKDIR /app

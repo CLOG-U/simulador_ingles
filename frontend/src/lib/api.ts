@@ -23,6 +23,19 @@ interface ErrorBody {
   message?: string;
   field_errors?: Record<string, string[]>;
   request_id?: string;
+  detail?: string | Array<{ msg?: string; loc?: Array<string | number> }>;
+}
+
+function messageFromErrorBody(body: ErrorBody): string {
+  if (body.message) return body.message;
+  if (typeof body.detail === "string") return body.detail;
+  if (Array.isArray(body.detail) && body.detail.length) {
+    return body.detail
+      .map((item) => item.msg)
+      .filter((msg): msg is string => Boolean(msg))
+      .join(". ");
+  }
+  return "Error de conexión con el servidor";
 }
 
 function isPublicPath() {
@@ -55,7 +68,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
     throw new ApiError(
       body.code ?? "UNKNOWN",
-      body.message ?? "Error de conexión con el servidor",
+      messageFromErrorBody(body) || "Error de conexión con el servidor",
       body.field_errors ?? {},
       body.request_id,
     );

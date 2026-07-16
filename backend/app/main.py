@@ -13,7 +13,6 @@ from app.api.health import router as health_router
 from app.core.config import settings
 from app.core.errors import AppError, app_error_handler
 from app.core.logging import RequestIdFilter, new_request_id, request_id_ctx, setup_logging
-from app.spa import mount_spa
 
 setup_logging(settings.log_level)
 logging_filter = RequestIdFilter()
@@ -57,6 +56,3 @@ app.include_router(admin_users_router, prefix="/api/v1")
 app.include_router(admin_export_router, prefix="/api/v1")
 app.include_router(admin_exam_router, prefix="/api/v1")
 app.include_router(admin_audit_router, prefix="/api/v1")
-
-# Frontend embebido: mismo origen que la API (evita Not Found SPA y cookies cross-site).
-mount_spa(app)

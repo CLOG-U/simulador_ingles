@@ -1,12 +1,12 @@
-# Blueprint de Render: un solo Web Service (API + frontend embebido)
+# Blueprint de Render: backend (Docker) + frontend (estático) — servicios independientes
 # Docs: https://render.com/docs/blueprint-spec
 
 services:
   - type: web
     name: simulador-api
     runtime: docker
+    rootDir: backend
     plan: free
-    dockerfilePath: ./Dockerfile
     healthCheckPath: /api/v1/health/live
     envVars:
       - key: ENVIRONMENT
@@ -21,6 +21,19 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-      # Con frontend embebido, el origen es la propia URL del servicio.
       - key: CORS_ORIGINS
+        sync: false
+
+  - type: web
+    name: simulador
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
         sync: false
