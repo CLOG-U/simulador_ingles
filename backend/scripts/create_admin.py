@@ -9,7 +9,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.core.config import settings
+from app.core.config import database_connect_args, settings
 from app.core.security import hash_password, normalize_username
 from app.models import User, UserRole
 
@@ -57,14 +57,7 @@ async def run() -> None:
         print("La contraseña debe tener al menos 8 caracteres.", file=sys.stderr)
         sys.exit(1)
 
-    connect_args: dict = {}
-    if settings.database_ssl_required:
-        import ssl
-
-        if os.environ.get("ADMIN_ALLOW_INSECURE_SSL") == "1":
-            connect_args["ssl"] = ssl._create_unverified_context()
-        else:
-            connect_args["ssl"] = ssl.create_default_context()
+    connect_args = database_connect_args()
 
     engine = create_async_engine(
         settings.database_url_async,

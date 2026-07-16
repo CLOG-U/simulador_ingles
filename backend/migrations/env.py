@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.core.config import settings
+from app.core.config import database_connect_args, settings
 from app.core.database import Base
 from app.models import entities  # noqa: F401 — register models
 
@@ -42,9 +42,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    connect_args: dict = {}
-    if settings.database_ssl_required:
-        connect_args["ssl"] = True
+    connect_args = database_connect_args()
 
     connectable = create_async_engine(
         settings.database_url_async,

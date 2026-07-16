@@ -39,3 +39,14 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def database_connect_args() -> dict:
+    if not settings.database_ssl_required:
+        return {}
+    import ssl
+
+    # El pooler de Supabase usa certificados que fallan verificación en Render.
+    if "supabase.co" in settings.database_url:
+        return {"ssl": ssl._create_unverified_context()}
+    return {"ssl": True}
