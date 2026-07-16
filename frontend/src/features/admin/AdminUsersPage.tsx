@@ -30,6 +30,13 @@ export function AdminUsersPage() {
     onSuccess: (res) => setCreatedPassword(res.temporary_password),
   });
 
+  const allowAttemptMutation = useMutation({
+    mutationFn: (userId: string) => adminApi.allowNewAttempt(userId),
+    onSuccess: () => {
+      setCreatedPassword("Nuevo intento habilitado para el estudiante.");
+    },
+  });
+
   return (
     <AppShell title="Usuarios" nav={adminNav}>
       <section className="card mb-6 space-y-3">
@@ -82,13 +89,15 @@ export function AdminUsersPage() {
                     >
                       Restablecer clave
                     </button>
-                    <button
-                      type="button"
-                      className="text-brand-primary underline"
-                      onClick={() => adminApi.allowNewAttempt(u.id)}
-                    >
-                      Nuevo intento
-                    </button>
+                    {u.role === "STUDENT" && (
+                      <button
+                        type="button"
+                        className="text-brand-primary underline"
+                        onClick={() => allowAttemptMutation.mutate(u.id)}
+                      >
+                        Nuevo intento
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

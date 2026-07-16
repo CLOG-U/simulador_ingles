@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../../components/AppShell";
+import { ApiError } from "../../lib/api";
 import { examApi } from "../../lib/endpoints";
 import type { ExamQuestion } from "../../lib/types";
 
@@ -25,9 +26,21 @@ export function ExamStartRedirect() {
   }, [data, navigate]);
 
   if (error) {
+    const apiError = error instanceof ApiError ? error : null;
+    const message =
+      apiError?.message ?? "No se pudo iniciar la evaluación. Intenta de nuevo más tarde.";
+    const isMaxAttempts = apiError?.code === "MAX_ATTEMPTS_REACHED";
+
     return (
       <AppShell title="Evaluación">
-        <div className="card text-danger">No se pudo iniciar la evaluación.</div>
+        <div className="card space-y-4">
+          <p className={isMaxAttempts ? "text-amber-800" : "text-danger"}>{message}</p>
+          {isMaxAttempts && (
+            <Link to="/student" className="btn-primary inline-flex">
+              Volver al panel
+            </Link>
+          )}
+        </div>
       </AppShell>
     );
   }

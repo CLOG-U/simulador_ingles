@@ -2,6 +2,7 @@ import type {
   AdminUser,
   Attempt,
   AttemptResult,
+  AttemptStatus,
   ExamConfig,
   UserMe,
   VerbItem,
@@ -27,6 +28,7 @@ export const authApi = {
 
 export const examApi = {
   config: () => apiFetch<ExamConfig>("/exam/config"),
+  attemptStatus: () => apiFetch<AttemptStatus>("/attempts/status"),
   startAttempt: () => apiFetch<Attempt>("/attempts", { method: "POST" }),
   currentAttempt: () => apiFetch<Attempt | null>("/attempts/current"),
   getAttempt: (id: string) => apiFetch<Attempt>(`/attempts/${id}`),

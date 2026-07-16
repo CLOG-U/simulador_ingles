@@ -45,6 +45,20 @@ export interface Attempt {
   questions: ExamQuestion[];
 }
 
+export interface AttemptStatus {
+  has_open_attempt: boolean;
+  open_attempt_id: string | null;
+  submitted_count: number;
+  max_attempts: number;
+  can_start_new: boolean;
+  last_submitted: {
+    id: string;
+    percentage: number | null;
+    passed: boolean | null;
+    submitted_at: string | null;
+  } | null;
+}
+
 export interface AttemptResult {
   id: string;
   status: string;

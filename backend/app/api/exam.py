@@ -27,6 +27,14 @@ async def start_attempt(
     return exam_service.serialize_attempt(attempt, include_grades=include_grades)
 
 
+@router.get("/attempts/status")
+async def attempt_status(
+    student: User = Depends(require_student),
+    db: AsyncSession = Depends(get_db),
+):
+    return await exam_service.get_student_attempt_status(db, student.id)
+
+
 @router.get("/attempts/current")
 async def current_attempt(
     student: User = Depends(require_student),

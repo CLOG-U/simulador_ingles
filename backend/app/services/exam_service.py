@@ -275,6 +275,43 @@ async def submit_attempt(session: AsyncSession, attempt: Attempt) -> Attempt:
     return attempt
 
 
+async def get_student_attempt_status(session: AsyncSession, user_id: uuid.UUID) -> dict:
+    config = await get_exam_config(session)
+    open_attempt = await get_open_attempt(session, user_id)
+    submitted_count = await _count_submitted_attempts(session, user_id)
+
+    last_submitted = None
+    if submitted_count > 0:
+        result = await session.execute(
+            select(Attempt)
+            .where(
+                Attempt.user_id == user_id,
+                Attempt.status == AttemptStatus.SUBMITTED,
+            )
+            .order_by(Attempt.submitted_at.desc())
+            .limit(1)
+        )
+        last = result.scalar_one_or_none()
+        if last:
+            last_submitted = {
+                "id": str(last.id),
+                "percentage": float(last.percentage) if last.percentage is not None else None,
+                "passed": last.passed,
+                "submitted_at": last.submitted_at.isoformat() if last.submitted_at else None,
+            }
+
+    can_start_new = open_attempt is not None or submitted_count < config.max_attempts
+
+    return {
+        "has_open_attempt": open_attempt is not None,
+        "open_attempt_id": str(open_attempt.id) if open_attempt else None,
+        "submitted_count": submitted_count,
+        "max_attempts": config.max_attempts,
+        "can_start_new": can_start_new,
+        "last_submitted": last_submitted,
+    }
+
+
 async def allow_new_attempt(session: AsyncSession, user_id: uuid.UUID) -> None:
     result = await session.execute(
         select(Attempt).where(
