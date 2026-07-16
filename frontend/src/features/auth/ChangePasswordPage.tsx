@@ -44,6 +44,10 @@ export function ChangePasswordPage() {
     try {
       await authApi.changePassword(data.current_password, data.new_password);
       const updated = await authApi.me();
+      if (!updated) {
+        navigate("/login", { replace: true });
+        return;
+      }
       queryClient.setQueryData(["auth", "me"], updated);
       navigate(updated.role === "ADMIN" ? "/admin" : "/student", { replace: true });
     } catch (err) {

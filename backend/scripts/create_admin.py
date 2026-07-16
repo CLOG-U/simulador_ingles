@@ -45,6 +45,7 @@ async def run() -> None:
     username = os.environ.get("ADMIN_USERNAME") or input("Usuario administrador: ").strip()
     full_name = os.environ.get("ADMIN_FULL_NAME") or input("Nombre completo: ").strip()
     password = os.environ.get("ADMIN_PASSWORD")
+    bootstrap = bool(os.environ.get("ADMIN_USERNAME") and os.environ.get("ADMIN_PASSWORD"))
     if not password:
         password = getpass.getpass("Contraseña: ")
         confirm = getpass.getpass("Confirmar contraseña: ")
@@ -56,12 +57,35 @@ async def run() -> None:
         print("La contraseña debe tener al menos 8 caracteres.", file=sys.stderr)
         sys.exit(1)
 
-    engine = create_async_engine(settings.database_url, echo=False)
+    connect_args: dict = {}
+    if settings.database_ssl_required:
+        import ssl
+
+        if os.environ.get("ADMIN_ALLOW_INSECURE_SSL") == "1":
+            connect_args["ssl"] = ssl._create_unverified_context()
+        else:
+            connect_args["ssl"] = ssl.create_default_context()
+
+    engine = create_async_engine(
+        settings.database_url_async,
+        echo=False,
+        connect_args=connect_args,
+    )
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with factory() as session:
-        user = await create_admin(session, username=username, full_name=full_name, password=password)
-    await engine.dispose()
-    print(f"Administrador '{user.username}' creado correctamente.")
+    try:
+        async with factory() as session:
+            user = await create_admin(
+                session, username=username, full_name=full_name, password=password
+            )
+        print(f"Administrador '{user.username}' creado correctamente.")
+    except ValueError as exc:
+        if bootstrap:
+            print(str(exc), "- se omite (bootstrap).")
+        else:
+            print(str(exc), file=sys.stderr)
+            sys.exit(1)
+    finally:
+        await engine.dispose()
 
 
 def main() -> None:
