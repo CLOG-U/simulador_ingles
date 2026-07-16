@@ -9,7 +9,7 @@ def set_auth_cookies(response: Response, *, access_token: str, refresh_token: st
     common = {
         "httponly": True,
         "secure": settings.cookie_secure,
-        "samesite": "lax",
+        "samesite": settings.cookie_samesite,
         "path": "/",
     }
     response.set_cookie(key="access_token", value=access_token, max_age=access_max_age, **common)
@@ -20,7 +20,7 @@ def clear_auth_cookies(response: Response) -> None:
     common = {
         "httponly": True,
         "secure": settings.cookie_secure,
-        "samesite": "lax",
+        "samesite": settings.cookie_samesite,
         "path": "/",
     }
     response.delete_cookie(key="access_token", **common)

@@ -96,7 +96,30 @@ VITE_API_BASE_URL=https://simulador-api.onrender.com/api/v1
 
 Reemplaza la URL por la que te asigne Render al backend.
 
-## 4. Ajuste final de CORS
+### Rewrite SPA (obligatorio)
+
+React Router necesita que todas las rutas sirvan `index.html`. El `render.yaml` ya define:
+
+| Source | Destination | Action |
+|--------|-------------|--------|
+| `/*` | `/index.html` | Rewrite |
+
+Si el blueprint no aplicó la regla sola, en el Static Site ve a **Redirects/Rewrites** y añádela manualmente. Sin esto, rutas como `/admin/dashboard` devuelven **Not Found** al recargar o al entrar tras el login.
+
+## 4. Cookies de auth (cross-site en Render)
+
+Frontend y API viven en hosts distintos (`*.onrender.com`). Con `SameSite=Lax` el navegador **no** envía las cookies en las peticiones cross-site, así que el login puede devolver 200 y el siguiente `GET` protegido falla con 401.
+
+En `ENVIRONMENT=production` el backend setea cookies con:
+
+- `Secure`
+- `SameSite=None`
+
+En development siguen siendo `SameSite=Lax` (sin `Secure`).
+
+Tras cambiar esto, **redeploy** backend y frontend.
+
+## 5. Ajuste final de CORS
 
 Cuando tengas la URL real del frontend, actualiza en el backend:
 
@@ -106,11 +129,12 @@ CORS_ORIGINS=https://simulador.onrender.com
 
 Sin barra final. Si Render te da otro nombre (`simulador-xxxx.onrender.com`), usa esa URL exacta.
 
-## 5. Verificación
+## 6. Verificación
 
 1. `https://simulador-api.onrender.com/api/v1/health/live` → `{"status":"ok"}`
 2. `https://simulador-api.onrender.com/api/v1/health/ready` → `{"status":"ready"}` (confirma Supabase)
 3. Abrir frontend → login profesor → crear estudiante → examen
+4. Tras login, en DevTools → Network: las peticiones a la API deben llevar cookie `access_token` y las respuestas `Set-Cookie` deben incluir `SameSite=None; Secure`
 
 ## Notas
 
