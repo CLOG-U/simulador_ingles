@@ -11,10 +11,16 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     environment: str = "development"
     log_level: str = "INFO"
+    max_login_attempts: int = 5
+    lockout_minutes: int = 15
 
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def cookie_secure(self) -> bool:
+        return self.environment == "production"
 
 
 settings = Settings()
