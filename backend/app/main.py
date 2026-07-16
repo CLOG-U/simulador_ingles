@@ -4,8 +4,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.admin_audit import router as admin_audit_router
+from app.api.admin_exam import router as admin_exam_router
 from app.api.admin_users import router as admin_users_router
 from app.api.auth import router as auth_router
+from app.api.exam import router as exam_router
 from app.api.health import router as health_router
 from app.core.config import settings
 from app.core.errors import AppError, app_error_handler
@@ -48,5 +50,7 @@ async def request_id_middleware(request: Request, call_next):
 
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(exam_router, prefix="/api/v1")
 app.include_router(admin_users_router, prefix="/api/v1")
+app.include_router(admin_exam_router, prefix="/api/v1")
 app.include_router(admin_audit_router, prefix="/api/v1")
