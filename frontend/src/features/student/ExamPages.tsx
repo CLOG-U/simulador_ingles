@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../../components/AppShell";
@@ -6,12 +6,22 @@ import { ApiError } from "../../lib/api";
 import { examApi } from "../../lib/endpoints";
 import type { ExamQuestion } from "../../lib/types";
 
-type SaveStatus = "idle" | "saving" | "saved" | "offline";
+type SaveStatus = "idle" | "pending" | "saving" | "saved" | "offline";
+
+const SAVE_DEBOUNCE_MS = 1500;
 
 function fieldKey(field: string): "base" | "past" | "spanish" {
   if (field === "BASE") return "base";
   if (field === "PAST") return "past";
   return "spanish";
+}
+
+function emptyAnswers() {
+  return { base: "", past: "", spanish: "" };
+}
+
+function serializeAnswers(answers: { base: string; past: string; spanish: string }) {
+  return JSON.stringify(answers);
 }
 
 export function ExamStartRedirect() {
@@ -55,9 +65,13 @@ export function ExamStartRedirect() {
 export function ExamPage() {
   const { attemptId = "" } = useParams();
   const [index, setIndex] = useState(0);
+  const [answers, setAnswers] = useState(emptyAnswers);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [showSubmit, setShowSubmit] = useState(false);
   const debounceRef = useRef<number | null>(null);
+  const lastSavedRef = useRef("");
+  const dirtyRef = useRef(false);
+  const savedTimeoutRef = useRef<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data: attempt, isLoading } = useQuery({
@@ -69,13 +83,16 @@ export function ExamPage() {
   const saveMutation = useMutation({
     mutationFn: ({
       questionId,
-      answers,
+      payload,
     }: {
       questionId: string;
-      answers: Record<string, string | null>;
-    }) => examApi.saveAnswer(attemptId, questionId, answers),
-    onMutate: () => setSaveStatus("saving"),
-    onSuccess: () => setSaveStatus("saved"),
+      payload: { base: string; past: string; spanish: string };
+    }) => examApi.saveAnswer(attemptId, questionId, payload),
+    onSuccess: () => {
+      setSaveStatus("saved");
+      if (savedTimeoutRef.current) window.clearTimeout(savedTimeoutRef.current);
+      savedTimeoutRef.current = window.setTimeout(() => setSaveStatus("idle"), 2000);
+    },
     onError: () => setSaveStatus("offline"),
   });
 
@@ -92,30 +109,65 @@ export function ExamPage() {
   );
   const question: ExamQuestion | undefined = questions[index];
 
-  const localAnswers = useRef<Record<string, { base: string; past: string; spanish: string }>>({});
-
   useEffect(() => {
     if (!question) return;
-    if (!localAnswers.current[question.id]) {
-      localAnswers.current[question.id] = {
-        base: question.answers.base ?? "",
-        past: question.answers.past ?? "",
-        spanish: question.answers.spanish ?? "",
-      };
-    }
-  }, [question]);
-
-  const scheduleSave = (questionId: string, answers: Record<string, string>) => {
+    const next = {
+      base: question.answers.base ?? "",
+      past: question.answers.past ?? "",
+      spanish: question.answers.spanish ?? "",
+    };
+    setAnswers(next);
+    lastSavedRef.current = serializeAnswers(next);
+    dirtyRef.current = false;
+    setSaveStatus("idle");
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => {
-      void saveMutation.mutateAsync({ questionId, answers });
-    }, 400);
-  };
+  }, [question?.id]);
+
+  const persistAnswers = useCallback(
+    async (questionId: string, payload: { base: string; past: string; spanish: string }) => {
+      const serialized = serializeAnswers(payload);
+      if (serialized === lastSavedRef.current) {
+        dirtyRef.current = false;
+        setSaveStatus("idle");
+        return;
+      }
+      setSaveStatus("saving");
+      try {
+        await saveMutation.mutateAsync({ questionId, payload });
+        lastSavedRef.current = serialized;
+        dirtyRef.current = false;
+      } catch {
+        setSaveStatus("offline");
+      }
+    },
+    [saveMutation],
+  );
+
+  const scheduleSave = useCallback(
+    (questionId: string, payload: { base: string; past: string; spanish: string }) => {
+      dirtyRef.current = true;
+      setSaveStatus("pending");
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        void persistAnswers(questionId, payload);
+      }, SAVE_DEBOUNCE_MS);
+    },
+    [persistAnswers],
+  );
+
+  const flushSave = useCallback(
+    (questionId: string, payload: { base: string; past: string; spanish: string }) => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      if (!dirtyRef.current) return;
+      void persistAnswers(questionId, payload);
+    },
+    [persistAnswers],
+  );
 
   const emptyCount = questions.reduce((acc, q) => {
-    const a = localAnswers.current[q.id] ?? q.answers;
     const req = q.required_fields.map((f) => fieldKey(f.field));
-    const empty = req.filter((k) => !(a[k as keyof typeof a] ?? "").trim()).length;
+    const source = q.id === question?.id ? answers : q.answers;
+    const empty = req.filter((k) => !(source[k as keyof typeof source] ?? "").trim()).length;
     return acc + empty;
   }, 0);
 
@@ -127,11 +179,16 @@ export function ExamPage() {
     );
   }
 
-  const current = localAnswers.current[question.id] ?? {
-    base: question.answers.base ?? "",
-    past: question.answers.past ?? "",
-    spanish: question.answers.spanish ?? "",
-  };
+  const statusLabel =
+    saveStatus === "pending"
+      ? ""
+      : saveStatus === "saving"
+        ? "Guardando…"
+        : saveStatus === "saved"
+          ? "Guardado"
+          : saveStatus === "offline"
+            ? "Sin conexión"
+            : "";
 
   return (
     <AppShell title="Evaluación">
@@ -139,11 +196,7 @@ export function ExamPage() {
         <span>
           Pregunta {question.position} de {questions.length}
         </span>
-        <span aria-live="polite">
-          {saveStatus === "saving" && "Guardando…"}
-          {saveStatus === "saved" && "Guardado"}
-          {saveStatus === "offline" && "Sin conexión"}
-        </span>
+        <span aria-live="polite">{statusLabel}</span>
       </div>
 
       <section className="card space-y-4">
@@ -154,18 +207,19 @@ export function ExamPage() {
           const key = fieldKey(field.field);
           return (
             <div key={field.field}>
-              <label htmlFor={key} className="mb-1 block text-sm font-medium">
+              <label htmlFor={`${question.id}-${key}`} className="mb-1 block text-sm font-medium">
                 {field.label}
               </label>
               <input
-                id={key}
+                id={`${question.id}-${key}`}
                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-sky"
-                value={current[key]}
+                value={answers[key]}
                 onChange={(e) => {
-                  current[key] = e.target.value;
-                  scheduleSave(question.id, { ...current });
+                  const next = { ...answers, [key]: e.target.value };
+                  setAnswers(next);
+                  scheduleSave(question.id, next);
                 }}
-                onBlur={() => void saveMutation.mutateAsync({ questionId: question.id, answers: current })}
+                onBlur={() => flushSave(question.id, answers)}
               />
             </div>
           );
@@ -177,7 +231,10 @@ export function ExamPage() {
           <button
             key={q.id}
             type="button"
-            onClick={() => setIndex(i)}
+            onClick={() => {
+              flushSave(question.id, answers);
+              setIndex(i);
+            }}
             className={`min-h-11 min-w-11 rounded-lg border px-3 ${
               i === index ? "border-brand-primary bg-brand-primary text-white" : "bg-white"
             }`}
@@ -193,7 +250,10 @@ export function ExamPage() {
           type="button"
           className="min-h-11 rounded-xl border px-4"
           disabled={index === 0}
-          onClick={() => setIndex((i) => i - 1)}
+          onClick={() => {
+            flushSave(question.id, answers);
+            setIndex((i) => i - 1);
+          }}
         >
           Anterior
         </button>
@@ -201,11 +261,21 @@ export function ExamPage() {
           type="button"
           className="min-h-11 rounded-xl border px-4"
           disabled={index >= questions.length - 1}
-          onClick={() => setIndex((i) => i + 1)}
+          onClick={() => {
+            flushSave(question.id, answers);
+            setIndex((i) => i + 1);
+          }}
         >
           Siguiente
         </button>
-        <button type="button" className="btn-primary" onClick={() => setShowSubmit(true)}>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => {
+            flushSave(question.id, answers);
+            setShowSubmit(true);
+          }}
+        >
           Entregar
         </button>
       </div>
@@ -218,7 +288,11 @@ export function ExamPage() {
               Tienes {emptyCount} campo(s) vacío(s). ¿Deseas entregar la evaluación?
             </p>
             <div className="flex gap-3">
-              <button type="button" className="min-h-11 rounded-xl border px-4" onClick={() => setShowSubmit(false)}>
+              <button
+                type="button"
+                className="min-h-11 rounded-xl border px-4"
+                onClick={() => setShowSubmit(false)}
+              >
                 Cancelar
               </button>
               <button
@@ -274,7 +348,9 @@ export function ExamResultPage() {
             <h3 className="font-semibold">Revisión</h3>
             {data.questions.map((q) => (
               <article key={q.id} className="rounded-lg border p-3 text-sm">
-                <p className="font-medium">{q.prompt_label}: {q.shown_value}</p>
+                <p className="font-medium">
+                  {q.prompt_label}: {q.shown_value}
+                </p>
                 {q.grades && q.expected && (
                   <ul className="mt-2 space-y-1">
                     {(["base", "past", "spanish"] as const).map((k) =>
