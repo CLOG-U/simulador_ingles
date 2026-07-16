@@ -1,18 +1,20 @@
 import pytest
-from httpx import ASGITransport, AsyncClient
+from sqlalchemy import func, select
 
-from app.main import app
-
-
-@pytest.fixture
-async def client():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
+from app.models import Verb
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
-async def test_liveness(client):
-    response = await client.get("/api/v1/health/live")
+async def test_readiness_with_database(client, db_session):
+    response = await client.get("/api/v1/health/ready")
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    assert response.json()["status"] == "ready"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_seed_loaded_73_verbs(db_session):
+    result = await db_session.execute(select(func.count()).select_from(Verb))
+    count = result.scalar_one()
+    assert count == 73

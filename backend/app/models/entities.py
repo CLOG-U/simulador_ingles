@@ -88,7 +88,9 @@ class Verb(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
-    answers: Mapped[list["VerbAnswer"]] = relationship(back_populates="verb", cascade="all, delete-orphan")
+    answers: Mapped[list["VerbAnswer"]] = relationship(
+        back_populates="verb", cascade="all, delete-orphan"
+    )
 
 
 class VerbAnswer(Base):
@@ -138,7 +140,9 @@ class Attempt(Base):
     )
     config_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
     status: Mapped[AttemptStatus] = mapped_column(
-        Enum(AttemptStatus, name="attempt_status"), default=AttemptStatus.IN_PROGRESS, nullable=False
+        Enum(AttemptStatus, name="attempt_status"),
+        default=AttemptStatus.IN_PROGRESS,
+        nullable=False,
     )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

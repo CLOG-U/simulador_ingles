@@ -77,4 +77,17 @@ cd frontend && npm test
 
 ## Fases de implementación
 
-Ver `plan.md` sección 16. Estado actual: **Fase 1 — Base técnica**.
+Ver `plan.md` sección 16.
+
+| Fase | Estado |
+|------|--------|
+| 0 — Aprobación pedagógica | Pendiente del propietario |
+| 1 — Base técnica | Completada |
+| 2 — Autenticación y usuarios | Pendiente |
+| 3 — Motor de evaluación | Pendiente |
+| 4 — Interfaces | Pendiente |
+| 5 — Calidad y lanzamiento | Pendiente |
+
+## CI
+
+GitHub Actions ejecuta lint, pruebas y build en cada push a `main`.

@@ -1,5 +1,3 @@
-import pytest
-
 from seed.verbs_data import VERBS
 
 
@@ -18,6 +16,7 @@ def test_disambiguated_verbs_have_distinct_prompts() -> None:
     for verb in VERBS:
         key = verb.spanish_display.lower()
         by_spanish.setdefault(key, set()).add(verb.spanish_prompt)
-    # do/make both say "Hacer" in display but different prompts
-    assert "Hacer (una actividad o tarea)" in {v.spanish_prompt for v in VERBS if v.base_display == "Do"}
-    assert "Hacer (crear o fabricar)" in {v.spanish_prompt for v in VERBS if v.base_display == "Make"}
+    do_prompts = {v.spanish_prompt for v in VERBS if v.base_display == "Do"}
+    make_prompts = {v.spanish_prompt for v in VERBS if v.base_display == "Make"}
+    assert "Hacer (una actividad o tarea)" in do_prompts
+    assert "Hacer (crear o fabricar)" in make_prompts

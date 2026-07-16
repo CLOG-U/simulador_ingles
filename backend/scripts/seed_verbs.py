@@ -37,9 +37,15 @@ async def seed_verbs(session: AsyncSession) -> None:
             verb.spanish_prompt = item.spanish_prompt
             verb.hint = item.hint
 
-        await _upsert_answer(session, verb.id, VerbAnswerField.BASE, item.base_display, normalize_text)
-        await _upsert_answer(session, verb.id, VerbAnswerField.PAST, item.past_display, normalize_text)
-        await _upsert_answer(session, verb.id, VerbAnswerField.SPANISH, item.spanish_prompt, normalize_spanish)
+        await _upsert_answer(
+            session, verb.id, VerbAnswerField.BASE, item.base_display, normalize_text
+        )
+        await _upsert_answer(
+            session, verb.id, VerbAnswerField.PAST, item.past_display, normalize_text
+        )
+        await _upsert_answer(
+            session, verb.id, VerbAnswerField.SPANISH, item.spanish_prompt, normalize_spanish
+        )
 
 
 async def _upsert_answer(
