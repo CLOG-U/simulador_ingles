@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 def normalize_database_url(url: str) -> str:
     if url.startswith("postgres://"):
         url = "postgresql://" + url.removeprefix("postgres://")
@@ -36,6 +37,11 @@ class Settings(BaseSettings):
     @property
     def cookie_secure(self) -> bool:
         return self.environment == "production"
+
+    @property
+    def cookie_samesite(self) -> str:
+        # Cross-site frontend/API on distinct *.onrender.com hosts need None+Secure.
+        return "none" if self.environment == "production" else "lax"
 
 
 settings = Settings()
