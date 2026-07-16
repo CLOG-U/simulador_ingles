@@ -1,0 +1,90 @@
+"""Banco inicial de 73 verbos del PDF con desambiguaciones (plan sección 4.4)."""
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class VerbSeed:
+    source_order: int
+    base_display: str
+    past_display: str
+    spanish_display: str
+    spanish_prompt: str
+    hint: str | None = None
+
+
+VERBS: list[VerbSeed] = [
+    VerbSeed(1, "Go", "Went", "Ir", "Ir"),
+    VerbSeed(2, "Work", "Worked", "Trabajar", "Trabajar"),
+    VerbSeed(3, "Play", "Played", "Jugar", "Jugar"),
+    VerbSeed(4, "Cook", "Cooked", "Cocinar", "Cocinar"),
+    VerbSeed(5, "Eat", "Ate", "Comer", "Comer"),
+    VerbSeed(6, "Drink", "Drank", "Tomar", "Tomar (beber)"),
+    VerbSeed(7, "Drive", "Drove", "Manejar", "Manejar"),
+    VerbSeed(8, "Do", "Did", "Hacer", "Hacer (una actividad o tarea)"),
+    VerbSeed(9, "Get", "Got", "Obtener", "Obtener, recibir o conseguir"),
+    VerbSeed(10, "Give", "Gave", "Dar", "Dar"),
+    VerbSeed(11, "Read", "Read", "Leer", "Leer"),
+    VerbSeed(12, "See", "Saw", "Ver, observar", "Ver"),
+    VerbSeed(13, "Look", "Looked", "Mirar", "Mirar"),
+    VerbSeed(14, "Take", "Took", "Tomar", "Tomar (coger/llevar)"),
+    VerbSeed(15, "Study", "Studied", "Estudiar", "Estudiar"),
+    VerbSeed(16, "Think", "Thought", "Pensar", "Pensar"),
+    VerbSeed(17, "Wash", "Washed", "Lavar", "Lavar"),
+    VerbSeed(18, "Watch", "Watched", "Observar, mirar", "Observar o mirar atentamente"),
+    VerbSeed(19, "Have", "Had", "Tener", "Tener"),
+    VerbSeed(20, "Find", "Found", "Encontrar", "Encontrar"),
+    VerbSeed(21, "Wake up", "Woke up", "Despertar", "Despertar"),
+    VerbSeed(22, "Learn", "Learned", "Aprender", "Aprender"),
+    VerbSeed(23, "Write", "Wrote", "Escribir", "Escribir"),
+    VerbSeed(24, "Walk", "Walked", "Caminar", "Caminar"),
+    VerbSeed(25, "Make", "Made", "Hacer", "Hacer (crear o fabricar)"),
+    VerbSeed(26, "Listen", "Listened", "Escuchar", "Escuchar (prestar atención)"),
+    VerbSeed(27, "Sleep", "Slept", "Dormir", "Dormir"),
+    VerbSeed(28, "Live", "Lived", "Vivir", "Vivir"),
+    VerbSeed(29, "Brush", "Brushed", "Cepillar", "Cepillar"),
+    VerbSeed(30, "Can", "Could", "Poder", "Poder"),
+    VerbSeed(31, "Want", "Wanted", "Querer", "Querer"),
+    VerbSeed(32, "Need", "Needed", "Necesitar", "Necesitar"),
+    VerbSeed(33, "Like", "Liked", "Gustar", "Gustar"),
+    VerbSeed(34, "Talk", "Talked", "Conversar", "Conversar"),
+    VerbSeed(35, "Speak", "Spoke", "Hablar", "Hablar"),
+    VerbSeed(36, "Remember", "Remembered", "Recordar", "Recordar"),
+    VerbSeed(37, "Understand", "Understood", "Entender", "Entender"),
+    VerbSeed(38, "Spend", "Spent", "Gastar", "Gastar"),
+    VerbSeed(39, "Try", "Tried", "Intentar, tratar", "Intentar, tratar"),
+    VerbSeed(40, "Swim", "Swam", "Nadar", "Nadar"),
+    VerbSeed(41, "Come", "Came", "Venir", "Venir"),
+    VerbSeed(42, "Start", "Started", "Empezar", "Empezar"),
+    VerbSeed(43, "Say", "Said", "Decir", "Decir (algo)"),
+    VerbSeed(44, "Tell", "Told", "Decir, contar, narrar", "Decir o contar (a alguien)"),
+    VerbSeed(45, "Buy", "Bought", "Comprar", "Comprar"),
+    VerbSeed(46, "Bring", "Brought", "Traer", "Traer"),
+    VerbSeed(47, "Change", "Changed", "Cambiar", "Cambiar"),
+    VerbSeed(48, "Cut", "Cut", "Cortar", "Cortar"),
+    VerbSeed(49, "Fall", "Fell", "Caer", "Caer"),
+    VerbSeed(50, "Fix", "Fixed", "Arreglar, reparar", "Arreglar, reparar"),
+    VerbSeed(51, "Forget", "Forgot", "Olvidar", "Olvidar"),
+    VerbSeed(52, "Lose", "Lost", "Perder", "Perder"),
+    VerbSeed(53, "Open", "Opened", "Abrir", "Abrir"),
+    VerbSeed(54, "Close", "Closed", "Cerrar", "Cerrar"),
+    VerbSeed(55, "Pay", "Paid", "Pagar", "Pagar"),
+    VerbSeed(56, "Put", "Put", "Poner", "Poner"),
+    VerbSeed(57, "Run", "Ran", "Correr", "Correr"),
+    VerbSeed(58, "Send", "Sent", "Enviar", "Enviar"),
+    VerbSeed(59, "Feel", "Felt", "Sentir", "Sentir"),
+    VerbSeed(60, "Teach", "Taught", "Enseñar", "Enseñar"),
+    VerbSeed(61, "Wait", "Waited", "Esperar", "Esperar"),
+    VerbSeed(62, "Fly", "Flew", "Volar", "Volar"),
+    VerbSeed(63, "Leave", "Left", "Dejar, salir", "Salir o dejar"),
+    VerbSeed(64, "Know", "Knew", "Saber, conocer", "Saber, conocer"),
+    VerbSeed(65, "Believe", "Believed", "Creer", "Creer"),
+    VerbSeed(66, "Become", "Became", "Llegar a ser", "Llegar a ser"),
+    VerbSeed(67, "Ask", "Asked", "Preguntar, pedir", "Preguntar, pedir"),
+    VerbSeed(68, "Hear", "Heard", "Escuchar", "Oír"),
+    VerbSeed(69, "Use", "Used", "Usar", "Usar"),
+    VerbSeed(70, "Sing", "Sang", "Cantar", "Cantar"),
+    VerbSeed(71, "Text", "Texted", "Mensajear", "Mensajear"),
+    VerbSeed(72, "Call", "Called", "Llamar", "Llamar"),
+    VerbSeed(73, "Pick up", "Picked up", "Recoger", "Recoger"),
+]
