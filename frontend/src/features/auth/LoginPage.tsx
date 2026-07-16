@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { authApi } from "../../lib/endpoints";
 import { ApiError } from "../../lib/api";
+import { notifyAuthChanged } from "../../lib/authEvents";
 
 const schema = z.object({
   username: z.string().min(1, "Ingresa tu usuario"),
@@ -30,6 +31,9 @@ export function LoginPage() {
     try {
       const result = await authApi.login(data.username, data.password);
       queryClient.setQueryData(["auth", "me"], result.user);
+      queryClient.clear();
+      queryClient.setQueryData(["auth", "me"], result.user);
+      notifyAuthChanged();
       if (result.must_change_password) {
         navigate("/change-password");
       } else if (result.user.role === "ADMIN") {

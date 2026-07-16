@@ -1,7 +1,9 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { UserMe } from "../../lib/types";
 import { authApi } from "../../lib/endpoints";
+import { setOnUnauthorized } from "../../lib/api";
+import { AUTH_SYNC_KEY, notifyAuthChanged } from "../../lib/authEvents";
 
 interface AuthContextValue {
   user: UserMe | null | undefined;
@@ -18,14 +20,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["auth", "me"],
     queryFn: authApi.me,
     retry: false,
-    staleTime: 10_000,
+    staleTime: 0,
     refetchOnWindowFocus: true,
   });
+
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      queryClient.setQueryData(["auth", "me"], null);
+      window.location.href = "/login";
+    });
+  }, [queryClient]);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== AUTH_SYNC_KEY) return;
+      void queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      queryClient.invalidateQueries();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [queryClient]);
 
   const logout = async () => {
     await authApi.logout();
     queryClient.setQueryData(["auth", "me"], null);
     queryClient.clear();
+    notifyAuthChanged();
   };
 
   return (

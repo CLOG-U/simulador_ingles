@@ -1,5 +1,11 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
+let onUnauthorized: (() => void) | null = null;
+
+export function setOnUnauthorized(handler: () => void) {
+  onUnauthorized = handler;
+}
+
 export class ApiError extends Error {
   constructor(
     public code: string,
@@ -30,6 +36,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      onUnauthorized?.();
+    }
     let body: ErrorBody = {};
     try {
       body = await response.json();

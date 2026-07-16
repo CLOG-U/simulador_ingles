@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell, adminNav } from "../../components/AppShell";
+import { QueryState } from "../../components/QueryState";
 import { adminApi } from "../../lib/endpoints";
 
 type CredentialModal = {
@@ -24,7 +25,7 @@ export function AdminUsersPage() {
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-users", search],
     queryFn: () => adminApi.listUsers({ search: search || undefined }),
   });
@@ -143,9 +144,13 @@ export function AdminUsersPage() {
         className="mb-4 w-full rounded-xl border px-4 py-2"
       />
 
-      {isLoading ? (
-        <p>Cargando…</p>
-      ) : (
+      <QueryState
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isEmpty={!data?.items.length}
+        emptyMessage="No hay usuarios registrados."
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
@@ -206,7 +211,7 @@ export function AdminUsersPage() {
             </tbody>
           </table>
         </div>
-      )}
+      </QueryState>
     </AppShell>
   );
 }

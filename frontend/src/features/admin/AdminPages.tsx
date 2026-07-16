@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell, adminNav } from "../../components/AppShell";
+import { QueryState } from "../../components/QueryState";
 import { adminApi } from "../../lib/endpoints";
 
 export function AdminVerbsPage() {
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-verbs", search],
     queryFn: () => adminApi.listVerbs(search || undefined),
   });
@@ -25,9 +26,13 @@ export function AdminVerbsPage() {
         placeholder="Buscar verbo…"
         className="mb-4 w-full rounded-xl border px-4 py-2"
       />
-      {isLoading ? (
-        <p>Cargando…</p>
-      ) : (
+      <QueryState
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isEmpty={!data?.items.length}
+        emptyMessage="No hay verbos en el banco."
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
@@ -60,7 +65,7 @@ export function AdminVerbsPage() {
             </tbody>
           </table>
         </div>
-      )}
+      </QueryState>
     </AppShell>
   );
 }
@@ -110,16 +115,20 @@ export function AdminConfigPage() {
 }
 
 export function AdminResultsPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-attempts"],
     queryFn: adminApi.listAttempts,
   });
 
   return (
     <AppShell title="Resultados" nav={adminNav}>
-      {isLoading ? (
-        <p>Cargando…</p>
-      ) : (
+      <QueryState
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isEmpty={!data?.items.length}
+        emptyMessage="No hay resultados todavía."
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-left text-sm">
             <thead>
@@ -142,22 +151,26 @@ export function AdminResultsPage() {
             </tbody>
           </table>
         </div>
-      )}
+      </QueryState>
     </AppShell>
   );
 }
 
 export function AdminAuditPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-audit"],
     queryFn: adminApi.auditLogs,
   });
 
   return (
     <AppShell title="Auditoría" nav={adminNav}>
-      {isLoading ? (
-        <p>Cargando…</p>
-      ) : (
+      <QueryState
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isEmpty={!data?.items.length}
+        emptyMessage="No hay registros de auditoría."
+      >
         <ul className="space-y-2 text-sm">
           {data?.items.map((log) => (
             <li key={log.id as string} className="card">
@@ -165,7 +178,7 @@ export function AdminAuditPage() {
             </li>
           ))}
         </ul>
-      )}
+      </QueryState>
     </AppShell>
   );
 }
