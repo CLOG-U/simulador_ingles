@@ -20,39 +20,109 @@ function formatDate(iso: string | null | undefined) {
   });
 }
 
-function QuestionReview({ questions }: { questions: ExamQuestion[] }) {
+function answerKey(field: string): "base" | "past" | "spanish" {
+  return field.toLowerCase() as "base" | "past" | "spanish";
+}
+
+function GradeBadge({ correct }: { correct: boolean }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+        correct ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+      }`}
+    >
+      {correct ? "Correcto" : "Incorrecto"}
+    </span>
+  );
+}
+
+function QuestionReview({
+  questions,
+  graded,
+}: {
+  questions: ExamQuestion[];
+  graded: boolean;
+}) {
   if (questions.length === 0) return null;
 
   return (
     <div className="space-y-3 pt-4">
       <h3 className="font-semibold">Revisión por pregunta</h3>
-      {questions.map((q) => (
-        <article key={q.id} className="rounded-lg border p-3 text-sm">
-          <p className="font-medium">
-            {q.position}. {q.prompt_label}: {q.shown_value}
-          </p>
-          {q.grades && q.expected ? (
-            <ul className="mt-2 space-y-1">
-              {(["base", "past", "spanish"] as const).map((k) =>
-                q.grades?.[k] != null ? (
-                  <li key={k} className={q.grades[k] ? "text-success" : "text-danger"}>
-                    {k}: respuesta «{q.answers[k] ?? "—"}» — esperado «{q.expected?.[k]}»{" "}
-                    {q.grades[k] ? "✓" : "✗"}
-                  </li>
-                ) : null,
+      {questions.map((q) => {
+        const hasGrades = graded && q.grades && q.expected;
+        const fullyCorrect =
+          q.fully_correct ??
+          (hasGrades
+            ? q.required_fields.every(({ field }) => q.grades?.[answerKey(field)] === true)
+            : false);
+
+        return (
+          <article
+            key={q.id}
+            className={`rounded-lg border p-3 text-sm ${
+              hasGrades
+                ? fullyCorrect
+                  ? "border-green-200 bg-green-50/40"
+                  : "border-red-200 bg-red-50/40"
+                : ""
+            }`}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="font-medium">
+                {q.position}. {q.prompt_label}: {q.shown_value}
+              </p>
+              {hasGrades && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    fullyCorrect
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {fullyCorrect ? "Verbo completo" : "Verbo con errores"}
+                </span>
               )}
+            </div>
+
+            <ul className="mt-3 space-y-2">
+              {q.required_fields.map(({ field, label }) => {
+                const key = answerKey(field);
+                const studentAnswer = q.answers[key]?.trim() || "—";
+                const expectedAnswer = q.expected?.[key] ?? "—";
+                const isCorrect = q.grades?.[key];
+
+                return (
+                  <li
+                    key={field}
+                    className={`rounded-lg border bg-white p-2 ${
+                      hasGrades && isCorrect === true
+                        ? "border-green-200"
+                        : hasGrades && isCorrect === false
+                          ? "border-red-200"
+                          : "border-gray-200"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-medium capitalize">{label}</p>
+                      {hasGrades && isCorrect != null && <GradeBadge correct={isCorrect} />}
+                    </div>
+                    <p className="mt-1">
+                      <span className="text-gray-600">Respuesta del estudiante:</span>{" "}
+                      <strong>{studentAnswer}</strong>
+                    </p>
+                    {hasGrades && (
+                      <p className="mt-1">
+                        <span className="text-gray-600">Respuesta correcta:</span>{" "}
+                        <strong className="text-green-800">{expectedAnswer}</strong>
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
-          ) : (
-            <ul className="mt-2 space-y-1 text-gray-600">
-              {(["base", "past", "spanish"] as const).map((k) => (
-                <li key={k}>
-                  {k}: «{q.answers[k] ?? "—"}»
-                </li>
-              ))}
-            </ul>
-          )}
-        </article>
-      ))}
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -104,7 +174,7 @@ function AttemptReportContent({ data }: { data: AdminAttemptReport }) {
       )}
 
       {data.questions && data.questions.length > 0 && (
-        <QuestionReview questions={data.questions} />
+        <QuestionReview questions={data.questions} graded={submitted} />
       )}
     </section>
   );

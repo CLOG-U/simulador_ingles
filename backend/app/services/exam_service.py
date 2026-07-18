@@ -203,16 +203,20 @@ def serialize_question(question: AttemptQuestion, *, include_grades: bool) -> di
         },
     }
     if include_grades:
-        data["grades"] = {
+        grades = {
             "base": question.is_base_correct,
             "past": question.is_past_correct,
             "spanish": question.is_spanish_correct,
         }
+        data["grades"] = grades
         data["expected"] = {
             "base": question.snapshot_base,
             "past": question.snapshot_past,
             "spanish": question.snapshot_spanish_prompt,
         }
+        data["fully_correct"] = all(
+            grades[f.lower()] is True for f in required
+        )
     return data
 
 

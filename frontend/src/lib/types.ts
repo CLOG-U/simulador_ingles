@@ -34,6 +34,7 @@ export interface ExamQuestion {
   answers: { base: string | null; past: string | null; spanish: string | null };
   grades?: { base: boolean | null; past: boolean | null; spanish: boolean | null };
   expected?: { base: string; past: string; spanish: string };
+  fully_correct?: boolean;
 }
 
 export interface Attempt {
