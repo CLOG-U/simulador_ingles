@@ -1,11 +1,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
 from app.core.database import get_db
-from app.models import User, UserRole
+from app.core.errors import AppError
+from app.models import Attempt, User, UserRole
 from app.schemas.user import (
     AdminResetPasswordRequest,
     AdminUserCreate,
@@ -66,6 +68,44 @@ async def create_user(
         user=AdminUserResponse.model_validate(user),
         temporary_password=temp_password,
     )
+
+
+@router.get("/{user_id}/report")
+async def student_report(
+    user_id: uuid.UUID,
+    _admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await user_service.get_user(db, user_id)
+    if user.role != UserRole.STUDENT:
+        raise AppError("NOT_FOUND", "Estudiante no encontrado", status_code=404)
+
+    result = await db.execute(
+        select(Attempt)
+        .where(Attempt.user_id == user_id)
+        .order_by(Attempt.started_at.desc())
+    )
+    attempts = result.scalars().all()
+    stats = await exam_service.get_student_attempt_stats(db, [user_id])
+    attempt_summary = stats.get(user_id, {})
+
+    return {
+        "student": AdminUserResponse.model_validate(user).model_copy(update=attempt_summary),
+        "attempts": [
+            {
+                "id": str(a.id),
+                "status": a.status.value,
+                "started_at": a.started_at.isoformat(),
+                "submitted_at": a.submitted_at.isoformat() if a.submitted_at else None,
+                "percentage": float(a.percentage) if a.percentage is not None else None,
+                "passed": a.passed,
+                "correct_fields": a.correct_fields,
+                "total_fields": a.total_fields,
+                "fully_correct_questions": a.fully_correct_questions,
+            }
+            for a in attempts
+        ],
+    }
 
 
 @router.get("/{user_id}", response_model=AdminUserResponse)

@@ -95,3 +95,41 @@ export interface VerbItem {
   spanish_prompt: string;
   is_active: boolean;
 }
+
+export interface AdminAttemptListItem {
+  id: string;
+  student_id: string;
+  student_username: string;
+  student_name: string;
+  status: string;
+  percentage: number | null;
+  passed: boolean | null;
+  started_at: string;
+  submitted_at: string | null;
+}
+
+export interface AdminAttemptSummary {
+  id: string;
+  status: string;
+  started_at: string;
+  submitted_at: string | null;
+  percentage: number | null;
+  passed: boolean | null;
+  correct_fields: number | null;
+  total_fields: number | null;
+  fully_correct_questions: number | null;
+}
+
+export interface AdminStudentReport {
+  student: AdminUser;
+  attempts: AdminAttemptSummary[];
+}
+
+export interface AdminAttemptReport extends AttemptResult {
+  student_id: string;
+  student_username: string;
+  student_name: string;
+  started_at: string;
+  submitted_at: string | null;
+  questions: ExamQuestion[];
+}

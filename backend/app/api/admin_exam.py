@@ -177,11 +177,13 @@ async def list_attempts(
         "items": [
             {
                 "id": str(a.id),
+                "student_id": str(u.id),
                 "student_username": u.username,
                 "student_name": u.full_name,
                 "status": a.status.value,
                 "percentage": float(a.percentage) if a.percentage is not None else None,
                 "passed": a.passed,
+                "started_at": a.started_at.isoformat(),
                 "submitted_at": a.submitted_at.isoformat() if a.submitted_at else None,
             }
             for a, u in rows
@@ -198,14 +200,18 @@ async def get_attempt_admin(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Attempt).options(selectinload(Attempt.questions)).where(Attempt.id == attempt_id)
+        select(Attempt, User)
+        .join(User, User.id == Attempt.user_id)
+        .options(selectinload(Attempt.questions))
+        .where(Attempt.id == attempt_id)
     )
-    attempt = result.scalar_one_or_none()
-    if attempt is None:
+    row = result.one_or_none()
+    if row is None:
         from app.core.errors import AppError
 
         raise AppError("NOT_FOUND", "Intento no encontrado", status_code=404)
-    return exam_service.serialize_attempt(attempt, include_grades=True)
+    attempt, user = row
+    return exam_service.serialize_admin_attempt_report(attempt, user)
 
 
 @router.post("/users/{user_id}/allow-new-attempt")

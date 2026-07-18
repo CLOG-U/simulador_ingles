@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
@@ -449,13 +450,21 @@ export function AdminUsersPage() {
                       Restablecer clave
                     </button>
                     {u.role === "STUDENT" && (
-                      <button
-                        type="button"
-                        className="text-brand-primary underline"
-                        onClick={() => allowAttemptMutation.mutate(u.id)}
-                      >
-                        Nuevo intento
-                      </button>
+                      <>
+                        <Link
+                          to={`/admin/students/${u.id}/report`}
+                          className="mr-2 text-brand-primary underline"
+                        >
+                          Ver reporte
+                        </Link>
+                        <button
+                          type="button"
+                          className="text-brand-primary underline"
+                          onClick={() => allowAttemptMutation.mutate(u.id)}
+                        >
+                          Nuevo intento
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>

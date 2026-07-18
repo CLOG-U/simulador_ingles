@@ -13,6 +13,10 @@ import {
 } from "../features/admin/AdminPages";
 import { AdminDashboard } from "../features/admin/AdminDashboard";
 import { AdminUsersPage } from "../features/admin/AdminUsersPage";
+import {
+  AdminAttemptReportPage,
+  AdminStudentReportPage,
+} from "../features/admin/AdminReportPages";
 import { ExamInstructionsPage } from "../features/student/ExamInstructionsPage";
 import {
   ExamPage,
@@ -52,6 +56,8 @@ export function App() {
               <Route path="/admin/verbs" element={<AdminVerbsPage />} />
               <Route path="/admin/config" element={<AdminConfigPage />} />
               <Route path="/admin/results" element={<AdminResultsPage />} />
+              <Route path="/admin/students/:userId/report" element={<AdminStudentReportPage />} />
+              <Route path="/admin/reports/:attemptId" element={<AdminAttemptReportPage />} />
               <Route path="/admin/audit" element={<AdminAuditPage />} />
             </Route>
 

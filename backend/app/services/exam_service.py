@@ -230,6 +230,28 @@ def serialize_attempt(attempt: Attempt, *, include_grades: bool) -> dict:
     }
 
 
+def serialize_admin_attempt_report(attempt: Attempt, user: User) -> dict:
+    include_grades = attempt.status == AttemptStatus.SUBMITTED
+    data = serialize_attempt(attempt, include_grades=include_grades)
+    review_policy = "FULL"
+    if attempt.config_snapshot:
+        review_policy = attempt.config_snapshot.get("review_policy", "FULL")
+    data.update(
+        {
+            "student_id": str(user.id),
+            "student_username": user.username,
+            "student_name": user.full_name,
+            "correct_fields": attempt.correct_fields,
+            "total_fields": attempt.total_fields,
+            "fully_correct_questions": attempt.fully_correct_questions,
+            "percentage": float(attempt.percentage) if attempt.percentage is not None else None,
+            "passed": attempt.passed,
+            "review_policy": review_policy,
+        }
+    )
+    return data
+
+
 async def save_question_answer(
     session: AsyncSession,
     *,

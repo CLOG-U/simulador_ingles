@@ -1,8 +1,16 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
 import { adminApi } from "../../lib/endpoints";
+
+const ATTEMPT_STATUS_LABELS: Record<string, string> = {
+  IN_PROGRESS: "En curso",
+  SUBMITTED: "Entregado",
+  CANCELLED: "Cancelado",
+  EXPIRED: "Expirado",
+};
 
 export function AdminVerbsPage() {
   const [search, setSearch] = useState("");
@@ -130,22 +138,45 @@ export function AdminResultsPage() {
         emptyMessage="No hay resultados todavía."
       >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-left text-sm">
+          <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b">
                 <th className="py-2">Estudiante</th>
                 <th className="py-2">Estado</th>
                 <th className="py-2">Nota</th>
                 <th className="py-2">Aprobado</th>
+                <th className="py-2">Acción</th>
               </tr>
             </thead>
             <tbody>
               {data?.items.map((row) => (
-                <tr key={row.id as string} className="border-b">
-                  <td className="py-2">{row.student_name as string}</td>
-                  <td className="py-2">{row.status as string}</td>
-                  <td className="py-2">{row.percentage as number | null}%</td>
-                  <td className="py-2">{row.passed ? "Sí" : "No"}</td>
+                <tr key={row.id} className="border-b">
+                  <td className="py-2">
+                    <Link
+                      to={`/admin/students/${row.student_id}/report`}
+                      className="text-brand-primary underline"
+                    >
+                      {row.student_name}
+                    </Link>
+                    <span className="block text-xs text-gray-500">{row.student_username}</span>
+                  </td>
+                  <td className="py-2">
+                    {ATTEMPT_STATUS_LABELS[row.status] ?? row.status}
+                  </td>
+                  <td className="py-2">
+                    {row.percentage != null ? `${row.percentage.toFixed(1)}%` : "—"}
+                  </td>
+                  <td className="py-2">
+                    {row.status === "SUBMITTED" ? (row.passed ? "Sí" : "No") : "—"}
+                  </td>
+                  <td className="py-2">
+                    <Link
+                      to={`/admin/reports/${row.id}`}
+                      className="text-brand-primary underline"
+                    >
+                      Ver evaluación
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

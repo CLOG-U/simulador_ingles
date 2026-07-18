@@ -1,4 +1,7 @@
 import type {
+  AdminAttemptListItem,
+  AdminAttemptReport,
+  AdminStudentReport,
   AdminUser,
   Attempt,
   AttemptResult,
@@ -139,6 +142,11 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
-  listAttempts: () => apiFetch<{ items: Record<string, unknown>[] }>("/admin/attempts"),
+  listAttempts: () =>
+    apiFetch<{ items: AdminAttemptListItem[] }>("/admin/attempts"),
+  studentReport: (userId: string) =>
+    apiFetch<AdminStudentReport>(`/admin/users/${userId}/report`),
+  attemptReport: (attemptId: string) =>
+    apiFetch<AdminAttemptReport>(`/admin/attempts/${attemptId}`),
   auditLogs: () => apiFetch<{ items: Record<string, unknown>[] }>("/admin/audit-logs"),
 };
