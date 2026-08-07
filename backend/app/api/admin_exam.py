@@ -7,9 +7,10 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import require_admin
 from app.core.database import get_db
-from app.models import Attempt, AttemptStatus, User, Verb
-from app.models.enums import ReviewPolicy
-from app.services import exam_service
+from app.core.errors import AppError
+from app.models import Attempt, AttemptStatus, ExamType, PastSimpleAttempt, User, Verb
+from app.models.enums import ReviewPolicy, UserRole
+from app.services import exam_service, user_service
 from app.services.audit_service import log_audit
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -88,6 +89,8 @@ async def get_exam_config_admin(
 ):
     config = await exam_service.get_exam_config(db)
     return {
+        "exam_type": "verb_exam",
+        "is_enabled": config.is_enabled,
         "question_count": config.question_count,
         "passing_percentage": config.passing_percentage,
         "duration_minutes": config.duration_minutes,
@@ -103,6 +106,8 @@ async def update_exam_config(
     db: AsyncSession = Depends(get_db),
 ):
     config = await exam_service.get_exam_config(db)
+    if "is_enabled" in body:
+        config.is_enabled = bool(body["is_enabled"])
     if "passing_percentage" in body:
         config.passing_percentage = int(body["passing_percentage"])
     if "duration_minutes" in body:
@@ -150,11 +155,36 @@ async def dashboard(
             )
         )
     ).scalar_one()
+    past_finished = (
+        await db.execute(
+            select(func.count()).select_from(PastSimpleAttempt).where(
+                PastSimpleAttempt.status == AttemptStatus.SUBMITTED
+            )
+        )
+    ).scalar_one()
+    past_avg = (
+        await db.execute(
+            select(func.avg(PastSimpleAttempt.percentage)).where(
+                PastSimpleAttempt.status == AttemptStatus.SUBMITTED
+            )
+        )
+    ).scalar_one()
+    past_passed = (
+        await db.execute(
+            select(func.count()).select_from(PastSimpleAttempt).where(
+                PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
+                PastSimpleAttempt.passed.is_(True),
+            )
+        )
+    ).scalar_one()
     return {
         "active_students": active_students,
         "finished_attempts": finished,
         "average_percentage": float(avg) if avg else None,
         "passed_count": passed,
+        "past_simple_finished_attempts": past_finished,
+        "past_simple_average_percentage": float(past_avg) if past_avg else None,
+        "past_simple_passed_count": past_passed,
     }
 
 
@@ -177,6 +207,8 @@ async def list_attempts(
         "items": [
             {
                 "id": str(a.id),
+                "exam_type": ExamType.VERB_EXAM.value,
+                "exam_name": "Verb Exam",
                 "student_id": str(u.id),
                 "student_username": u.username,
                 "student_name": u.full_name,
@@ -207,8 +239,6 @@ async def get_attempt_admin(
     )
     row = result.one_or_none()
     if row is None:
-        from app.core.errors import AppError
-
         raise AppError("NOT_FOUND", "Intento no encontrado", status_code=404)
     attempt, user = row
     return exam_service.serialize_admin_attempt_report(attempt, user)
@@ -220,7 +250,10 @@ async def allow_new_attempt(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    await exam_service.allow_new_attempt(db, user_id)
+    user = await user_service.get_user(db, user_id)
+    if user.role != UserRole.STUDENT:
+        raise AppError("NOT_FOUND", "Estudiante no encontrado", status_code=404)
+    await exam_service.allow_new_attempt(db, user_id, actor_id=admin.id)
     await log_audit(
         db,
         actor_user_id=admin.id,
@@ -228,4 +261,5 @@ async def allow_new_attempt(
         target_type="user",
         target_id=str(user_id),
     )
+    await db.commit()
     return {"status": "ok"}

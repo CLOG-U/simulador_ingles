@@ -41,8 +41,8 @@ async def main() -> None:
         # Asumimos admin creado externamente; intentamos login
         r = await client.post("/auth/login", json={"username": ADMIN_USER, "password": ADMIN_PASS})
         if r.status_code != 200:
-            print(f"\n  Admin no existe aún. Créalo con:")
-            print(f"  docker compose exec backend python -m scripts.create_admin")
+            print("\n  Admin no existe aún. Créalo con:")
+            print("  docker compose exec backend python -m scripts.create_admin")
             print(f"  (usuario: {ADMIN_USER}, clave: {ADMIN_PASS})\n")
             fail("login admin", r.text)
 
@@ -155,7 +155,10 @@ async def main() -> None:
         if r.status_code != 200:
             fail("resultado estudiante", r.text)
         result = r.json()
-        ok(f"resultado: {result['percentage']}% ({result['correct_fields']}/{result['total_fields']} campos)")
+        ok(
+            f"resultado: {result['percentage']}% "
+            f"({result['correct_fields']}/{result['total_fields']} campos)"
+        )
 
         # 12. Profesor ve resultados
         r = await client.get("/admin/attempts", cookies=admin_cookies)
@@ -173,9 +176,9 @@ async def main() -> None:
         ok(f"export CSV ({len(r.text)} bytes)")
 
     print("\n=== TODAS LAS PRUEBAS PASARON ===")
-    print(f"\nFrontend: http://localhost:5173")
-    print(f"API docs: http://localhost:8000/docs")
-    print(f"\nCredenciales de prueba:")
+    print("\nFrontend: http://localhost:5173")
+    print("API docs: http://localhost:8000/docs")
+    print("\nCredenciales de prueba:")
     print(f"  Profesor:  {ADMIN_USER} / {ADMIN_PASS}")
     print(f"  Estudiante: {STUDENT_USER} / {STUDENT_TEMP}")
 

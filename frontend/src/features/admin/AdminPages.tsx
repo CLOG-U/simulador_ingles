@@ -84,8 +84,9 @@ export function AdminConfigPage() {
   const [passing, setPassing] = useState<number | "">("");
   const [duration, setDuration] = useState<number | "">("");
 
-  const save = async () => {
+  const save = async (isEnabled = data?.is_enabled ?? true) => {
     await adminApi.updateExamConfig({
+      is_enabled: isEnabled,
       passing_percentage: passing === "" ? undefined : Number(passing),
       duration_minutes: duration === "" ? null : Number(duration),
     });
@@ -95,6 +96,20 @@ export function AdminConfigPage() {
   return (
     <AppShell title="Configuración" nav={adminNav}>
       <section className="card max-w-md space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">Verb Exam</h2>
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-3 ${
+              data?.is_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            onClick={() => void save(!data?.is_enabled)}
+          >
+            {data?.is_enabled ? "Habilitado" : "Deshabilitado"}
+          </button>
+        </div>
         <p>Preguntas por intento: {data?.question_count ?? 20} (fijo en MVP)</p>
         <label className="block">
           Nota mínima (%)
@@ -123,25 +138,46 @@ export function AdminConfigPage() {
 }
 
 export function AdminResultsPage() {
-  const { data, isLoading, isError, error } = useQuery({
+  const verbQuery = useQuery({
     queryKey: ["admin-attempts"],
     queryFn: adminApi.listAttempts,
   });
+  const pastQuery = useQuery({
+    queryKey: ["admin-past-simple-attempts"],
+    queryFn: adminApi.listPastSimpleAttempts,
+  });
+  const items = [
+    ...(verbQuery.data?.items ?? []),
+    ...(pastQuery.data?.items ?? []),
+  ].sort(
+    (a, b) =>
+      new Date(b.started_at).getTime() - new Date(a.started_at).getTime(),
+  );
 
   return (
     <AppShell title="Resultados" nav={adminNav}>
+      <div className="mb-4 flex justify-end">
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => void adminApi.downloadAttemptsCsv()}
+        >
+          Exportar CSV
+        </button>
+      </div>
       <QueryState
-        isLoading={isLoading}
-        isError={isError}
-        error={error}
-        isEmpty={!data?.items.length}
+        isLoading={verbQuery.isLoading || pastQuery.isLoading}
+        isError={verbQuery.isError || pastQuery.isError}
+        error={verbQuery.error ?? pastQuery.error}
+        isEmpty={!items.length}
         emptyMessage="No hay resultados todavía."
       >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
+          <table className="w-full min-w-[760px] text-left text-sm">
             <thead>
               <tr className="border-b">
                 <th className="py-2">Estudiante</th>
+                <th className="py-2">Examen</th>
                 <th className="py-2">Estado</th>
                 <th className="py-2">Nota</th>
                 <th className="py-2">Aprobado</th>
@@ -149,7 +185,7 @@ export function AdminResultsPage() {
               </tr>
             </thead>
             <tbody>
-              {data?.items.map((row) => (
+              {items.map((row) => (
                 <tr key={row.id} className="border-b">
                   <td className="py-2">
                     <Link
@@ -159,6 +195,10 @@ export function AdminResultsPage() {
                       {row.student_name}
                     </Link>
                     <span className="block text-xs text-gray-500">{row.student_username}</span>
+                  </td>
+                  <td className="py-2">
+                    {row.exam_name}
+                    {row.attempt_number ? ` · #${row.attempt_number}` : ""}
                   </td>
                   <td className="py-2">
                     {ATTEMPT_STATUS_LABELS[row.status] ?? row.status}
@@ -171,7 +211,11 @@ export function AdminResultsPage() {
                   </td>
                   <td className="py-2">
                     <Link
-                      to={`/admin/reports/${row.id}`}
+                      to={
+                        row.exam_type === "past_simple_exam"
+                          ? `/admin/past-simple/reports/${row.id}`
+                          : `/admin/reports/${row.id}`
+                      }
                       className="text-brand-primary underline"
                     >
                       Ver evaluación

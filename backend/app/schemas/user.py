@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -37,6 +37,7 @@ class AdminUserResponse(BaseModel):
     attempts_max: int | None = None
     attempts_remaining: int | None = None
     has_open_attempt: bool | None = None
+    exam_access: list[dict] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 

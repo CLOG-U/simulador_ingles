@@ -42,7 +42,9 @@ export function ExamStartRedirect() {
   });
 
   useEffect(() => {
-    if (data?.id) navigate(`/student/exam/${data.id}`, { replace: true });
+    if (data?.id) {
+      navigate(`/student/exams/verb_exam/attempts/${data.id}`, { replace: true });
+    }
   }, [data, navigate]);
 
   if (error) {
@@ -82,6 +84,7 @@ export function ExamPage() {
   const debounceRef = useRef<number | null>(null);
   const lastSavedRef = useRef<Record<string, string>>({});
   const localAnswersRef = useRef<Record<string, AnswerSet>>({});
+  const initializedAttemptRef = useRef<string | null>(null);
   const savingRef = useRef<Promise<void> | null>(null);
   const savedTimeoutRef = useRef<number | null>(null);
   const queryClient = useQueryClient();
@@ -145,7 +148,7 @@ export function ExamPage() {
   }, [localAnswers]);
 
   useEffect(() => {
-    if (!attempt) return;
+    if (!attempt || initializedAttemptRef.current === attempt.id) return;
     const initial: Record<string, AnswerSet> = {};
     const saved: Record<string, string> = {};
     for (const q of attempt.questions) {
@@ -156,7 +159,8 @@ export function ExamPage() {
     setLocalAnswers(initial);
     localAnswersRef.current = initial;
     lastSavedRef.current = saved;
-  }, [attempt?.id]);
+    initializedAttemptRef.current = attempt.id;
+  }, [attempt]);
 
   const persistAnswers = useCallback(
     async (questionId: string, payload: AnswerSet) => {
@@ -370,7 +374,7 @@ export function ExamPage() {
                 onClick={async () => {
                   await flushAllSaves();
                   await submitMutation.mutateAsync();
-                  window.location.href = `/student/result/${attemptId}`;
+                  window.location.href = `/student/exams/verb_exam/results/${attemptId}`;
                 }}
               >
                 Entregar

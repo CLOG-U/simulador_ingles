@@ -1,9 +1,8 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
-
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

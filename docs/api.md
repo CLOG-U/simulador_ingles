@@ -1,4 +1,4 @@
-# API - Simulador de verbos
+# API - Powerful English Academy
 
 Prefijo base: `/api/v1`
 
@@ -14,6 +14,8 @@ Prefijo base: `/api/v1`
 
 ## Estudiante
 
+### Verb Exam
+
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/exam/config` | Reglas visibles |
@@ -23,6 +25,19 @@ Prefijo base: `/api/v1`
 | PATCH | `/attempts/{id}/questions/{qid}` | Guardar respuestas |
 | POST | `/attempts/{id}/submit` | Entregar (idempotente) |
 | GET | `/attempts/{id}/result` | Resultado y revisión |
+
+### Past Simple Exam
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/past-simple/config` | Reglas visibles |
+| GET | `/past-simple/attempts/status` | Disponibilidad e historial reciente |
+| POST | `/past-simple/attempts` | Iniciar o reanudar intento |
+| GET | `/past-simple/attempts/current` | Intento abierto |
+| GET | `/past-simple/attempts/{id}` | Detalle del intento propio |
+| PATCH | `/past-simple/attempts/{id}/questions/{qid}` | Guardar respuesta |
+| POST | `/past-simple/attempts/{id}/submit` | Entregar (idempotente) |
+| GET | `/past-simple/attempts/{id}/result` | Resultado y revisión |
 
 ## Administración
 
@@ -38,6 +53,13 @@ Prefijo base: `/api/v1`
 | GET | `/admin/attempts` | Resultados |
 | GET | `/admin/attempts/export.csv` | Exportar CSV |
 | GET | `/admin/audit-logs` | Auditoría |
+| GET/PATCH | `/admin/past-simple/config` | Configuración Past Simple |
+| GET/PATCH | `/admin/past-simple/questions` | Banco Past Simple |
+| GET | `/admin/past-simple/attempts` | Resultados Past Simple |
+| GET | `/admin/past-simple/attempts/{id}` | Reporte detallado |
+| GET | `/admin/users/{id}/exam-access` | Accesos del estudiante |
+| PATCH | `/admin/users/{id}/exam-access/{exam_type}` | Habilitar o bloquear examen |
+| POST | `/admin/users/{id}/exams/{exam_type}/allow-new-attempt` | Autorizar reintento |
 
 ## Health
 

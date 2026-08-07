@@ -41,6 +41,11 @@ LOG_LEVEL=INFO
 
 `CORS_ORIGINS` = URL exacta del Static Site, **sin barra final**.
 
+El arranque del backend ejecuta automáticamente `alembic upgrade head` y los seeds
+idempotentes de Verb Exam y Past Simple Exam. La migración `002_multi_exam` conserva
+todos los intentos existentes, habilita Verb Exam para los estudiantes actuales y
+deja Past Simple Exam deshabilitado hasta que el profesor lo active.
+
 ### Crear profesor (sin Shell)
 
 Variables temporales + Manual Deploy:

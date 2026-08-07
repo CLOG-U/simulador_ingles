@@ -202,14 +202,15 @@ export function AdminStudentReportPage() {
               <h2 className="text-xl font-bold">{data.student.full_name}</h2>
               <p className="text-sm text-gray-600">Usuario: {data.student.username}</p>
               <p className="text-sm">
-                Intentos: {data.student.attempts_used ?? 0} de {data.student.attempts_max ?? "—"}{" "}
-                usados · {data.student.attempts_remaining ?? "—"} restante(s)
+                Intentos Verb Exam: {data.student.attempts_used ?? 0} de{" "}
+                {data.student.attempts_max ?? "—"} usados ·{" "}
+                {data.student.attempts_remaining ?? "—"} restante(s)
                 {data.student.has_open_attempt ? " · examen en curso" : ""}
               </p>
             </section>
 
             <section className="card">
-              <h3 className="mb-3 font-semibold">Historial de evaluaciones</h3>
+              <h3 className="mb-3 font-semibold">Historial de Verb Exam</h3>
               {data.attempts.length === 0 ? (
                 <p className="text-sm text-gray-600">Este estudiante aún no tiene intentos.</p>
               ) : (
@@ -240,6 +241,61 @@ export function AdminStudentReportPage() {
                           <td className="py-2">
                             <Link
                               to={`/admin/reports/${a.id}`}
+                              className="text-brand-primary underline"
+                            >
+                              Ver evaluación
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className="card">
+              <h3 className="mb-3 font-semibold">Historial de Past Simple Exam</h3>
+              {data.past_simple_attempts.length === 0 ? (
+                <p className="text-sm text-gray-600">
+                  Este estudiante aún no tiene intentos de Past Simple Exam.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[700px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="py-2">Intento</th>
+                        <th className="py-2">Fecha inicio</th>
+                        <th className="py-2">Entrega</th>
+                        <th className="py-2">Estado</th>
+                        <th className="py-2">Nota</th>
+                        <th className="py-2">Puntaje</th>
+                        <th className="py-2">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.past_simple_attempts.map((attempt) => (
+                        <tr key={attempt.id} className="border-b">
+                          <td className="py-2">#{attempt.attempt_number}</td>
+                          <td className="py-2">{formatDate(attempt.started_at)}</td>
+                          <td className="py-2">{formatDate(attempt.submitted_at)}</td>
+                          <td className="py-2">
+                            {STATUS_LABELS[attempt.status] ?? attempt.status}
+                          </td>
+                          <td className="py-2">
+                            {attempt.percentage != null
+                              ? `${attempt.percentage.toFixed(1)}%`
+                              : "—"}
+                          </td>
+                          <td className="py-2">
+                            {attempt.score_out_of_ten != null
+                              ? `${attempt.score_out_of_ten.toFixed(1)} / 10`
+                              : "—"}
+                          </td>
+                          <td className="py-2">
+                            <Link
+                              to={`/admin/past-simple/reports/${attempt.id}`}
                               className="text-brand-primary underline"
                             >
                               Ver evaluación

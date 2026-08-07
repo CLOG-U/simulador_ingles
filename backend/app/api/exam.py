@@ -117,7 +117,11 @@ async def attempt_result(
         "review_policy": policy,
     }
     if show_questions and include_grades:
-        data["questions"] = exam_service.serialize_attempt(attempt, include_grades=True)["questions"]
+        data["questions"] = exam_service.serialize_attempt(
+            attempt, include_grades=True
+        )["questions"]
     elif show_questions:
-        data["questions"] = exam_service.serialize_attempt(attempt, include_grades=False)["questions"]
+        data["questions"] = exam_service.serialize_attempt(
+            attempt, include_grades=False
+        )["questions"]
     return data

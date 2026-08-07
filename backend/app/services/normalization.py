@@ -13,3 +13,11 @@ def normalize_spanish(value: str) -> str:
     return "".join(
         c for c in unicodedata.normalize("NFD", normalized) if unicodedata.category(c) != "Mn"
     )
+
+
+def normalize_english_answer(value: str) -> str:
+    """Normaliza respuestas escritas sin relajar la estructura gramatical."""
+    normalized = value.replace("’", "'").replace("‘", "'")
+    normalized = normalize_text(normalized)
+    normalized = normalized.translate(str.maketrans("", "", ".,?!;:"))
+    return " ".join(normalized.split())

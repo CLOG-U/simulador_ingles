@@ -5,7 +5,7 @@ import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
 import { ApiError } from "../../lib/api";
 import { adminApi } from "../../lib/endpoints";
-import type { AdminUser } from "../../lib/types";
+import type { AdminUser, ExamType } from "../../lib/types";
 
 type CredentialModal = {
   type: "created" | "reset" | "updated";
@@ -137,9 +137,30 @@ export function AdminUsersPage() {
   });
 
   const allowAttemptMutation = useMutation({
-    mutationFn: (userId: string) => adminApi.allowNewAttempt(userId),
+    mutationFn: ({
+      userId,
+      examType,
+    }: {
+      userId: string;
+      examType: ExamType;
+    }) => adminApi.authorizeNewAttempt(userId, examType),
     onSuccess: () => {
       setActionNotice("Nuevo intento habilitado para el estudiante.");
+      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
+  const accessMutation = useMutation({
+    mutationFn: ({
+      userId,
+      examType,
+      isEnabled,
+    }: {
+      userId: string;
+      examType: ExamType;
+      isEnabled: boolean;
+    }) => adminApi.updateExamAccess(userId, examType, isEnabled),
+    onSuccess: () => {
+      setActionNotice("Acceso al examen actualizado.");
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
   });
@@ -423,13 +444,23 @@ export function AdminUsersPage() {
                   </td>
                   <td className="py-2">
                     {u.role === "STUDENT" ? (
-                      <span>
-                        {u.attempts_remaining ?? "—"} restante(s)
-                        <span className="block text-xs text-gray-500">
-                          {u.attempts_used ?? 0} de {u.attempts_max ?? "—"} usados
-                          {u.has_open_attempt ? " · examen en curso" : ""}
-                        </span>
-                      </span>
+                      <div className="space-y-1 text-xs">
+                        {(["verb_exam", "past_simple_exam"] as const).map((examType) => {
+                          const access = u.exam_access?.find(
+                            (item) => item.exam_type === examType,
+                          );
+                          return (
+                            <p key={examType}>
+                              <strong>
+                                {examType === "verb_exam" ? "Verb" : "Past Simple"}:
+                              </strong>{" "}
+                              {access?.is_enabled ? "habilitado" : "bloqueado"} ·{" "}
+                              {access?.submitted_attempts ?? 0} completado(s) ·{" "}
+                              {access?.remaining_attempts ?? access?.allowed_attempts ?? 1} pendiente(s)
+                            </p>
+                          );
+                        })}
+                      </div>
                     ) : (
                       "—"
                     )}
@@ -450,21 +481,50 @@ export function AdminUsersPage() {
                       Restablecer clave
                     </button>
                     {u.role === "STUDENT" && (
-                      <>
+                      <div className="mt-2 space-y-2">
                         <Link
                           to={`/admin/students/${u.id}/report`}
-                          className="mr-2 text-brand-primary underline"
+                          className="block text-brand-primary underline"
                         >
                           Ver reporte
                         </Link>
-                        <button
-                          type="button"
-                          className="text-brand-primary underline"
-                          onClick={() => allowAttemptMutation.mutate(u.id)}
-                        >
-                          Nuevo intento
-                        </button>
-                      </>
+                        {(["verb_exam", "past_simple_exam"] as const).map((examType) => {
+                          const access = u.exam_access?.find(
+                            (item) => item.exam_type === examType,
+                          );
+                          const label =
+                            examType === "verb_exam" ? "Verb" : "Past Simple";
+                          return (
+                            <div key={examType} className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="text-brand-primary underline"
+                                onClick={() =>
+                                  accessMutation.mutate({
+                                    userId: u.id,
+                                    examType,
+                                    isEnabled: !access?.is_enabled,
+                                  })
+                                }
+                              >
+                                {access?.is_enabled ? `Bloquear ${label}` : `Habilitar ${label}`}
+                              </button>
+                              <button
+                                type="button"
+                                className="text-brand-primary underline"
+                                onClick={() =>
+                                  allowAttemptMutation.mutate({
+                                    userId: u.id,
+                                    examType,
+                                  })
+                                }
+                              >
+                                Nuevo intento {label}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </td>
                 </tr>

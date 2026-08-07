@@ -22,7 +22,7 @@ export function ExamInstructionsPage() {
         <p className="text-sm text-gray-600">
           Ejemplo pasado: <em>went</em> → <em>go</em> + <em>ir</em>
         </p>
-        <Link to="/student/exam/start" className="btn-primary inline-flex">
+        <Link to="/student/exams/verb_exam/start" className="btn-primary inline-flex">
           Comenzar evaluación
         </Link>
       </section>

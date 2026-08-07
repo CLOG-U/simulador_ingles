@@ -20,6 +20,6 @@ describe("LoginPage", () => {
     renderLogin();
     expect(screen.getByRole("heading", { name: /iniciar sesión/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^contraseña$/i)).toBeInTheDocument();
   });
 });

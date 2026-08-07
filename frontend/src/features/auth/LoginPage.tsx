@@ -51,7 +51,7 @@ export function LoginPage() {
       <header className="bg-brand-primary px-4 py-8 text-brand-white">
         <div className="mx-auto max-w-md text-center">
           <p className="text-sm text-brand-sky">Powerful English Academy</p>
-          <h1 className="mt-2 text-2xl font-bold">Simulador de verbos</h1>
+          <h1 className="mt-2 text-2xl font-bold">English Exam Platform</h1>
         </div>
       </header>
       <main className="mx-auto max-w-md px-4 py-8">

@@ -12,11 +12,12 @@ from app.models import (
     AttemptQuestion,
     AttemptStatus,
     ExamConfig,
-    PromptType,
+    ExamType,
     User,
     Verb,
     VerbAnswer,
 )
+from app.services import exam_access_service
 from app.services.exam_engine import (
     FIELD_LABELS,
     PROMPT_LABELS,
@@ -39,6 +40,8 @@ async def get_exam_config(session: AsyncSession) -> ExamConfig:
 async def get_visible_config(session: AsyncSession) -> dict:
     config = await get_exam_config(session)
     return {
+        "exam_type": ExamType.VERB_EXAM.value,
+        "is_enabled": config.is_enabled,
         "question_count": config.question_count,
         "passing_percentage": config.passing_percentage,
         "duration_minutes": config.duration_minutes,
@@ -83,13 +86,18 @@ async def create_or_get_attempt(session: AsyncSession, user: User) -> Attempt:
             status_code=403,
         )
 
+    access = await exam_access_service.ensure_exam_available(
+        session,
+        user_id=user.id,
+        exam_type=ExamType.VERB_EXAM,
+    )
     existing = await get_open_attempt(session, user.id)
     if existing:
         return existing
 
     config = await get_exam_config(session)
     submitted_count = await _count_submitted_attempts(session, user.id)
-    if submitted_count >= config.max_attempts:
+    if submitted_count >= access.allowed_attempts:
         raise AppError(
             "MAX_ATTEMPTS_REACHED",
             "Ya completaste tu evaluación. Contacta al profesor si necesitas un nuevo intento.",
@@ -242,6 +250,8 @@ def serialize_admin_attempt_report(attempt: Attempt, user: User) -> dict:
         review_policy = attempt.config_snapshot.get("review_policy", "FULL")
     data.update(
         {
+            "exam_type": ExamType.VERB_EXAM.value,
+            "exam_name": "Verb Exam",
             "student_id": str(user.id),
             "student_username": user.username,
             "student_name": user.full_name,
@@ -303,6 +313,11 @@ async def submit_attempt(session: AsyncSession, attempt: Attempt) -> Attempt:
 
 async def get_student_attempt_status(session: AsyncSession, user_id: uuid.UUID) -> dict:
     config = await get_exam_config(session)
+    access = await exam_access_service.get_or_create_access(
+        session,
+        user_id=user_id,
+        exam_type=ExamType.VERB_EXAM,
+    )
     open_attempt = await get_open_attempt(session, user_id)
     submitted_count = await _count_submitted_attempts(session, user_id)
 
@@ -326,13 +341,18 @@ async def get_student_attempt_status(session: AsyncSession, user_id: uuid.UUID) 
                 "submitted_at": last.submitted_at.isoformat() if last.submitted_at else None,
             }
 
-    can_start_new = open_attempt is not None or submitted_count < config.max_attempts
+    available = config.is_enabled and access.is_enabled
+    can_start_new = available and (
+        open_attempt is not None or submitted_count < access.allowed_attempts
+    )
 
     return {
+        "exam_type": ExamType.VERB_EXAM.value,
+        "is_available": available,
         "has_open_attempt": open_attempt is not None,
         "open_attempt_id": str(open_attempt.id) if open_attempt else None,
         "submitted_count": submitted_count,
-        "max_attempts": config.max_attempts,
+        "max_attempts": access.allowed_attempts,
         "can_start_new": can_start_new,
         "last_submitted": last_submitted,
     }
@@ -345,7 +365,7 @@ async def get_student_attempt_stats(
         return {}
 
     config = await get_exam_config(session)
-    max_attempts = config.max_attempts
+    access_map = await exam_access_service.get_student_access_map(session, user_ids)
 
     submitted_result = await session.execute(
         select(Attempt.user_id, func.count())
@@ -368,21 +388,39 @@ async def get_student_attempt_stats(
     return {
         user_id: {
             "attempts_used": used_map.get(user_id, 0),
-            "attempts_max": max_attempts,
-            "attempts_remaining": max(0, max_attempts - used_map.get(user_id, 0)),
+            "attempts_max": (
+                access_map.get(user_id, {})
+                .get(ExamType.VERB_EXAM.value)
+                .allowed_attempts
+                if access_map.get(user_id, {}).get(ExamType.VERB_EXAM.value)
+                else config.max_attempts
+            ),
+            "attempts_remaining": max(
+                0,
+                (
+                    access_map.get(user_id, {})
+                    .get(ExamType.VERB_EXAM.value)
+                    .allowed_attempts
+                    if access_map.get(user_id, {}).get(ExamType.VERB_EXAM.value)
+                    else config.max_attempts
+                )
+                - used_map.get(user_id, 0),
+            ),
             "has_open_attempt": user_id in open_set,
         }
         for user_id in user_ids
     }
 
 
-async def allow_new_attempt(session: AsyncSession, user_id: uuid.UUID) -> None:
-    result = await session.execute(
-        select(Attempt).where(
-            Attempt.user_id == user_id,
-            Attempt.status.in_([AttemptStatus.SUBMITTED, AttemptStatus.IN_PROGRESS]),
-        )
+async def allow_new_attempt(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    *,
+    actor_id: uuid.UUID,
+) -> None:
+    await exam_access_service.authorize_new_attempt(
+        session,
+        user_id=user_id,
+        exam_type=ExamType.VERB_EXAM,
+        actor_id=actor_id,
     )
-    for attempt in result.scalars():
-        attempt.status = AttemptStatus.CANCELLED
-    await session.commit()

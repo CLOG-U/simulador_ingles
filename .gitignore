@@ -33,6 +33,7 @@ coverage/
 
 # Build
 frontend/dist/
+*.tsbuildinfo
 *.log
 
 # OS

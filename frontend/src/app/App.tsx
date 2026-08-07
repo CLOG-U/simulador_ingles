@@ -17,7 +17,18 @@ import {
   AdminAttemptReportPage,
   AdminStudentReportPage,
 } from "../features/admin/AdminReportPages";
+import {
+  AdminPastSimpleAttemptReportPage,
+  AdminPastSimplePage,
+} from "../features/admin/AdminPastSimplePages";
 import { ExamInstructionsPage } from "../features/student/ExamInstructionsPage";
+import {
+  PastSimpleExamPage,
+  PastSimpleInstructionsPage,
+  PastSimpleResultPage,
+  PastSimpleReviewPage,
+  PastSimpleStartRedirect,
+} from "../features/student/PastSimplePages";
 import {
   ExamPage,
   ExamResultPage,
@@ -48,16 +59,57 @@ export function App() {
               <Route path="/student/exam/start" element={<ExamStartRedirect />} />
               <Route path="/student/exam/:attemptId" element={<ExamPage />} />
               <Route path="/student/result/:attemptId" element={<ExamResultPage />} />
+              <Route
+                path="/student/exams/verb_exam/instructions"
+                element={<ExamInstructionsPage />}
+              />
+              <Route
+                path="/student/exams/verb_exam/start"
+                element={<ExamStartRedirect />}
+              />
+              <Route
+                path="/student/exams/verb_exam/attempts/:attemptId"
+                element={<ExamPage />}
+              />
+              <Route
+                path="/student/exams/verb_exam/results/:attemptId"
+                element={<ExamResultPage />}
+              />
+              <Route
+                path="/student/exams/past_simple_exam/instructions"
+                element={<PastSimpleInstructionsPage />}
+              />
+              <Route
+                path="/student/exams/past_simple_exam/start"
+                element={<PastSimpleStartRedirect />}
+              />
+              <Route
+                path="/student/exams/past_simple_exam/attempts/:attemptId"
+                element={<PastSimpleExamPage />}
+              />
+              <Route
+                path="/student/exams/past_simple_exam/results/:attemptId"
+                element={<PastSimpleResultPage />}
+              />
+              <Route
+                path="/student/exams/past_simple_exam/results/:attemptId/review"
+                element={<PastSimpleReviewPage />}
+              />
             </Route>
 
             <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/verbs" element={<AdminVerbsPage />} />
+              <Route path="/admin/past-simple" element={<AdminPastSimplePage />} />
               <Route path="/admin/config" element={<AdminConfigPage />} />
               <Route path="/admin/results" element={<AdminResultsPage />} />
               <Route path="/admin/students/:userId/report" element={<AdminStudentReportPage />} />
               <Route path="/admin/reports/:attemptId" element={<AdminAttemptReportPage />} />
+              <Route
+                path="/admin/past-simple/reports/:attemptId"
+                element={<AdminPastSimpleAttemptReportPage />}
+              />
               <Route path="/admin/audit" element={<AdminAuditPage />} />
             </Route>
 

@@ -3,6 +3,7 @@ set -e
 
 alembic upgrade head
 python -m scripts.seed_verbs
+python -m scripts.seed_past_simple
 if [ -n "$ADMIN_USERNAME" ] && [ -n "$ADMIN_PASSWORD" ]; then
   python -m scripts.create_admin || true
 fi

@@ -15,9 +15,15 @@ export function AdminDashboard() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Estudiantes activos", data?.active_students],
-            ["Intentos terminados", data?.finished_attempts],
-            ["Promedio", data?.average_percentage?.toFixed(1) ?? "—"],
-            ["Aprobados", data?.passed_count],
+            ["Verb: terminados", data?.finished_attempts],
+            ["Verb: promedio", data?.average_percentage?.toFixed(1) ?? "—"],
+            ["Verb: aprobados", data?.passed_count],
+            ["Past Simple: terminados", data?.past_simple_finished_attempts],
+            [
+              "Past Simple: promedio",
+              data?.past_simple_average_percentage?.toFixed(1) ?? "—",
+            ],
+            ["Past Simple: aprobados", data?.past_simple_passed_count],
           ].map(([label, value]) => (
             <div key={label as string} className="card">
               <p className="text-sm text-gray-500">{label}</p>

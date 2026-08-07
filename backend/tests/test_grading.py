@@ -1,10 +1,7 @@
 import uuid
-from datetime import UTC, datetime
 
-import pytest
-
-from app.models.enums import PromptType
 from app.models.entities import AttemptQuestion
+from app.models.enums import PromptType
 from app.services.grading_service import grade_question
 
 

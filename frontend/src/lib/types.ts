@@ -1,4 +1,5 @@
 export type UserRole = "ADMIN" | "STUDENT";
+export type ExamType = "verb_exam" | "past_simple_exam";
 
 export interface UserMe {
   id: string;
@@ -11,10 +12,22 @@ export interface UserMe {
 }
 
 export interface ExamConfig {
+  exam_type?: ExamType;
+  is_enabled?: boolean;
   question_count: number;
   passing_percentage: number;
   duration_minutes: number | null;
   max_attempts: number;
+  review_policy: string;
+}
+
+export interface PastSimpleConfig {
+  exam_type: "past_simple_exam";
+  title: string;
+  is_enabled: boolean;
+  question_count: number;
+  passing_percentage: number;
+  duration_minutes: number | null;
   review_policy: string;
 }
 
@@ -47,6 +60,8 @@ export interface Attempt {
 }
 
 export interface AttemptStatus {
+  exam_type?: ExamType;
+  is_available?: boolean;
   has_open_attempt: boolean;
   open_attempt_id: string | null;
   submitted_count: number;
@@ -85,6 +100,16 @@ export interface AdminUser {
   attempts_max?: number | null;
   attempts_remaining?: number | null;
   has_open_attempt?: boolean | null;
+  exam_access?: ExamAccess[];
+}
+
+export interface ExamAccess {
+  exam_type: ExamType;
+  globally_enabled?: boolean;
+  is_enabled: boolean;
+  allowed_attempts: number;
+  submitted_attempts?: number;
+  remaining_attempts?: number;
 }
 
 export interface VerbItem {
@@ -99,6 +124,8 @@ export interface VerbItem {
 
 export interface AdminAttemptListItem {
   id: string;
+  exam_type: ExamType;
+  exam_name: string;
   student_id: string;
   student_username: string;
   student_name: string;
@@ -107,10 +134,14 @@ export interface AdminAttemptListItem {
   passed: boolean | null;
   started_at: string;
   submitted_at: string | null;
+  attempt_number?: number;
+  score_out_of_ten?: number | null;
 }
 
 export interface AdminAttemptSummary {
   id: string;
+  exam_type: ExamType;
+  exam_name: string;
   status: string;
   started_at: string;
   submitted_at: string | null;
@@ -124,13 +155,104 @@ export interface AdminAttemptSummary {
 export interface AdminStudentReport {
   student: AdminUser;
   attempts: AdminAttemptSummary[];
+  past_simple_attempts: PastSimpleAttemptSummary[];
 }
 
 export interface AdminAttemptReport extends AttemptResult {
+  exam_type: "verb_exam";
+  exam_name: string;
   student_id: string;
   student_username: string;
   student_name: string;
   started_at: string;
   submitted_at: string | null;
   questions: ExamQuestion[];
+}
+
+export interface PastSimpleQuestion {
+  id: string;
+  position: number;
+  topic: string;
+  question_type: string;
+  instruction: string;
+  question: string;
+  options: string[] | null;
+  answer: string | null;
+  correct_answer?: string;
+  is_correct?: boolean | null;
+  status?: "correct" | "incorrect" | "unanswered";
+  explanation?: string;
+}
+
+export interface PastSimpleAttempt {
+  id: string;
+  exam_type: "past_simple_exam";
+  exam_name: string;
+  attempt_number: number;
+  status: string;
+  started_at: string;
+  expires_at: string | null;
+  submitted_at: string | null;
+  questions: PastSimpleQuestion[];
+}
+
+export interface TopicPerformance {
+  topic: string;
+  topic_label: string;
+  total: number;
+  correct: number;
+  incorrect: number;
+  unanswered: number;
+  percentage: number;
+}
+
+export interface PastSimpleResult extends PastSimpleAttempt {
+  student_id: string;
+  student_name: string;
+  student_username: string;
+  duration_seconds: number | null;
+  total_questions: number;
+  correct_answers: number | null;
+  incorrect_answers: number | null;
+  unanswered_answers: number | null;
+  percentage: number | null;
+  score_out_of_ten: number | null;
+  passed: boolean | null;
+  review_policy: string;
+  topic_performance: TopicPerformance[];
+  observation: {
+    strong_topics: string[];
+    topics_to_review: string[];
+  };
+}
+
+export interface PastSimpleAttemptSummary {
+  id: string;
+  exam_type: "past_simple_exam";
+  exam_name: string;
+  attempt_number: number;
+  status: string;
+  started_at: string;
+  submitted_at: string | null;
+  percentage: number | null;
+  score_out_of_ten: number | null;
+  passed: boolean | null;
+  correct_answers: number | null;
+  incorrect_answers: number | null;
+  unanswered_answers: number | null;
+  total_questions: number;
+}
+
+export interface PastSimpleQuestionAdmin {
+  id: string;
+  stable_key: string;
+  topic: string;
+  question_type: string;
+  instruction: string;
+  question: string;
+  options: string[] | null;
+  correct_answer: string;
+  explanation: string;
+  points: number;
+  active: boolean;
 }

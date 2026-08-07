@@ -1,13 +1,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
 from app.core.database import get_db
 from app.core.errors import AppError
-from app.models import Attempt, User, UserRole
+from app.models import Attempt, AttemptStatus, ExamType, PastSimpleAttempt, User, UserRole
 from app.schemas.user import (
     AdminResetPasswordRequest,
     AdminUserCreate,
@@ -17,7 +17,7 @@ from app.schemas.user import (
     PaginatedUsersResponse,
     ResetPasswordResponse,
 )
-from app.services import exam_service, user_service
+from app.services import exam_access_service, exam_service, user_service
 
 router = APIRouter(prefix="/admin/users", tags=["admin-users"])
 
@@ -36,11 +36,48 @@ async def list_users(
     )
     student_ids = [u.id for u in users if u.role == UserRole.STUDENT]
     attempt_stats = await exam_service.get_student_attempt_stats(db, student_ids)
+    access_map = await exam_access_service.get_student_access_map(db, student_ids)
+    past_counts_result = await db.execute(
+        select(PastSimpleAttempt.user_id, func.count())
+        .where(
+            PastSimpleAttempt.user_id.in_(student_ids),
+            PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
+        )
+        .group_by(PastSimpleAttempt.user_id)
+    )
+    past_counts = {row[0]: row[1] for row in past_counts_result.all()}
     items: list[AdminUserResponse] = []
     for user in users:
         base = AdminUserResponse.model_validate(user)
         if user.role == UserRole.STUDENT and user.id in attempt_stats:
-            base = base.model_copy(update=attempt_stats[user.id])
+            base = base.model_copy(
+                update={
+                    **attempt_stats[user.id],
+                    "exam_access": [
+                        {
+                            "exam_type": access.exam_type,
+                            "is_enabled": access.is_enabled,
+                            "allowed_attempts": access.allowed_attempts,
+                            "submitted_attempts": (
+                                attempt_stats[user.id]["attempts_used"]
+                                if access.exam_type == ExamType.VERB_EXAM.value
+                                else past_counts.get(user.id, 0)
+                            ),
+                            "remaining_attempts": max(
+                                0,
+                                access.allowed_attempts
+                                - (
+                                    attempt_stats[user.id]["attempts_used"]
+                                    if access.exam_type
+                                    == ExamType.VERB_EXAM.value
+                                    else past_counts.get(user.id, 0)
+                                ),
+                            ),
+                        }
+                        for access in access_map.get(user.id, {}).values()
+                    ],
+                }
+            )
         items.append(base)
     return PaginatedUsersResponse(
         items=items,
@@ -86,6 +123,12 @@ async def student_report(
         .order_by(Attempt.started_at.desc())
     )
     attempts = result.scalars().all()
+    past_result = await db.execute(
+        select(PastSimpleAttempt)
+        .where(PastSimpleAttempt.user_id == user_id)
+        .order_by(PastSimpleAttempt.started_at.desc())
+    )
+    past_attempts = past_result.scalars().all()
     stats = await exam_service.get_student_attempt_stats(db, [user_id])
     attempt_summary = stats.get(user_id, {})
 
@@ -94,6 +137,8 @@ async def student_report(
         "attempts": [
             {
                 "id": str(a.id),
+                "exam_type": ExamType.VERB_EXAM.value,
+                "exam_name": "Verb Exam",
                 "status": a.status.value,
                 "started_at": a.started_at.isoformat(),
                 "submitted_at": a.submitted_at.isoformat() if a.submitted_at else None,
@@ -104,6 +149,37 @@ async def student_report(
                 "fully_correct_questions": a.fully_correct_questions,
             }
             for a in attempts
+        ],
+        "past_simple_attempts": [
+            {
+                "id": str(attempt.id),
+                "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+                "exam_name": "Past Simple Exam",
+                "attempt_number": attempt.attempt_number,
+                "status": attempt.status.value,
+                "started_at": attempt.started_at.isoformat(),
+                "submitted_at": (
+                    attempt.submitted_at.isoformat()
+                    if attempt.submitted_at
+                    else None
+                ),
+                "percentage": (
+                    float(attempt.percentage)
+                    if attempt.percentage is not None
+                    else None
+                ),
+                "score_out_of_ten": (
+                    float(attempt.score_out_of_ten)
+                    if attempt.score_out_of_ten is not None
+                    else None
+                ),
+                "passed": attempt.passed,
+                "correct_answers": attempt.correct_answers,
+                "incorrect_answers": attempt.incorrect_answers,
+                "unanswered_answers": attempt.unanswered_answers,
+                "total_questions": attempt.total_questions,
+            }
+            for attempt in past_attempts
         ],
     }
 

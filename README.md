@@ -1,6 +1,15 @@
-# Simulador de verbos - Powerful English Academy
+# Plataforma de exámenes - Powerful English Academy
 
-Aplicación web de evaluación de verbos en inglés para estudiantes de la academia.
+Aplicación web de evaluaciones de inglés para estudiantes de la academia.
+
+## Exámenes
+
+- **Verb Exam:** evaluación existente de forma base, pasado y significado en español.
+- **Past Simple Exam:** 24 preguntas mezcladas, dos por cada uno de 12 temas de
+  interrogación, `did`, `was/were`, respuestas cortas y Question Words.
+
+Cada examen mantiene configuración, acceso por estudiante, intentos, resultados e
+historial independientes. El profesor habilita el acceso y autoriza nuevos intentos.
 
 ## Stack
 
@@ -41,6 +50,7 @@ python -m venv .venv
 pip install -r requirements.txt
 alembic upgrade head
 python -m scripts.seed_verbs
+python -m scripts.seed_past_simple
 uvicorn app.main:app --reload
 ```
 
@@ -58,8 +68,9 @@ npm run dev
 # Migraciones
 cd backend && alembic upgrade head
 
-# Seed de verbos (idempotente)
+# Seeds idempotentes
 cd backend && python -m scripts.seed_verbs
+cd backend && python -m scripts.seed_past_simple
 
 # Crear administrador inicial
 cd backend && python -m scripts.create_admin

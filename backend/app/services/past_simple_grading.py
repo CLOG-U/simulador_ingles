@@ -1,0 +1,104 @@
+from datetime import UTC, datetime
+from decimal import Decimal
+
+from app.models import PastSimpleAttempt, PastSimpleAttemptQuestion
+from app.services.normalization import normalize_english_answer
+
+TOPIC_LABELS = {
+    "interrogative_structure": "Interrogative structure",
+    "use_of_did": "Use of did",
+    "regular_irregular_verbs": "Regular and irregular verbs",
+    "short_answers": "Short answers with did and didn't",
+    "was_were": "Was and were",
+    "question_words": "Question Words",
+    "what": "What",
+    "where": "Where",
+    "when": "When",
+    "why": "Why",
+    "who": "Who",
+    "how": "How",
+}
+
+
+def grade_question(question: PastSimpleAttemptQuestion) -> bool | None:
+    raw = question.answer_raw
+    if raw is None or not raw.strip():
+        question.is_correct = None
+        question.graded_at = datetime.now(UTC)
+        return None
+
+    accepted = [
+        question.snapshot_correct_answer,
+        *question.snapshot_accepted_answers,
+    ]
+    normalized_answer = normalize_english_answer(raw)
+    question.is_correct = normalized_answer in {
+        normalize_english_answer(value) for value in accepted
+    }
+    question.graded_at = datetime.now(UTC)
+    return question.is_correct
+
+
+def grade_attempt(attempt: PastSimpleAttempt) -> None:
+    grades = [grade_question(question) for question in attempt.questions]
+    correct = sum(grade is True for grade in grades)
+    unanswered = sum(grade is None for grade in grades)
+    incorrect = len(grades) - correct - unanswered
+    total = attempt.total_questions
+    percentage = Decimal(correct) / Decimal(total) * Decimal(100)
+
+    attempt.correct_answers = correct
+    attempt.incorrect_answers = incorrect
+    attempt.unanswered_answers = unanswered
+    attempt.percentage = float(round(percentage, 2))
+    attempt.score_out_of_ten = float(round(percentage / Decimal(10), 2))
+    attempt.passed = float(percentage) >= attempt.config_snapshot.get(
+        "passing_percentage", 70
+    )
+
+
+def topic_performance(attempt: PastSimpleAttempt) -> list[dict]:
+    grouped: dict[str, dict[str, int | str]] = {}
+    for question in sorted(attempt.questions, key=lambda item: item.position):
+        topic = question.snapshot_topic
+        row = grouped.setdefault(
+            topic,
+            {
+                "topic": topic,
+                "topic_label": TOPIC_LABELS.get(topic, topic),
+                "total": 0,
+                "correct": 0,
+                "incorrect": 0,
+                "unanswered": 0,
+            },
+        )
+        row["total"] = int(row["total"]) + 1
+        if question.is_correct is True:
+            row["correct"] = int(row["correct"]) + 1
+        elif question.is_correct is False:
+            row["incorrect"] = int(row["incorrect"]) + 1
+        else:
+            row["unanswered"] = int(row["unanswered"]) + 1
+
+    rows: list[dict] = []
+    for row in grouped.values():
+        total = int(row["total"])
+        correct = int(row["correct"])
+        rows.append({**row, "percentage": round(correct / total * 100, 2)})
+    return rows
+
+
+def automatic_observation(attempt: PastSimpleAttempt) -> dict[str, list[str]]:
+    performance = topic_performance(attempt)
+    return {
+        "strong_topics": [
+            str(row["topic_label"])
+            for row in performance
+            if float(row["percentage"]) >= 75
+        ],
+        "topics_to_review": [
+            str(row["topic_label"])
+            for row in performance
+            if float(row["percentage"]) < 70
+        ],
+    }

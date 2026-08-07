@@ -6,7 +6,13 @@ import type {
   Attempt,
   AttemptResult,
   AttemptStatus,
+  ExamAccess,
   ExamConfig,
+  ExamType,
+  PastSimpleAttempt,
+  PastSimpleConfig,
+  PastSimpleQuestionAdmin,
+  PastSimpleResult,
   UserMe,
   VerbItem,
 } from "./types";
@@ -14,6 +20,8 @@ import { apiFetch, ApiError } from "./api";
 import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from "./tokenStorage";
 
 export { apiFetch, ApiError } from "./api";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
 type LoginResult = {
   user: UserMe;
@@ -89,6 +97,33 @@ export const examApi = {
   result: (attemptId: string) => apiFetch<AttemptResult>(`/attempts/${attemptId}/result`),
 };
 
+export const pastSimpleApi = {
+  config: () =>
+    apiFetch<PastSimpleConfig>("/past-simple/config"),
+  attemptStatus: () =>
+    apiFetch<AttemptStatus>("/past-simple/attempts/status"),
+  startAttempt: () =>
+    apiFetch<PastSimpleAttempt>("/past-simple/attempts", { method: "POST" }),
+  currentAttempt: () =>
+    apiFetch<PastSimpleAttempt | null>("/past-simple/attempts/current"),
+  getAttempt: (id: string) =>
+    apiFetch<PastSimpleAttempt>(`/past-simple/attempts/${id}`),
+  saveAnswer: (attemptId: string, questionId: string, answer: string | null) =>
+    apiFetch<{ status: string }>(
+      `/past-simple/attempts/${attemptId}/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submit: (attemptId: string) =>
+    apiFetch<PastSimpleAttempt>(`/past-simple/attempts/${attemptId}/submit`, {
+      method: "POST",
+    }),
+  result: (attemptId: string) =>
+    apiFetch<PastSimpleResult>(`/past-simple/attempts/${attemptId}/result`),
+};
+
 export const adminApi = {
   dashboard: () =>
     apiFetch<{
@@ -96,6 +131,9 @@ export const adminApi = {
       finished_attempts: number;
       average_percentage: number | null;
       passed_count: number;
+      past_simple_finished_attempts: number;
+      past_simple_average_percentage: number | null;
+      past_simple_passed_count: number;
     }>("/admin/dashboard"),
   listUsers: (params?: { search?: string; page?: number }) => {
     const q = new URLSearchParams();
@@ -133,6 +171,18 @@ export const adminApi = {
     }),
   allowNewAttempt: (userId: string) =>
     apiFetch<{ status: string }>(`/admin/users/${userId}/allow-new-attempt`, { method: "POST" }),
+  examAccess: (userId: string) =>
+    apiFetch<{ items: ExamAccess[] }>(`/admin/users/${userId}/exam-access`),
+  updateExamAccess: (userId: string, examType: ExamType, is_enabled: boolean) =>
+    apiFetch<ExamAccess>(`/admin/users/${userId}/exam-access/${examType}`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_enabled }),
+    }),
+  authorizeNewAttempt: (userId: string, examType: ExamType) =>
+    apiFetch<{ status: string; exam_type: ExamType }>(
+      `/admin/users/${userId}/exams/${examType}/allow-new-attempt`,
+      { method: "POST" },
+    ),
   listVerbs: (search?: string) => {
     const q = search ? `?search=${encodeURIComponent(search)}` : "";
     return apiFetch<{ items: VerbItem[]; total: number }>(`/admin/verbs${q}`);
@@ -155,5 +205,54 @@ export const adminApi = {
     apiFetch<AdminStudentReport>(`/admin/users/${userId}/report`),
   attemptReport: (attemptId: string) =>
     apiFetch<AdminAttemptReport>(`/admin/attempts/${attemptId}`),
+  getPastSimpleConfig: () =>
+    apiFetch<PastSimpleConfig>("/admin/past-simple/config"),
+  updatePastSimpleConfig: (
+    data: Partial<
+      Pick<
+        PastSimpleConfig,
+        | "is_enabled"
+        | "passing_percentage"
+        | "duration_minutes"
+        | "review_policy"
+      >
+    >,
+  ) =>
+    apiFetch<PastSimpleConfig>("/admin/past-simple/config", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  listPastSimpleQuestions: () =>
+    apiFetch<{ items: PastSimpleQuestionAdmin[] }>("/admin/past-simple/questions"),
+  togglePastSimpleQuestion: (questionId: string, active: boolean) =>
+    apiFetch<{ id: string; active: boolean }>(
+      `/admin/past-simple/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ active }),
+      },
+    ),
+  listPastSimpleAttempts: () =>
+    apiFetch<{ items: AdminAttemptListItem[]; total: number }>(
+      "/admin/past-simple/attempts",
+    ),
+  pastSimpleAttemptReport: (attemptId: string) =>
+    apiFetch<PastSimpleResult>(`/admin/past-simple/attempts/${attemptId}`),
+  downloadAttemptsCsv: async () => {
+    const headers = new Headers();
+    const token = getAccessToken();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    const response = await fetch(`${API_BASE}/admin/attempts/export.csv`, {
+      credentials: "include",
+      headers,
+    });
+    if (!response.ok) throw new Error("No se pudo exportar el reporte.");
+    const url = URL.createObjectURL(await response.blob());
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "resultados-examenes.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
   auditLogs: () => apiFetch<{ items: Record<string, unknown>[] }>("/admin/audit-logs"),
 };

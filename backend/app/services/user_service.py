@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.security import generate_temporary_password, hash_password, normalize_username
-from app.models import RefreshSession, User, UserRole
+from app.models import ExamAccess, ExamType, RefreshSession, User, UserRole
 from app.services.audit_service import log_audit
 
 
@@ -133,6 +133,25 @@ async def create_user(
         must_change_password=must_change_password,
     )
     session.add(user)
+    if role == UserRole.STUDENT:
+        session.add_all(
+            [
+                ExamAccess(
+                    id=uuid.uuid4(),
+                    user_id=user.id,
+                    exam_type=ExamType.VERB_EXAM.value,
+                    is_enabled=True,
+                    allowed_attempts=1,
+                ),
+                ExamAccess(
+                    id=uuid.uuid4(),
+                    user_id=user.id,
+                    exam_type=ExamType.PAST_SIMPLE_EXAM.value,
+                    is_enabled=False,
+                    allowed_attempts=1,
+                ),
+            ]
+        )
     await log_audit(
         session,
         actor_user_id=actor_id,
