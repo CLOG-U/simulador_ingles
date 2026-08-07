@@ -60,6 +60,7 @@ async def get_open_attempt(
             PastSimpleAttempt.user_id == user_id,
             PastSimpleAttempt.status == AttemptStatus.IN_PROGRESS,
         )
+        .with_for_update()
     )
     attempt = result.scalar_one_or_none()
     if (
@@ -209,10 +210,42 @@ async def get_attempt_for_user(
         and attempt.expires_at
         and datetime.now(UTC) > attempt.expires_at
     ):
-        grade_attempt(attempt)
-        attempt.status = AttemptStatus.SUBMITTED
-        attempt.submitted_at = attempt.expires_at
-        await session.commit()
+        attempt = await _lock_attempt(
+            session,
+            attempt_id=attempt.id,
+            user_id=user_id,
+        )
+        if (
+            attempt.status == AttemptStatus.IN_PROGRESS
+            and attempt.expires_at
+            and datetime.now(UTC) > attempt.expires_at
+        ):
+            grade_attempt(attempt)
+            attempt.status = AttemptStatus.SUBMITTED
+            attempt.submitted_at = attempt.expires_at
+            await session.commit()
+    return attempt
+
+
+async def _lock_attempt(
+    session: AsyncSession,
+    *,
+    attempt_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> PastSimpleAttempt:
+    result = await session.execute(
+        select(PastSimpleAttempt)
+        .options(selectinload(PastSimpleAttempt.questions))
+        .where(
+            PastSimpleAttempt.id == attempt_id,
+            PastSimpleAttempt.user_id == user_id,
+        )
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    attempt = result.scalar_one_or_none()
+    if attempt is None:
+        raise AppError("NOT_FOUND", "Intento no encontrado.", status_code=404)
     return attempt
 
 
@@ -279,10 +312,15 @@ async def save_answer(
     question_id: uuid.UUID,
     answer: str | None,
 ) -> PastSimpleAttemptQuestion:
-    if attempt.status != AttemptStatus.IN_PROGRESS:
+    locked_attempt = await _lock_attempt(
+        session,
+        attempt_id=attempt.id,
+        user_id=attempt.user_id,
+    )
+    if locked_attempt.status != AttemptStatus.IN_PROGRESS:
         raise AppError("ATTEMPT_CLOSED", "Este intento ya fue entregado.", status_code=400)
     question = next(
-        (item for item in attempt.questions if item.id == question_id),
+        (item for item in locked_attempt.questions if item.id == question_id),
         None,
     )
     if question is None:
@@ -298,23 +336,33 @@ async def submit_attempt(
     session: AsyncSession,
     attempt: PastSimpleAttempt,
 ) -> PastSimpleAttempt:
-    if attempt.status == AttemptStatus.SUBMITTED:
-        return attempt
-    if attempt.status != AttemptStatus.IN_PROGRESS:
+    locked_attempt = await _lock_attempt(
+        session,
+        attempt_id=attempt.id,
+        user_id=attempt.user_id,
+    )
+    if locked_attempt.status == AttemptStatus.SUBMITTED:
+        return locked_attempt
+    if locked_attempt.status != AttemptStatus.IN_PROGRESS:
         raise AppError(
             "ATTEMPT_CLOSED",
             "Este intento no puede entregarse.",
             status_code=400,
         )
 
-    grade_attempt(attempt)
-    attempt.status = AttemptStatus.SUBMITTED
-    attempt.submitted_at = datetime.now(UTC)
+    now = datetime.now(UTC)
+    grade_attempt(locked_attempt)
+    locked_attempt.status = AttemptStatus.SUBMITTED
+    locked_attempt.submitted_at = (
+        locked_attempt.expires_at
+        if locked_attempt.expires_at and now > locked_attempt.expires_at
+        else now
+    )
     await session.commit()
     return await get_attempt_for_user(
         session,
-        attempt_id=attempt.id,
-        user_id=attempt.user_id,
+        attempt_id=locked_attempt.id,
+        user_id=locked_attempt.user_id,
     )
 
 

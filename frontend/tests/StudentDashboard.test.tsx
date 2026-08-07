@@ -84,10 +84,10 @@ describe("StudentDashboard", () => {
 
   it("shows independent Verb and Past Simple exam cards", async () => {
     renderDashboard();
-    expect(await screen.findByRole("heading", { name: "Verb Exam" })).toBeInTheDocument();
+    expect(await screen.findByText("Locked")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Verb Exam" })).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", { name: "Past Simple Exam" }),
+      screen.getByRole("heading", { name: "Past Simple Exam" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Locked")).toBeInTheDocument();
   });
 });

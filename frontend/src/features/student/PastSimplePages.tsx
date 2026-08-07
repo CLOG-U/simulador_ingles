@@ -20,6 +20,34 @@ function formatDate(value: string | null) {
   });
 }
 
+function RequestError({
+  title,
+  error,
+  onRetry,
+}: {
+  title: string;
+  error: unknown;
+  onRetry: () => void;
+}) {
+  return (
+    <AppShell title={title}>
+      <section className="card space-y-4">
+        <p className="text-danger">
+          {error instanceof ApiError ? error.message : "The information could not be loaded."}
+        </p>
+        <div className="flex gap-3">
+          <button type="button" className="btn-primary" onClick={onRetry}>
+            Try Again
+          </button>
+          <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
+            Back to Exams
+          </Link>
+        </div>
+      </section>
+    </AppShell>
+  );
+}
+
 export function PastSimpleInstructionsPage() {
   return (
     <AppShell title="Past Simple Exam">
@@ -50,19 +78,21 @@ export function PastSimpleInstructionsPage() {
 
 export function PastSimpleStartRedirect() {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["past-simple-attempt-start"],
-    queryFn: pastSimpleApi.startAttempt,
-    retry: false,
+  const startedRef = useRef(false);
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: pastSimpleApi.startAttempt,
+    onSuccess: (attempt) => {
+      navigate(`/student/exams/past_simple_exam/attempts/${attempt.id}`, {
+        replace: true,
+      });
+    },
   });
 
   useEffect(() => {
-    if (data?.id) {
-      navigate(`/student/exams/past_simple_exam/attempts/${data.id}`, {
-        replace: true,
-      });
-    }
-  }, [data, navigate]);
+    if (startedRef.current) return;
+    startedRef.current = true;
+    mutate();
+  }, [mutate]);
 
   if (error) {
     return (
@@ -83,7 +113,7 @@ export function PastSimpleStartRedirect() {
 
   return (
     <AppShell title="Past Simple Exam">
-      <p>{isLoading ? "Preparing your questions…" : "Redirecting…"}</p>
+      <p>{isPending ? "Preparing your questions…" : "Redirecting…"}</p>
     </AppShell>
   );
 }
@@ -162,9 +192,16 @@ export function PastSimpleExamPage() {
   const initializedAttemptRef = useRef<string | null>(null);
   const timerRef = useRef<number | null>(null);
   const autoSubmittingRef = useRef(false);
+  const saveQueuesRef = useRef<Record<string, Promise<void>>>({});
   const queryClient = useQueryClient();
 
-  const { data: attempt, isLoading } = useQuery({
+  const {
+    data: attempt,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["past-simple-attempt", attemptId],
     queryFn: () => pastSimpleApi.getAttempt(attemptId),
     enabled: Boolean(attemptId),
@@ -209,9 +246,11 @@ export function PastSimpleExamPage() {
       setSecondsLeft(remaining);
       if (remaining === 0 && !autoSubmittingRef.current) {
         autoSubmittingRef.current = true;
-        void pastSimpleApi.submit(attempt.id).finally(() => {
-          window.location.href = `/student/exams/past_simple_exam/results/${attempt.id}`;
-        });
+        void Promise.allSettled(Object.values(saveQueuesRef.current))
+          .then(() => pastSimpleApi.submit(attempt.id))
+          .finally(() => {
+            window.location.href = `/student/exams/past_simple_exam/results/${attempt.id}`;
+          });
       }
     };
     updateTimer();
@@ -219,29 +258,49 @@ export function PastSimpleExamPage() {
     return () => window.clearInterval(interval);
   }, [attempt?.expires_at, attempt?.id, attempt?.status]);
 
-  const saveMutation = useMutation({
-    mutationFn: ({ questionId, answer }: { questionId: string; answer: string }) =>
-      pastSimpleApi.saveAnswer(attemptId, questionId, answer || null),
-    onSuccess: (_data, variables) => {
-      savedRef.current[variables.questionId] = variables.answer;
-      setSaveLabel("Saved");
-      queryClient.setQueryData<PastSimpleAttempt>(
-        ["past-simple-attempt", attemptId],
-        (old) =>
-          old
-            ? {
-                ...old,
-                questions: old.questions.map((item) =>
-                  item.id === variables.questionId
-                    ? { ...item, answer: variables.answer || null }
-                    : item,
-                ),
-              }
-            : old,
-      );
+  const queueSave = useCallback(
+    (questionId: string, answer: string) => {
+      const previous = saveQueuesRef.current[questionId] ?? Promise.resolve();
+      const operation = previous
+        .catch(() => undefined)
+        .then(async () => {
+          await pastSimpleApi.saveAnswer(
+            attemptId,
+            questionId,
+            answer || null,
+          );
+          savedRef.current[questionId] = answer;
+          setSaveLabel("Saved");
+          queryClient.setQueryData<PastSimpleAttempt>(
+            ["past-simple-attempt", attemptId],
+            (old) =>
+              old
+                ? {
+                    ...old,
+                    questions: old.questions.map((item) =>
+                      item.id === questionId
+                        ? { ...item, answer: answer || null }
+                        : item,
+                    ),
+                  }
+                : old,
+          );
+        })
+        .catch((saveError) => {
+          setSaveLabel("Not saved");
+          throw saveError;
+        });
+      saveQueuesRef.current[questionId] = operation;
+      const cleanup = () => {
+        if (saveQueuesRef.current[questionId] === operation) {
+          delete saveQueuesRef.current[questionId];
+        }
+      };
+      void operation.then(cleanup, cleanup);
+      return operation;
     },
-    onError: () => setSaveLabel("Not saved"),
-  });
+    [attemptId, queryClient],
+  );
 
   const flushSave = useCallback(
     async (questionId: string) => {
@@ -249,9 +308,9 @@ export function PastSimpleExamPage() {
       const answer = answersRef.current[questionId] ?? "";
       if (savedRef.current[questionId] === answer) return;
       setSaveLabel("Saving…");
-      await saveMutation.mutateAsync({ questionId, answer });
+      await queueSave(questionId, answer);
     },
-    [saveMutation],
+    [queueSave],
   );
 
   const updateAnswer = (questionId: string, value: string) => {
@@ -261,13 +320,17 @@ export function PastSimpleExamPage() {
     setSaveLabel("");
     if (timerRef.current) window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
-      void flushSave(questionId);
+      void flushSave(questionId).catch(() => undefined);
     }, SAVE_DEBOUNCE_MS);
   };
 
   const goTo = async (nextIndex: number) => {
     if (!question || nextIndex < 0 || nextIndex >= questions.length) return;
-    await flushSave(question.id);
+    try {
+      await flushSave(question.id);
+    } catch {
+      return;
+    }
     setIndex(nextIndex);
     setSaveLabel("");
   };
@@ -276,6 +339,28 @@ export function PastSimpleExamPage() {
     (item) => !(answers[item.id] ?? item.answer ?? "").trim(),
   ).length;
   const answered = questions.length - unanswered;
+
+  if (isError) {
+    return (
+      <AppShell title="Past Simple Exam">
+        <section className="card space-y-4">
+          <p className="text-danger">
+            {error instanceof ApiError
+              ? error.message
+              : "The exam could not be loaded."}
+          </p>
+          <div className="flex gap-3">
+            <button type="button" className="btn-primary" onClick={() => void refetch()}>
+              Try Again
+            </button>
+            <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
+              Back to Exams
+            </Link>
+          </div>
+        </section>
+      </AppShell>
+    );
+  }
 
   if (isLoading || !attempt || !question) {
     return (
@@ -314,7 +399,7 @@ export function PastSimpleExamPage() {
           question={question}
           value={answers[question.id] ?? ""}
           onChange={(value) => updateAnswer(question.id, value)}
-          onBlur={() => void flushSave(question.id)}
+          onBlur={() => void flushSave(question.id).catch(() => undefined)}
         />
       </section>
 
@@ -362,8 +447,12 @@ export function PastSimpleExamPage() {
             type="button"
             className="btn-primary"
             onClick={async () => {
-              await flushSave(question.id);
-              setShowSubmit(true);
+              try {
+                await flushSave(question.id);
+                setShowSubmit(true);
+              } catch {
+                // Keep the student on the exam until the answer is saved.
+              }
             }}
           >
             Submit Exam
@@ -372,9 +461,21 @@ export function PastSimpleExamPage() {
       </div>
 
       {showSubmit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <section className="card max-w-md space-y-4" role="dialog" aria-modal="true">
-            <h3 className="text-lg font-semibold">Submit Past Simple Exam?</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setShowSubmit(false);
+          }}
+        >
+          <section
+            className="card max-w-md space-y-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="past-simple-submit-title"
+          >
+            <h3 id="past-simple-submit-title" className="text-lg font-semibold">
+              Submit Past Simple Exam?
+            </h3>
             <p>
               You have {unanswered} unanswered question{unanswered === 1 ? "" : "s"}. After
               submitting, answers cannot be changed.
@@ -384,6 +485,7 @@ export function PastSimpleExamPage() {
                 type="button"
                 className="min-h-11 rounded-xl border px-4"
                 onClick={() => setShowSubmit(false)}
+                autoFocus
               >
                 Cancel
               </button>
@@ -391,9 +493,15 @@ export function PastSimpleExamPage() {
                 type="button"
                 className="btn-primary"
                 onClick={async () => {
-                  for (const item of questions) await flushSave(item.id);
-                  await pastSimpleApi.submit(attemptId);
-                  window.location.href = `/student/exams/past_simple_exam/results/${attemptId}`;
+                  try {
+                    for (const item of questions) await flushSave(item.id);
+                    await Promise.all(Object.values(saveQueuesRef.current));
+                    await pastSimpleApi.submit(attemptId);
+                    window.location.href = `/student/exams/past_simple_exam/results/${attemptId}`;
+                  } catch {
+                    setShowSubmit(false);
+                    setSaveLabel("Not saved");
+                  }
                 }}
               >
                 Confirm Submit
@@ -431,11 +539,21 @@ function ResultSummary({ result }: { result: PastSimpleResult }) {
 
 export function PastSimpleResultPage() {
   const { attemptId = "" } = useParams();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["past-simple-result", attemptId],
     queryFn: () => pastSimpleApi.result(attemptId),
     enabled: Boolean(attemptId),
   });
+
+  if (isError) {
+    return (
+      <RequestError
+        title="Past Simple Exam Result"
+        error={error}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   if (isLoading || !data) {
     return (
@@ -469,11 +587,21 @@ export function PastSimpleResultPage() {
 
 export function PastSimpleReviewPage() {
   const { attemptId = "" } = useParams();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["past-simple-result", attemptId],
     queryFn: () => pastSimpleApi.result(attemptId),
     enabled: Boolean(attemptId),
   });
+
+  if (isError) {
+    return (
+      <RequestError
+        title="Review Answers"
+        error={error}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   if (isLoading || !data) {
     return (
@@ -486,6 +614,11 @@ export function PastSimpleReviewPage() {
   return (
     <AppShell title="Review Answers">
       <div className="space-y-4">
+        {data.questions.length === 0 && (
+          <section className="card">
+            <p>The answer review is not available for this exam.</p>
+          </section>
+        )}
         {data.questions.map((question) => (
           <article
             key={question.id}

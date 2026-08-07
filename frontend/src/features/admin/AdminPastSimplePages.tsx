@@ -89,6 +89,7 @@ export function AdminPastSimplePage() {
                   ? "bg-green-100 text-green-800"
                   : "bg-gray-200 text-gray-700"
               }`}
+              disabled={!config}
               onClick={() => void saveConfig(!config?.is_enabled)}
             >
               {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
@@ -116,7 +117,12 @@ export function AdminPastSimplePage() {
               />
             </label>
           </div>
-          <button type="button" className="btn-primary" onClick={() => void saveConfig()}>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={!config}
+            onClick={() => void saveConfig()}
+          >
             Guardar configuración
           </button>
         </section>

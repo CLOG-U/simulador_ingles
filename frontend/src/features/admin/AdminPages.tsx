@@ -93,6 +93,12 @@ export function AdminConfigPage() {
     void queryClient.invalidateQueries({ queryKey: ["admin-config"] });
   };
 
+  const toggleAvailability = async () => {
+    if (!data) return;
+    await adminApi.updateExamConfig({ is_enabled: !data.is_enabled });
+    void queryClient.invalidateQueries({ queryKey: ["admin-config"] });
+  };
+
   return (
     <AppShell title="Configuración" nav={adminNav}>
       <section className="card max-w-md space-y-4">
@@ -105,7 +111,8 @@ export function AdminConfigPage() {
                 ? "bg-green-100 text-green-800"
                 : "bg-gray-200 text-gray-700"
             }`}
-            onClick={() => void save(!data?.is_enabled)}
+            disabled={!data}
+            onClick={() => void toggleAvailability()}
           >
             {data?.is_enabled ? "Habilitado" : "Deshabilitado"}
           </button>
@@ -138,6 +145,8 @@ export function AdminConfigPage() {
 }
 
 export function AdminResultsPage() {
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
   const verbQuery = useQuery({
     queryKey: ["admin-attempts"],
     queryFn: adminApi.listAttempts,
@@ -160,11 +169,27 @@ export function AdminResultsPage() {
         <button
           type="button"
           className="btn-primary"
-          onClick={() => void adminApi.downloadAttemptsCsv()}
+          disabled={isExporting}
+          onClick={async () => {
+            setIsExporting(true);
+            setExportError("");
+            try {
+              await adminApi.downloadAttemptsCsv();
+            } catch (error) {
+              setExportError(
+                error instanceof Error
+                  ? error.message
+                  : "No se pudo exportar el reporte.",
+              );
+            } finally {
+              setIsExporting(false);
+            }
+          }}
         >
-          Exportar CSV
+          {isExporting ? "Exportando…" : "Exportar CSV"}
         </button>
       </div>
+      {exportError && <p className="mb-4 text-sm text-danger">{exportError}</p>}
       <QueryState
         isLoading={verbQuery.isLoading || pastQuery.isLoading}
         isError={verbQuery.isError || pastQuery.isError}

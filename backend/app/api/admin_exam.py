@@ -1,14 +1,22 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import require_admin
 from app.core.database import get_db
 from app.core.errors import AppError
-from app.models import Attempt, AttemptStatus, ExamType, PastSimpleAttempt, User, Verb
+from app.models import (
+    Attempt,
+    AttemptStatus,
+    ExamAccess,
+    ExamType,
+    PastSimpleAttempt,
+    User,
+    Verb,
+)
 from app.models.enums import ReviewPolicy, UserRole
 from app.services import exam_service, user_service
 from app.services.audit_service import log_audit
@@ -113,7 +121,23 @@ async def update_exam_config(
     if "duration_minutes" in body:
         config.duration_minutes = body["duration_minutes"]
     if "max_attempts" in body:
-        config.max_attempts = int(body["max_attempts"])
+        new_max_attempts = int(body["max_attempts"])
+        if new_max_attempts < 1:
+            raise AppError(
+                "INVALID_CONFIG",
+                "Debe permitirse al menos un intento.",
+                status_code=400,
+            )
+        previous_max_attempts = config.max_attempts
+        config.max_attempts = new_max_attempts
+        await db.execute(
+            update(ExamAccess)
+            .where(
+                ExamAccess.exam_type == ExamType.VERB_EXAM.value,
+                ExamAccess.allowed_attempts == previous_max_attempts,
+            )
+            .values(allowed_attempts=new_max_attempts)
+        )
     if "review_policy" in body:
         config.review_policy = ReviewPolicy(body["review_policy"])
     config.updated_by = admin.id

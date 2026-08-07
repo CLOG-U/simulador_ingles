@@ -1,12 +1,16 @@
 import uuid
 from collections import Counter
 
+import pytest
+from pydantic import ValidationError
+
 from app.models import (
     PastSimpleAttempt,
     PastSimpleAttemptQuestion,
     PastSimpleQuestion,
     PastSimpleTopic,
 )
+from app.schemas.past_simple import PastSimpleConfigUpdate
 from app.services.normalization import normalize_english_answer
 from app.services.past_simple_engine import select_balanced_questions
 from app.services.past_simple_grading import (
@@ -62,6 +66,16 @@ def test_english_normalization_accepts_formatting_but_not_grammar_errors():
     assert normalize_english_answer("No, she didn’t.") == "no she didn't"
     assert normalize_english_answer("What did she studied yesterday?") != expected
     assert normalize_english_answer("What she did study yesterday?") != expected
+
+
+def test_config_update_rejects_null_for_non_nullable_fields():
+    with pytest.raises(ValidationError):
+        PastSimpleConfigUpdate.model_validate({"is_enabled": None})
+    with pytest.raises(ValidationError):
+        PastSimpleConfigUpdate.model_validate({"passing_percentage": None})
+    assert PastSimpleConfigUpdate.model_validate(
+        {"duration_minutes": None}
+    ).duration_minutes is None
 
 
 def _attempt_question(

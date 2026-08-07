@@ -140,6 +140,39 @@ export async function apiFetch<T>(path: string, init?: RequestInit, retry = true
   return response.json() as Promise<T>;
 }
 
+export async function apiFetchBlob(path: string, retry = true): Promise<Blob> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    credentials: "include",
+    headers: authHeaders(),
+  });
+
+  if (response.status === 401 && retry) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) return apiFetchBlob(path, false);
+  }
+
+  if (!response.ok) {
+    if (response.status === 401 && !isPublicPath()) {
+      clearAuthTokens();
+      onUnauthorized?.();
+    }
+    let body: ErrorBody = {};
+    try {
+      body = await response.json();
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(
+      body.code ?? "UNKNOWN",
+      messageFromErrorBody(body),
+      body.field_errors ?? {},
+      body.request_id,
+    );
+  }
+
+  return response.blob();
+}
+
 export async function checkHealth(): Promise<{ status: string }> {
   return apiFetch("/health/live");
 }

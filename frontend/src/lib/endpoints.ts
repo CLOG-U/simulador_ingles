@@ -16,12 +16,10 @@ import type {
   UserMe,
   VerbItem,
 } from "./types";
-import { apiFetch, ApiError } from "./api";
+import { apiFetch, apiFetchBlob, ApiError } from "./api";
 import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from "./tokenStorage";
 
 export { apiFetch, ApiError } from "./api";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
 type LoginResult = {
   user: UserMe;
@@ -239,15 +237,9 @@ export const adminApi = {
   pastSimpleAttemptReport: (attemptId: string) =>
     apiFetch<PastSimpleResult>(`/admin/past-simple/attempts/${attemptId}`),
   downloadAttemptsCsv: async () => {
-    const headers = new Headers();
-    const token = getAccessToken();
-    if (token) headers.set("Authorization", `Bearer ${token}`);
-    const response = await fetch(`${API_BASE}/admin/attempts/export.csv`, {
-      credentials: "include",
-      headers,
-    });
-    if (!response.ok) throw new Error("No se pudo exportar el reporte.");
-    const url = URL.createObjectURL(await response.blob());
+    const url = URL.createObjectURL(
+      await apiFetchBlob("/admin/attempts/export.csv"),
+    );
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "resultados-examenes.csv";

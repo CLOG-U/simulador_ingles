@@ -499,6 +499,11 @@ export function AdminUsersPage() {
                               <button
                                 type="button"
                                 className="text-brand-primary underline"
+                                disabled={
+                                  accessMutation.isPending &&
+                                  accessMutation.variables?.userId === u.id &&
+                                  accessMutation.variables?.examType === examType
+                                }
                                 onClick={() =>
                                   accessMutation.mutate({
                                     userId: u.id,
@@ -512,6 +517,11 @@ export function AdminUsersPage() {
                               <button
                                 type="button"
                                 className="text-brand-primary underline"
+                                disabled={
+                                  allowAttemptMutation.isPending &&
+                                  allowAttemptMutation.variables?.userId === u.id &&
+                                  allowAttemptMutation.variables?.examType === examType
+                                }
                                 onClick={() =>
                                   allowAttemptMutation.mutate({
                                     userId: u.id,

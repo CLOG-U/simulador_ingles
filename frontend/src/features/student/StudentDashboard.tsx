@@ -10,6 +10,9 @@ function ExamCard({
   description,
   config,
   status,
+  isLoading,
+  isError,
+  onRetry,
   instructionsPath,
   examPath,
   resultPath,
@@ -22,10 +25,32 @@ function ExamCard({
     passing_percentage: number;
   };
   status?: AttemptStatus;
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
   instructionsPath: string;
   examPath: (attemptId: string) => string;
   resultPath: (attemptId: string) => string;
 }) {
+  if (isLoading || isError) {
+    return (
+      <section className="card flex h-full flex-col">
+        <h2 className="text-xl font-semibold">{title}</h2>
+        <p className="mt-2 text-sm text-gray-600">{description}</p>
+        {isLoading ? (
+          <p className="mt-4 text-sm text-gray-600">Loading exam availability…</p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm text-danger">Exam availability could not be loaded.</p>
+            <button type="button" className="btn-primary" onClick={onRetry}>
+              Try Again
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  }
+
   const hasOpen = status?.has_open_attempt && status.open_attempt_id;
   const available = status?.is_available ?? config?.is_enabled ?? true;
   const canStart = status?.can_start_new ?? false;
@@ -81,19 +106,19 @@ function ExamCard({
 
 export function StudentDashboard() {
   const { user } = useAuth();
-  const { data: verbConfig } = useQuery({
+  const verbConfigQuery = useQuery({
     queryKey: ["exam-config", "verb_exam"],
     queryFn: examApi.config,
   });
-  const { data: verbStatus } = useQuery({
+  const verbStatusQuery = useQuery({
     queryKey: ["attempt-status", "verb_exam"],
     queryFn: examApi.attemptStatus,
   });
-  const { data: pastConfig } = useQuery({
+  const pastConfigQuery = useQuery({
     queryKey: ["exam-config", "past_simple_exam"],
     queryFn: pastSimpleApi.config,
   });
-  const { data: pastStatus } = useQuery({
+  const pastStatusQuery = useQuery({
     queryKey: ["attempt-status", "past_simple_exam"],
     queryFn: pastSimpleApi.attemptStatus,
   });
@@ -111,8 +136,14 @@ export function StudentDashboard() {
           <ExamCard
             title="Verb Exam"
             description="Complete the base form, past form and Spanish meaning of English verbs."
-            config={verbConfig}
-            status={verbStatus}
+            config={verbConfigQuery.data}
+            status={verbStatusQuery.data}
+            isLoading={verbConfigQuery.isLoading || verbStatusQuery.isLoading}
+            isError={verbConfigQuery.isError || verbStatusQuery.isError}
+            onRetry={() => {
+              void verbConfigQuery.refetch();
+              void verbStatusQuery.refetch();
+            }}
             instructionsPath="/student/exams/verb_exam/instructions"
             examPath={(id) => `/student/exams/verb_exam/attempts/${id}`}
             resultPath={(id) => `/student/exams/verb_exam/results/${id}`}
@@ -120,8 +151,14 @@ export function StudentDashboard() {
           <ExamCard
             title="Past Simple Exam"
             description="Test your knowledge of questions, short answers, verbs and question words in the Past Simple."
-            config={pastConfig}
-            status={pastStatus}
+            config={pastConfigQuery.data}
+            status={pastStatusQuery.data}
+            isLoading={pastConfigQuery.isLoading || pastStatusQuery.isLoading}
+            isError={pastConfigQuery.isError || pastStatusQuery.isError}
+            onRetry={() => {
+              void pastConfigQuery.refetch();
+              void pastStatusQuery.refetch();
+            }}
             instructionsPath="/student/exams/past_simple_exam/instructions"
             examPath={(id) => `/student/exams/past_simple_exam/attempts/${id}`}
             resultPath={(id) => `/student/exams/past_simple_exam/results/${id}`}

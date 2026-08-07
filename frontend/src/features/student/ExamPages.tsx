@@ -36,16 +36,21 @@ function answersFromQuestion(question: ExamQuestion): AnswerSet {
 
 export function ExamStartRedirect() {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["attempt-start"],
-    queryFn: examApi.startAttempt,
+  const startedRef = useRef(false);
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: examApi.startAttempt,
+    onSuccess: (attempt) => {
+      navigate(`/student/exams/verb_exam/attempts/${attempt.id}`, {
+        replace: true,
+      });
+    },
   });
 
   useEffect(() => {
-    if (data?.id) {
-      navigate(`/student/exams/verb_exam/attempts/${data.id}`, { replace: true });
-    }
-  }, [data, navigate]);
+    if (startedRef.current) return;
+    startedRef.current = true;
+    mutate();
+  }, [mutate]);
 
   if (error) {
     const apiError = error instanceof ApiError ? error : null;
@@ -69,7 +74,7 @@ export function ExamStartRedirect() {
 
   return (
     <AppShell title="Evaluación">
-      <p>{isLoading ? "Preparando preguntas…" : "Redirigiendo…"}</p>
+      <p>{isPending ? "Preparando preguntas…" : "Redirigiendo…"}</p>
     </AppShell>
   );
 }

@@ -114,6 +114,22 @@ async def test_past_simple_attempt_is_balanced_owned_and_idempotent(
     assert result_data["unanswered_answers"] == 23
     assert len(result_data["topic_performance"]) == 12
 
+    await db_session.refresh(attempt)
+    attempt.config_snapshot = {
+        **attempt.config_snapshot,
+        "review_policy": "SCORE_ONLY",
+    }
+    await db_session.commit()
+    score_only_attempt = await client.get(
+        f"/api/v1/past-simple/attempts/{attempt_id}",
+        headers=_auth(student),
+    )
+    assert score_only_attempt.status_code == 200
+    assert all(
+        "correct_answer" not in question
+        for question in score_only_attempt.json()["questions"]
+    )
+
     no_retry = await client.post(
         "/api/v1/past-simple/attempts",
         headers=_auth(student),

@@ -60,9 +60,13 @@ async def get_attempt(
         attempt_id=attempt_id,
         user_id=student.id,
     )
+    review_policy = attempt.config_snapshot.get("review_policy", "FULL")
     return past_simple_service.serialize_attempt(
         attempt,
-        include_grades=attempt.status == AttemptStatus.SUBMITTED,
+        include_grades=(
+            attempt.status == AttemptStatus.SUBMITTED
+            and review_policy == "FULL"
+        ),
     )
 
 

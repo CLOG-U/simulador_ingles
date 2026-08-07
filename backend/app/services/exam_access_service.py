@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
@@ -93,10 +93,19 @@ async def authorize_new_attempt(
         user_id=user_id,
         exam_type=exam_type,
     )
-    access.allowed_attempts += 1
+    result = await session.execute(
+        update(ExamAccess)
+        .where(ExamAccess.id == access.id)
+        .values(
+            allowed_attempts=ExamAccess.allowed_attempts + 1,
+            is_enabled=True,
+            updated_by=actor_id,
+        )
+        .returning(ExamAccess.allowed_attempts)
+    )
+    access.allowed_attempts = result.scalar_one()
     access.is_enabled = True
     access.updated_by = actor_id
-    await session.flush()
     return access
 
 

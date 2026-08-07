@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.security import generate_temporary_password, hash_password, normalize_username
-from app.models import ExamAccess, ExamType, RefreshSession, User, UserRole
+from app.models import ExamAccess, ExamConfig, ExamType, RefreshSession, User, UserRole
 from app.services.audit_service import log_audit
 
 
@@ -134,6 +134,8 @@ async def create_user(
     )
     session.add(user)
     if role == UserRole.STUDENT:
+        config_result = await session.execute(select(ExamConfig).limit(1))
+        config = config_result.scalar_one_or_none()
         session.add_all(
             [
                 ExamAccess(
@@ -141,7 +143,7 @@ async def create_user(
                     user_id=user.id,
                     exam_type=ExamType.VERB_EXAM.value,
                     is_enabled=True,
-                    allowed_attempts=1,
+                    allowed_attempts=config.max_attempts if config else 1,
                 ),
                 ExamAccess(
                     id=uuid.uuid4(),
