@@ -58,7 +58,7 @@ async def refresh_session(
     db: AsyncSession = Depends(get_db),
     body: RefreshRequest = RefreshRequest(),
 ):
-    token = request.cookies.get("refresh_token") or body.refresh_token
+    token = body.refresh_token or request.cookies.get("refresh_token")
     if not token:
         raise AppError("INVALID_REFRESH", auth_service.SESSION_EXPIRED, status_code=401)
     user, access_token, new_refresh = await auth_service.refresh_tokens(
@@ -82,7 +82,7 @@ async def logout(
     db: AsyncSession = Depends(get_db),
     body: RefreshRequest = RefreshRequest(),
 ):
-    token = request.cookies.get("refresh_token") or body.refresh_token
+    token = body.refresh_token or request.cookies.get("refresh_token")
     await auth_service.logout(db, refresh_token=token)
     clear_auth_cookies(response)
     return {"status": "ok"}
