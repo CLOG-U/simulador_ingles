@@ -1,5 +1,6 @@
 import hashlib
 import secrets
+import uuid
 from datetime import UTC, datetime, timedelta
 
 import jwt
@@ -32,7 +33,13 @@ def verify_password(password_hash: str, password: str) -> bool:
 
 def create_access_token(*, user_id: str, role: str) -> str:
     expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"sub": user_id, "role": role, "exp": expire, "type": "access"}
+    payload = {
+        "sub": user_id,
+        "role": role,
+        "exp": expire,
+        "type": "access",
+        "jti": str(uuid.uuid4()),
+    }
     return jwt.encode(payload, settings.secret_key, algorithm=JWT_ALGORITHM)
 
 
