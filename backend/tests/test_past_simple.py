@@ -1,5 +1,6 @@
 import uuid
 from collections import Counter
+from random import Random
 
 import pytest
 from pydantic import ValidationError
@@ -12,7 +13,10 @@ from app.models import (
 )
 from app.schemas.past_simple import PastSimpleConfigUpdate
 from app.services.normalization import normalize_english_answer
-from app.services.past_simple_engine import select_balanced_questions
+from app.services.past_simple_engine import (
+    select_balanced_questions,
+    shuffle_order_words,
+)
 from app.services.past_simple_grading import (
     automatic_observation,
     grade_attempt,
@@ -58,6 +62,20 @@ def test_balanced_selection_returns_two_questions_per_topic():
     assert len(selected) == 24
     assert len({item.id for item in selected}) == 24
     assert set(counts.values()) == {2}
+
+
+def test_order_words_are_never_kept_in_the_source_order():
+    class NoShuffleRandom(Random):
+        def shuffle(self, values):
+            return None
+
+    prompt = "why / did / Tom / cancel / the picnic"
+    shuffled = shuffle_order_words(prompt, NoShuffleRandom())
+
+    assert shuffled != prompt
+    assert Counter(part.strip() for part in shuffled.split("/")) == Counter(
+        part.strip() for part in prompt.split("/")
+    )
 
 
 def test_english_normalization_accepts_formatting_but_not_grammar_errors():

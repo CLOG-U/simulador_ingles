@@ -13,10 +13,14 @@ from app.models import (
     PastSimpleAttemptQuestion,
     PastSimpleConfig,
     PastSimpleQuestion,
+    PastSimpleQuestionType,
     User,
 )
 from app.services import exam_access_service
-from app.services.past_simple_engine import select_balanced_questions
+from app.services.past_simple_engine import (
+    select_balanced_questions,
+    shuffle_order_words,
+)
 from app.services.past_simple_grading import (
     automatic_observation,
     grade_attempt,
@@ -162,6 +166,11 @@ async def create_or_get_attempt(
     await session.flush()
 
     for position, question in enumerate(selected, start=1):
+        snapshot_question = (
+            shuffle_order_words(question.question)
+            if question.question_type == PastSimpleQuestionType.ORDER_WORDS.value
+            else question.question
+        )
         session.add(
             PastSimpleAttemptQuestion(
                 id=uuid.uuid4(),
@@ -171,7 +180,7 @@ async def create_or_get_attempt(
                 snapshot_topic=question.topic,
                 snapshot_question_type=question.question_type,
                 snapshot_instruction=question.instruction,
-                snapshot_question=question.question,
+                snapshot_question=snapshot_question,
                 snapshot_options=question.options,
                 snapshot_correct_answer=question.correct_answer,
                 snapshot_accepted_answers=question.accepted_answers,
