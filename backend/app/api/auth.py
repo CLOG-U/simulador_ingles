@@ -93,16 +93,29 @@ async def me(current_user: User = Depends(get_current_user)):
     return UserMeResponse.model_validate(current_user)
 
 
-@router.post("/change-password")
+@router.post("/change-password", response_model=RefreshResponse)
 async def change_password(
     body: ChangePasswordRequest,
+    request: Request,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await auth_service.change_password(
+    access_token, refresh_token = await auth_service.change_password(
         db,
         user=current_user,
         current_password=body.current_password,
         new_password=body.new_password,
+        ip_address=_client_ip(request),
+        device_info=request.headers.get("User-Agent"),
     )
-    return {"status": "ok"}
+    set_auth_cookies(
+        response,
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
+    return RefreshResponse(
+        user=UserMeResponse.model_validate(current_user),
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )

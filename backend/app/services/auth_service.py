@@ -141,7 +141,9 @@ async def change_password(
     user: User,
     current_password: str,
     new_password: str,
-) -> None:
+    ip_address: str | None = None,
+    device_info: str | None = None,
+) -> tuple[str, str]:
     if len(new_password) < 8:
         raise AppError(
             "WEAK_PASSWORD",
@@ -169,6 +171,19 @@ async def change_password(
     for refresh_session in result.scalars():
         refresh_session.revoked_at = now
 
+    access_token = create_access_token(user_id=str(user.id), role=user.role.value)
+    new_refresh = generate_refresh_token()
+    session.add(
+        RefreshSession(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            token_hash=hash_token(new_refresh),
+            expires_at=now + timedelta(days=settings.refresh_token_expire_days),
+            device_info=device_info,
+            ip_address=ip_address,
+        )
+    )
+
     await log_audit(
         session,
         actor_user_id=user.id,
@@ -177,6 +192,7 @@ async def change_password(
         target_id=str(user.id),
     )
     await session.commit()
+    return access_token, new_refresh
 
 
 def user_from_access_token(token: str) -> tuple[uuid.UUID, UserRole]:

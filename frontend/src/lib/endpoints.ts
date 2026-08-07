@@ -59,11 +59,18 @@ export const authApi = {
       throw err;
     }
   },
-  changePassword: (current_password: string, new_password: string) =>
-    apiFetch<{ status: string }>("/auth/change-password", {
+  changePassword: async (current_password: string, new_password: string) => {
+    const result = await apiFetch<{
+      user: UserMe;
+      access_token: string;
+      refresh_token: string;
+    }>("/auth/change-password", {
       method: "POST",
       body: JSON.stringify({ current_password, new_password }),
-    }),
+    });
+    setAuthTokens(result.access_token, result.refresh_token);
+    return result;
+  },
 };
 
 export const examApi = {

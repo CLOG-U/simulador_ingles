@@ -77,6 +77,40 @@ async def test_login_invalid_credentials(auth_client, student_user):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_change_password_returns_usable_rotated_tokens(auth_client, student_user):
+    login = await auth_client.post(
+        "/api/v1/auth/login",
+        json={"username": "estudiante1", "password": "temporal123"},
+    )
+    original = login.json()
+
+    changed = await auth_client.post(
+        "/api/v1/auth/change-password",
+        headers={"Authorization": f"Bearer {original['access_token']}"},
+        json={"current_password": "temporal123", "new_password": "personal123"},
+    )
+
+    assert changed.status_code == 200
+    data = changed.json()
+    assert data["user"]["must_change_password"] is False
+    assert data["access_token"] != original["access_token"]
+    assert data["refresh_token"] != original["refresh_token"]
+
+    refreshed = await auth_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": data["refresh_token"]},
+    )
+    assert refreshed.status_code == 200
+
+    old_refresh = await auth_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": original["refresh_token"]},
+    )
+    assert old_refresh.status_code == 401
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_me_requires_auth(auth_client):
     response = await auth_client.get("/api/v1/auth/me")
     assert response.status_code == 401
