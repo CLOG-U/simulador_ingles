@@ -69,12 +69,39 @@ def test_order_words_are_never_kept_in_the_source_order():
         def shuffle(self, values):
             return None
 
-    prompt = "why / did / Tom / cancel / the picnic"
-    shuffled = shuffle_order_words(prompt, NoShuffleRandom())
+    prompt = "cancel / Tom / why / the picnic / did"
+    correct = "Why did Tom cancel the picnic?"
+    shuffled = shuffle_order_words(
+        prompt,
+        NoShuffleRandom(),
+        correct_answer=correct,
+    )
 
     assert shuffled != prompt
+    assert normalize_english_answer(shuffled.replace(" / ", " ")) != (
+        normalize_english_answer(correct)
+    )
     assert Counter(part.strip() for part in shuffled.split("/")) == Counter(
         part.strip() for part in prompt.split("/")
+    )
+
+
+def test_order_words_never_use_the_correct_answer_order():
+    prompt = "where / did / the bus / stop"
+    correct = "Where did the bus stop?"
+
+    class AlwaysCorrectOrder(Random):
+        def shuffle(self, values):
+            values[:] = ["where", "did", "the bus", "stop"]
+
+    shuffled = shuffle_order_words(
+        prompt,
+        AlwaysCorrectOrder(),
+        correct_answer=correct,
+    )
+    assert shuffled != prompt
+    assert normalize_english_answer(shuffled.replace(" / ", " ")) != (
+        normalize_english_answer(correct)
     )
 
 

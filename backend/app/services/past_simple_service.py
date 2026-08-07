@@ -167,7 +167,10 @@ async def create_or_get_attempt(
 
     for position, question in enumerate(selected, start=1):
         snapshot_question = (
-            shuffle_order_words(question.question)
+            shuffle_order_words(
+                question.question,
+                correct_answer=question.correct_answer,
+            )
             if question.question_type == PastSimpleQuestionType.ORDER_WORDS.value
             else question.question
         )
