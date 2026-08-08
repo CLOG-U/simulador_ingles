@@ -210,11 +210,32 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
-  authorizeNewAttempt: (userId: string, examType: ExamType) =>
-    apiFetch<{ status: string; exam_type: ExamType }>(
-      `/admin/users/${userId}/exams/${examType}/allow-new-attempt`,
+  authorizeNewAttempt: (
+    userId: string,
+    examType: ExamType,
+    mode: "exam" | "practice" = "exam",
+  ) =>
+    apiFetch<{ status: string; exam_type: ExamType; mode: "exam" | "practice" }>(
+      `/admin/users/${userId}/exams/${examType}/allow-new-attempt?mode=${mode}`,
       { method: "POST" },
     ),
+  resetExamProgress: (
+    userId: string,
+    examType: ExamType,
+    mode: "exam" | "practice" = "exam",
+  ) =>
+    apiFetch<{
+      status: string;
+      exam_type: ExamType;
+      mode: "exam" | "practice";
+      deleted_attempts: number;
+      allowed_attempts: number;
+      practice_allowed_attempts?: number;
+    }>(
+      `/admin/users/${userId}/exams/${examType}/reset?mode=${mode}`,
+      { method: "POST" },
+    ),
+  /** @deprecated Use resetExamProgress */
   resetPastSimpleProgress: (userId: string, mode: "exam" | "practice") =>
     apiFetch<{
       status: string;

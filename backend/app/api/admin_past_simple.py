@@ -256,6 +256,7 @@ async def get_user_exam_access(
                     )
                 )
             ).scalar_one()
+            practice_submitted = 0
         else:
             submitted = (
                 await db.execute(
@@ -268,6 +269,17 @@ async def get_user_exam_access(
                     )
                 )
             ).scalar_one()
+            practice_submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(PastSimpleAttempt)
+                    .where(
+                        PastSimpleAttempt.user_id == user_id,
+                        PastSimpleAttempt.mode == past_simple_service.MODE_PRACTICE,
+                        PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
         items.append(
             {
                 "exam_type": exam_type.value,
@@ -275,8 +287,13 @@ async def get_user_exam_access(
                 "is_enabled": access.is_enabled,
                 "practice_enabled": access.practice_enabled,
                 "allowed_attempts": access.allowed_attempts,
+                "practice_allowed_attempts": access.practice_allowed_attempts,
                 "submitted_attempts": submitted,
                 "remaining_attempts": max(0, access.allowed_attempts - submitted),
+                "practice_submitted_attempts": practice_submitted,
+                "practice_remaining_attempts": max(
+                    0, access.practice_allowed_attempts - practice_submitted
+                ),
             }
         )
     await db.commit()
@@ -321,6 +338,7 @@ async def update_user_exam_access(
         "is_enabled": access.is_enabled,
         "practice_enabled": access.practice_enabled,
         "allowed_attempts": access.allowed_attempts,
+        "practice_allowed_attempts": access.practice_allowed_attempts,
     }
 
 
@@ -330,11 +348,18 @@ async def allow_new_attempt(
     exam_type: str,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
+    mode: str = Query("exam", pattern="^(exam|practice)$"),
 ):
     user = await user_service.get_user(db, user_id)
     if user.role != UserRole.STUDENT:
         raise AppError("NOT_FOUND", "Estudiante no encontrado.", status_code=404)
     parsed_type = _parse_exam_type(exam_type)
+    if parsed_type == ExamType.VERB_EXAM and mode == "practice":
+        raise AppError(
+            "INVALID_MODE",
+            "Verb Exam no tiene modo práctica.",
+            status_code=400,
+        )
     if parsed_type == ExamType.VERB_EXAM:
         await exam_service.allow_new_attempt(db, user_id, actor_id=admin.id)
     else:
@@ -343,6 +368,7 @@ async def allow_new_attempt(
             user_id=user_id,
             exam_type=parsed_type,
             actor_id=admin.id,
+            mode=mode,
         )
     await log_audit(
         db,
@@ -350,10 +376,56 @@ async def allow_new_attempt(
         action="ALLOW_NEW_ATTEMPT",
         target_type="user",
         target_id=str(user_id),
-        metadata={"exam_type": parsed_type.value},
+        metadata={"exam_type": parsed_type.value, "mode": mode},
     )
     await db.commit()
-    return {"status": "ok", "exam_type": parsed_type.value}
+    return {"status": "ok", "exam_type": parsed_type.value, "mode": mode}
+
+
+@router.post("/users/{user_id}/exams/{exam_type}/reset")
+async def reset_exam_progress(
+    user_id: uuid.UUID,
+    exam_type: str,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+    mode: str = Query("exam", pattern="^(exam|practice)$"),
+):
+    """Reset uniforme por módulo: habilita cupo en 1 e elimina intentos del modo."""
+    user = await user_service.get_user(db, user_id)
+    if user.role != UserRole.STUDENT:
+        raise AppError("NOT_FOUND", "Estudiante no encontrado.", status_code=404)
+    parsed_type = _parse_exam_type(exam_type)
+    if parsed_type == ExamType.VERB_EXAM:
+        if mode != "exam":
+            raise AppError(
+                "INVALID_MODE",
+                "Verb Exam no tiene modo práctica.",
+                status_code=400,
+            )
+        result = await exam_service.reset_student_progress(
+            db,
+            user_id=user_id,
+            actor_id=admin.id,
+        )
+        action = "VERB_EXAM_PROGRESS_RESET"
+    else:
+        result = await past_simple_service.reset_student_progress(
+            db,
+            user_id=user_id,
+            actor_id=admin.id,
+            mode=mode,
+        )
+        action = "PAST_SIMPLE_PROGRESS_RESET"
+    await log_audit(
+        db,
+        actor_user_id=admin.id,
+        action=action,
+        target_type="user",
+        target_id=str(user_id),
+        metadata={"exam_type": parsed_type.value, **result},
+    )
+    await db.commit()
+    return {"status": "ok", "exam_type": parsed_type.value, **result}
 
 
 @router.post("/users/{user_id}/exams/past_simple_exam/reset")
@@ -363,22 +435,11 @@ async def reset_past_simple_progress(
     db: AsyncSession = Depends(get_db),
     mode: str = Query("exam", pattern="^(exam|practice)$"),
 ):
-    user = await user_service.get_user(db, user_id)
-    if user.role != UserRole.STUDENT:
-        raise AppError("NOT_FOUND", "Estudiante no encontrado.", status_code=404)
-    result = await past_simple_service.reset_student_progress(
-        db,
+    """Compatibilidad con clientes anteriores; usa el reset genérico."""
+    return await reset_exam_progress(
         user_id=user_id,
-        actor_id=admin.id,
+        exam_type=ExamType.PAST_SIMPLE_EXAM.value,
+        admin=admin,
+        db=db,
         mode=mode,
     )
-    await log_audit(
-        db,
-        actor_user_id=admin.id,
-        action="PAST_SIMPLE_PROGRESS_RESET",
-        target_type="user",
-        target_id=str(user_id),
-        metadata=result,
-    )
-    await db.commit()
-    return {"status": "ok", "exam_type": ExamType.PAST_SIMPLE_EXAM.value, **result}

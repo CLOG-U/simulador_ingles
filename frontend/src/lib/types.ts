@@ -113,8 +113,11 @@ export interface ExamAccess {
   is_enabled: boolean;
   practice_enabled?: boolean;
   allowed_attempts: number;
+  practice_allowed_attempts?: number;
   submitted_attempts?: number;
   remaining_attempts?: number;
+  practice_submitted_attempts?: number;
+  practice_remaining_attempts?: number;
 }
 
 export interface VerbItem {

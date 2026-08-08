@@ -37,6 +37,7 @@ async def get_or_create_access(
         is_enabled=exam_type == ExamType.VERB_EXAM,
         practice_enabled=False,
         allowed_attempts=1,
+        practice_allowed_attempts=1,
     )
     session.add(access)
     await session.flush()
@@ -123,24 +124,53 @@ async def authorize_new_attempt(
     user_id: uuid.UUID,
     exam_type: ExamType,
     actor_id: uuid.UUID,
+    mode: str = "exam",
 ) -> ExamAccess:
+    """Incrementa el cupo de intentos de examen o de práctica."""
+    if mode not in {"exam", "practice"}:
+        raise AppError(
+            "INVALID_MODE",
+            "Modo inválido. Usa exam o practice.",
+            status_code=400,
+        )
+    if mode == "practice" and exam_type != ExamType.PAST_SIMPLE_EXAM:
+        raise AppError(
+            "INVALID_EXAM_TYPE",
+            "La práctica solo aplica a Past Simple.",
+            status_code=400,
+        )
+
     access = await get_or_create_access(
         session,
         user_id=user_id,
         exam_type=exam_type,
     )
-    result = await session.execute(
-        update(ExamAccess)
-        .where(ExamAccess.id == access.id)
-        .values(
-            allowed_attempts=ExamAccess.allowed_attempts + 1,
-            is_enabled=True,
-            updated_by=actor_id,
+    if mode == "practice":
+        result = await session.execute(
+            update(ExamAccess)
+            .where(ExamAccess.id == access.id)
+            .values(
+                practice_allowed_attempts=ExamAccess.practice_allowed_attempts + 1,
+                practice_enabled=True,
+                updated_by=actor_id,
+            )
+            .returning(ExamAccess.practice_allowed_attempts)
         )
-        .returning(ExamAccess.allowed_attempts)
-    )
-    access.allowed_attempts = result.scalar_one()
-    access.is_enabled = True
+        access.practice_allowed_attempts = result.scalar_one()
+        access.practice_enabled = True
+    else:
+        result = await session.execute(
+            update(ExamAccess)
+            .where(ExamAccess.id == access.id)
+            .values(
+                allowed_attempts=ExamAccess.allowed_attempts + 1,
+                is_enabled=True,
+                updated_by=actor_id,
+            )
+            .returning(ExamAccess.allowed_attempts)
+        )
+        access.allowed_attempts = result.scalar_one()
+        access.is_enabled = True
     access.updated_by = actor_id
     return access
 

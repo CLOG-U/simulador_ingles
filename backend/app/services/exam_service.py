@@ -2,7 +2,7 @@ import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -424,3 +424,29 @@ async def allow_new_attempt(
         exam_type=ExamType.VERB_EXAM,
         actor_id=actor_id,
     )
+
+
+async def reset_student_progress(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    actor_id: uuid.UUID,
+) -> dict:
+    """Elimina intentos del Verb Exam y deja 1 intento disponible."""
+    deleted = await session.execute(
+        delete(Attempt).where(Attempt.user_id == user_id)
+    )
+    access = await exam_access_service.get_or_create_access(
+        session,
+        user_id=user_id,
+        exam_type=ExamType.VERB_EXAM,
+    )
+    access.allowed_attempts = 1
+    access.updated_by = actor_id
+    await session.flush()
+    return {
+        "mode": "exam",
+        "deleted_attempts": deleted.rowcount or 0,
+        "allowed_attempts": access.allowed_attempts,
+        "is_enabled": access.is_enabled,
+    }

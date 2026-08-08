@@ -38,15 +38,24 @@ async def list_users(
     attempt_stats = await exam_service.get_student_attempt_stats(db, student_ids)
     access_map = await exam_access_service.get_student_access_map(db, student_ids)
     past_counts_result = await db.execute(
-        select(PastSimpleAttempt.user_id, func.count())
+        select(
+            PastSimpleAttempt.user_id,
+            PastSimpleAttempt.mode,
+            func.count(),
+        )
         .where(
             PastSimpleAttempt.user_id.in_(student_ids),
-            PastSimpleAttempt.mode == "exam",
             PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
         )
-        .group_by(PastSimpleAttempt.user_id)
+        .group_by(PastSimpleAttempt.user_id, PastSimpleAttempt.mode)
     )
-    past_counts = {row[0]: row[1] for row in past_counts_result.all()}
+    past_exam_counts: dict = {}
+    past_practice_counts: dict = {}
+    for user_id, mode, count in past_counts_result.all():
+        if mode == "practice":
+            past_practice_counts[user_id] = count
+        else:
+            past_exam_counts[user_id] = count
     items: list[AdminUserResponse] = []
     for user in users:
         base = AdminUserResponse.model_validate(user)
@@ -60,10 +69,11 @@ async def list_users(
                             "is_enabled": access.is_enabled,
                             "practice_enabled": access.practice_enabled,
                             "allowed_attempts": access.allowed_attempts,
+                            "practice_allowed_attempts": access.practice_allowed_attempts,
                             "submitted_attempts": (
                                 attempt_stats[user.id]["attempts_used"]
                                 if access.exam_type == ExamType.VERB_EXAM.value
-                                else past_counts.get(user.id, 0)
+                                else past_exam_counts.get(user.id, 0)
                             ),
                             "remaining_attempts": max(
                                 0,
@@ -72,8 +82,24 @@ async def list_users(
                                     attempt_stats[user.id]["attempts_used"]
                                     if access.exam_type
                                     == ExamType.VERB_EXAM.value
-                                    else past_counts.get(user.id, 0)
+                                    else past_exam_counts.get(user.id, 0)
                                 ),
+                            ),
+                            "practice_submitted_attempts": (
+                                past_practice_counts.get(user.id, 0)
+                                if access.exam_type
+                                == ExamType.PAST_SIMPLE_EXAM.value
+                                else 0
+                            ),
+                            "practice_remaining_attempts": (
+                                max(
+                                    0,
+                                    access.practice_allowed_attempts
+                                    - past_practice_counts.get(user.id, 0),
+                                )
+                                if access.exam_type
+                                == ExamType.PAST_SIMPLE_EXAM.value
+                                else 0
                             ),
                         }
                         for access in access_map.get(user.id, {}).values()
