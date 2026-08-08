@@ -111,6 +111,7 @@ export interface ExamAccess {
   exam_type: ExamType;
   globally_enabled?: boolean;
   is_enabled: boolean;
+  practice_enabled?: boolean;
   allowed_attempts: number;
   submitted_attempts?: number;
   remaining_attempts?: number;

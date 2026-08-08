@@ -58,6 +58,7 @@ async def list_users(
                         {
                             "exam_type": access.exam_type,
                             "is_enabled": access.is_enabled,
+                            "practice_enabled": access.practice_enabled,
                             "allowed_attempts": access.allowed_attempts,
                             "submitted_attempts": (
                                 attempt_stats[user.id]["attempts_used"]

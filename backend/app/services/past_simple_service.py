@@ -263,17 +263,10 @@ async def create_or_get_practice(
 
     await session.execute(select(User).where(User.id == user.id).with_for_update())
     config = await get_config(session)
-    access = await exam_access_service.get_or_create_access(
+    await exam_access_service.ensure_practice_available(
         session,
         user_id=user.id,
-        exam_type=ExamType.PAST_SIMPLE_EXAM,
     )
-    if not config.practice_enabled or not access.is_enabled:
-        raise AppError(
-            "PRACTICE_NOT_AVAILABLE",
-            "La práctica de Past Simple no está habilitada para tu cuenta.",
-            status_code=403,
-        )
 
     existing = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
     if existing:
@@ -600,7 +593,7 @@ async def get_attempt_status(
         }
 
     if mode == MODE_PRACTICE:
-        available = config.practice_enabled and access.is_enabled
+        available = config.practice_enabled and access.practice_enabled
         return {
             "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
             "mode": MODE_PRACTICE,

@@ -143,6 +143,7 @@ async def create_user(
                     user_id=user.id,
                     exam_type=ExamType.VERB_EXAM.value,
                     is_enabled=True,
+                    practice_enabled=False,
                     allowed_attempts=config.max_attempts if config else 1,
                 ),
                 ExamAccess(
@@ -150,6 +151,7 @@ async def create_user(
                     user_id=user.id,
                     exam_type=ExamType.PAST_SIMPLE_EXAM.value,
                     is_enabled=False,
+                    practice_enabled=False,
                     allowed_attempts=1,
                 ),
             ]

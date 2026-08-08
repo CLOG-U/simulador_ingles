@@ -35,6 +35,7 @@ async def get_or_create_access(
         user_id=user_id,
         exam_type=exam_type.value,
         is_enabled=exam_type == ExamType.VERB_EXAM,
+        practice_enabled=False,
         allowed_attempts=1,
     )
     session.add(access)
@@ -62,20 +63,55 @@ async def ensure_exam_available(
     return access
 
 
+async def _global_practice_enabled(session: AsyncSession) -> bool:
+    result = await session.execute(select(PastSimpleConfig).limit(1))
+    config = result.scalar_one_or_none()
+    return bool(config and config.practice_enabled)
+
+
+async def ensure_practice_available(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+) -> ExamAccess:
+    access = await get_or_create_access(
+        session,
+        user_id=user_id,
+        exam_type=ExamType.PAST_SIMPLE_EXAM,
+    )
+    if not await _global_practice_enabled(session) or not access.practice_enabled:
+        raise AppError(
+            "PRACTICE_NOT_AVAILABLE",
+            "La práctica de Past Simple no está habilitada para tu cuenta.",
+            status_code=403,
+        )
+    return access
+
+
 async def set_student_access(
     session: AsyncSession,
     *,
     user_id: uuid.UUID,
     exam_type: ExamType,
-    is_enabled: bool,
     actor_id: uuid.UUID,
+    is_enabled: bool | None = None,
+    practice_enabled: bool | None = None,
 ) -> ExamAccess:
     access = await get_or_create_access(
         session,
         user_id=user_id,
         exam_type=exam_type,
     )
-    access.is_enabled = is_enabled
+    if is_enabled is not None:
+        access.is_enabled = is_enabled
+    if practice_enabled is not None:
+        if exam_type != ExamType.PAST_SIMPLE_EXAM:
+            raise AppError(
+                "INVALID_EXAM_TYPE",
+                "La práctica solo aplica a Past Simple.",
+                status_code=400,
+            )
+        access.practice_enabled = practice_enabled
     access.updated_by = actor_id
     await session.flush()
     return access

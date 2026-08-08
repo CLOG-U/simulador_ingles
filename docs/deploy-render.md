@@ -49,6 +49,8 @@ La migración `003_past_simple_practice` añade el modo práctica (habilitada po
 defecto) y el seed amplía el banco compartido a 100 preguntas.
 La migración `004_practice_constraints` separa la unicidad de intentos por modo
 para que examen y práctica puedan coexistir.
+La migración `005_exam_access_practice` permite habilitar examen y práctica por
+estudiante de forma independiente.
 
 ### Crear profesor (sin Shell)
 

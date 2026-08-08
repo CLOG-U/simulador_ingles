@@ -273,6 +273,7 @@ async def get_user_exam_access(
                 "exam_type": exam_type.value,
                 "globally_enabled": availability[exam_type.value],
                 "is_enabled": access.is_enabled,
+                "practice_enabled": access.practice_enabled,
                 "allowed_attempts": access.allowed_attempts,
                 "submitted_attempts": submitted,
                 "remaining_attempts": max(0, access.allowed_attempts - submitted),
@@ -298,8 +299,9 @@ async def update_user_exam_access(
         db,
         user_id=user_id,
         exam_type=parsed_type,
-        is_enabled=body.is_enabled,
         actor_id=admin.id,
+        is_enabled=body.is_enabled,
+        practice_enabled=body.practice_enabled,
     )
     await log_audit(
         db,
@@ -310,12 +312,14 @@ async def update_user_exam_access(
         metadata={
             "exam_type": parsed_type.value,
             "is_enabled": body.is_enabled,
+            "practice_enabled": body.practice_enabled,
         },
     )
     await db.commit()
     return {
         "exam_type": parsed_type.value,
         "is_enabled": access.is_enabled,
+        "practice_enabled": access.practice_enabled,
         "allowed_attempts": access.allowed_attempts,
     }
 

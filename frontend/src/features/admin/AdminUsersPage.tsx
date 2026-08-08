@@ -154,13 +154,21 @@ export function AdminUsersPage() {
       userId,
       examType,
       isEnabled,
+      practiceEnabled,
     }: {
       userId: string;
       examType: ExamType;
-      isEnabled: boolean;
-    }) => adminApi.updateExamAccess(userId, examType, isEnabled),
+      isEnabled?: boolean;
+      practiceEnabled?: boolean;
+    }) =>
+      adminApi.updateExamAccess(userId, examType, {
+        ...(isEnabled !== undefined ? { is_enabled: isEnabled } : {}),
+        ...(practiceEnabled !== undefined
+          ? { practice_enabled: practiceEnabled }
+          : {}),
+      }),
     onSuccess: () => {
-      setActionNotice("Acceso al examen actualizado.");
+      setActionNotice("Acceso actualizado.");
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
   });
@@ -449,15 +457,35 @@ export function AdminUsersPage() {
                           const access = u.exam_access?.find(
                             (item) => item.exam_type === examType,
                           );
+                          if (examType === "verb_exam") {
+                            return (
+                              <p key={examType}>
+                                <strong>Verb:</strong>{" "}
+                                {access?.is_enabled ? "habilitado" : "bloqueado"} ·{" "}
+                                {access?.submitted_attempts ?? 0} completado(s) ·{" "}
+                                {access?.remaining_attempts ??
+                                  access?.allowed_attempts ??
+                                  1}{" "}
+                                pendiente(s)
+                              </p>
+                            );
+                          }
                           return (
-                            <p key={examType}>
-                              <strong>
-                                {examType === "verb_exam" ? "Verb" : "Past Simple"}:
-                              </strong>{" "}
-                              {access?.is_enabled ? "habilitado" : "bloqueado"} ·{" "}
-                              {access?.submitted_attempts ?? 0} completado(s) ·{" "}
-                              {access?.remaining_attempts ?? access?.allowed_attempts ?? 1} pendiente(s)
-                            </p>
+                            <div key={examType} className="space-y-0.5">
+                              <p>
+                                <strong>Past Simple Examen:</strong>{" "}
+                                {access?.is_enabled ? "habilitado" : "bloqueado"} ·{" "}
+                                {access?.submitted_attempts ?? 0} completado(s) ·{" "}
+                                {access?.remaining_attempts ??
+                                  access?.allowed_attempts ??
+                                  1}{" "}
+                                pendiente(s)
+                              </p>
+                              <p>
+                                <strong>Past Simple Práctica:</strong>{" "}
+                                {access?.practice_enabled ? "habilitada" : "bloqueada"}
+                              </p>
+                            </div>
                           );
                         })}
                       </div>
@@ -493,44 +521,73 @@ export function AdminUsersPage() {
                             (item) => item.exam_type === examType,
                           );
                           const label =
-                            examType === "verb_exam" ? "Verb" : "Past Simple";
+                            examType === "verb_exam" ? "Verb" : "Past Simple Examen";
                           return (
-                            <div key={examType} className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                className="text-brand-primary underline"
-                                disabled={
-                                  accessMutation.isPending &&
-                                  accessMutation.variables?.userId === u.id &&
-                                  accessMutation.variables?.examType === examType
-                                }
-                                onClick={() =>
-                                  accessMutation.mutate({
-                                    userId: u.id,
-                                    examType,
-                                    isEnabled: !access?.is_enabled,
-                                  })
-                                }
-                              >
-                                {access?.is_enabled ? `Bloquear ${label}` : `Habilitar ${label}`}
-                              </button>
-                              <button
-                                type="button"
-                                className="text-brand-primary underline"
-                                disabled={
-                                  allowAttemptMutation.isPending &&
-                                  allowAttemptMutation.variables?.userId === u.id &&
-                                  allowAttemptMutation.variables?.examType === examType
-                                }
-                                onClick={() =>
-                                  allowAttemptMutation.mutate({
-                                    userId: u.id,
-                                    examType,
-                                  })
-                                }
-                              >
-                                Nuevo intento {label}
-                              </button>
+                            <div key={examType} className="space-y-1">
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  className="text-brand-primary underline"
+                                  disabled={
+                                    accessMutation.isPending &&
+                                    accessMutation.variables?.userId === u.id &&
+                                    accessMutation.variables?.examType === examType &&
+                                    accessMutation.variables?.isEnabled !== undefined
+                                  }
+                                  onClick={() =>
+                                    accessMutation.mutate({
+                                      userId: u.id,
+                                      examType,
+                                      isEnabled: !access?.is_enabled,
+                                    })
+                                  }
+                                >
+                                  {access?.is_enabled
+                                    ? `Bloquear ${label}`
+                                    : `Habilitar ${label}`}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="text-brand-primary underline"
+                                  disabled={
+                                    allowAttemptMutation.isPending &&
+                                    allowAttemptMutation.variables?.userId === u.id &&
+                                    allowAttemptMutation.variables?.examType === examType
+                                  }
+                                  onClick={() =>
+                                    allowAttemptMutation.mutate({
+                                      userId: u.id,
+                                      examType,
+                                    })
+                                  }
+                                >
+                                  Nuevo intento {label}
+                                </button>
+                              </div>
+                              {examType === "past_simple_exam" && (
+                                <button
+                                  type="button"
+                                  className="text-brand-primary underline"
+                                  disabled={
+                                    accessMutation.isPending &&
+                                    accessMutation.variables?.userId === u.id &&
+                                    accessMutation.variables?.examType === examType &&
+                                    accessMutation.variables?.practiceEnabled !==
+                                      undefined
+                                  }
+                                  onClick={() =>
+                                    accessMutation.mutate({
+                                      userId: u.id,
+                                      examType,
+                                      practiceEnabled: !access?.practice_enabled,
+                                    })
+                                  }
+                                >
+                                  {access?.practice_enabled
+                                    ? "Bloquear Past Simple Práctica"
+                                    : "Habilitar Past Simple Práctica"}
+                                </button>
+                              )}
                             </div>
                           );
                         })}

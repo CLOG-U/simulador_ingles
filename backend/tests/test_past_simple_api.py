@@ -35,6 +35,7 @@ async def _student(db_session: AsyncSession, username: str) -> User:
             user_id=user.id,
             exam_type=ExamType.PAST_SIMPLE_EXAM.value,
             is_enabled=True,
+            practice_enabled=True,
             allowed_attempts=1,
         )
     )

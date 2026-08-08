@@ -201,10 +201,14 @@ export const adminApi = {
     apiFetch<{ status: string }>(`/admin/users/${userId}/allow-new-attempt`, { method: "POST" }),
   examAccess: (userId: string) =>
     apiFetch<{ items: ExamAccess[] }>(`/admin/users/${userId}/exam-access`),
-  updateExamAccess: (userId: string, examType: ExamType, is_enabled: boolean) =>
+  updateExamAccess: (
+    userId: string,
+    examType: ExamType,
+    data: { is_enabled?: boolean; practice_enabled?: boolean },
+  ) =>
     apiFetch<ExamAccess>(`/admin/users/${userId}/exam-access/${examType}`, {
       method: "PATCH",
-      body: JSON.stringify({ is_enabled }),
+      body: JSON.stringify(data),
     }),
   authorizeNewAttempt: (userId: string, examType: ExamType) =>
     apiFetch<{ status: string; exam_type: ExamType }>(

@@ -30,4 +30,11 @@ class PastSimpleConfigUpdate(BaseModel):
 
 
 class ExamAccessUpdate(BaseModel):
-    is_enabled: bool
+    is_enabled: bool | None = None
+    practice_enabled: bool | None = None
+
+    @model_validator(mode="after")
+    def require_at_least_one_flag(self):
+        if self.is_enabled is None and self.practice_enabled is None:
+            raise ValueError("Debes indicar is_enabled o practice_enabled")
+        return self

@@ -158,6 +158,7 @@ class ExamAccess(Base):
     )
     exam_type: Mapped[str] = mapped_column(String(32), nullable=False)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    practice_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     allowed_attempts: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     updated_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True

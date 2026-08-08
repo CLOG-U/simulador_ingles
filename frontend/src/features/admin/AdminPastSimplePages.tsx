@@ -61,19 +61,25 @@ export function AdminPastSimplePage() {
       }),
   });
 
-  const saveConfig = async (
-    overrides: {
-      is_enabled?: boolean;
-      practice_enabled?: boolean;
-    } = {},
-  ) => {
+  const saveSettings = async () => {
     await adminApi.updatePastSimpleConfig({
-      is_enabled: overrides.is_enabled ?? config?.is_enabled ?? false,
-      practice_enabled:
-        overrides.practice_enabled ?? config?.practice_enabled ?? true,
       passing_percentage:
         passing === "" ? config?.passing_percentage : Number(passing),
       duration_minutes: duration === "" ? null : Number(duration),
+    });
+    void queryClient.invalidateQueries({ queryKey: ["admin-past-simple-config"] });
+  };
+
+  const toggleExam = async () => {
+    if (!config) return;
+    await adminApi.updatePastSimpleConfig({ is_enabled: !config.is_enabled });
+    void queryClient.invalidateQueries({ queryKey: ["admin-past-simple-config"] });
+  };
+
+  const togglePractice = async () => {
+    if (!config) return;
+    await adminApi.updatePastSimpleConfig({
+      practice_enabled: !config.practice_enabled,
     });
     void queryClient.invalidateQueries({ queryKey: ["admin-past-simple-config"] });
   };
@@ -82,42 +88,49 @@ export function AdminPastSimplePage() {
     <AppShell title="Past Simple Exam" nav={adminNav}>
       <div className="space-y-5">
         <section className="card space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold">Configuración</h2>
-              <p className="text-sm text-gray-600">
-                Banco: {config?.question_bank_size ?? "—"} preguntas · Examen y
-                práctica: 24 (2 por cada uno de los 12 temas)
+          <div>
+            <h2 className="text-xl font-semibold">Configuración</h2>
+            <p className="text-sm text-gray-600">
+              Banco: {config?.question_bank_size ?? "—"} preguntas · Cada sesión
+              de examen o práctica toma 24 (2 por tema). Examen y práctica se
+              activan por separado.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border p-4">
+              <p className="font-medium">Examen oficial</p>
+              <p className="mt-1 text-sm text-gray-600">
+                Evaluación calificada. También requiere habilitar al estudiante
+                en Usuarios.
               </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className={`min-h-11 rounded-xl px-4 font-medium ${
+                className={`mt-3 min-h-11 rounded-xl px-4 font-medium ${
                   config?.is_enabled
                     ? "bg-green-100 text-green-800"
                     : "bg-gray-200 text-gray-700"
                 }`}
                 disabled={!config}
-                onClick={() =>
-                  void saveConfig({ is_enabled: !config?.is_enabled })
-                }
+                onClick={() => void toggleExam()}
               >
                 {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
               </button>
+            </div>
+            <div className="rounded-xl border p-4">
+              <p className="font-medium">Práctica</p>
+              <p className="mt-1 text-sm text-gray-600">
+                Entrenamiento con feedback. Independiente del examen; también se
+                habilita por estudiante en Usuarios.
+              </p>
               <button
                 type="button"
-                className={`min-h-11 rounded-xl px-4 font-medium ${
+                className={`mt-3 min-h-11 rounded-xl px-4 font-medium ${
                   config?.practice_enabled
                     ? "bg-green-100 text-green-800"
                     : "bg-gray-200 text-gray-700"
                 }`}
                 disabled={!config}
-                onClick={() =>
-                  void saveConfig({
-                    practice_enabled: !config?.practice_enabled,
-                  })
-                }
+                onClick={() => void togglePractice()}
               >
                 {config?.practice_enabled
                   ? "Práctica habilitada"
@@ -151,7 +164,7 @@ export function AdminPastSimplePage() {
             type="button"
             className="btn-primary"
             disabled={!config}
-            onClick={() => void saveConfig({})}
+            onClick={() => void saveSettings()}
           >
             Guardar configuración
           </button>
