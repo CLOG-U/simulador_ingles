@@ -44,24 +44,20 @@
     @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-brand-primary px-6 py-2.5 font-medium text-brand-white transition-colors hover:bg-brand-primary-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary;
   }
 
+  .admin-panel {
+    @apply rounded-xl border border-gray-200 bg-gray-50 p-3;
+  }
+
+  .admin-panel-title {
+    @apply mb-2 text-[11px] font-bold uppercase tracking-wide text-brand-primary;
+  }
+
   .btn-admin-primary {
     @apply inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-brand-primary px-3 py-2 text-center text-xs font-semibold text-brand-white transition-colors hover:bg-brand-primary-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-50;
   }
 
-  .btn-admin-sky {
-    @apply inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-brand-sky px-3 py-2 text-center text-xs font-semibold text-white transition-colors hover:bg-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-sky disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .btn-admin-purple {
-    @apply inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-brand-purple px-3 py-2 text-center text-xs font-semibold text-white transition-colors hover:bg-[#5a347f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .btn-admin-pink {
-    @apply inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-brand-pink px-3 py-2 text-center text-xs font-semibold text-white transition-colors hover:bg-[#c40c54] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-pink disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .btn-admin-yellow {
-    @apply inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-brand-yellow px-3 py-2 text-center text-xs font-semibold text-text transition-colors hover:bg-[#e6cf00] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-yellow disabled:cursor-not-allowed disabled:opacity-50;
+  .btn-admin-secondary {
+    @apply inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-brand-primary/25 bg-white px-3 py-2 text-center text-xs font-semibold text-brand-primary transition-colors hover:bg-brand-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-admin-success {

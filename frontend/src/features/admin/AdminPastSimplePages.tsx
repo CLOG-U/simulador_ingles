@@ -97,9 +97,9 @@ export function AdminPastSimplePage() {
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-brand-purple/30 bg-brand-purple/10 p-4">
-              <p className="font-medium">Examen oficial</p>
-              <p className="mt-1 text-sm text-gray-600">
+            <div className="admin-panel p-4">
+              <p className="admin-panel-title mb-1">Examen oficial</p>
+              <p className="text-sm text-gray-600">
                 Evaluación calificada. También requiere habilitar al estudiante
                 en Usuarios.
               </p>
@@ -114,9 +114,9 @@ export function AdminPastSimplePage() {
                 {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
               </button>
             </div>
-            <div className="rounded-xl border border-brand-pink/30 bg-brand-pink/10 p-4">
-              <p className="font-medium">Práctica</p>
-              <p className="mt-1 text-sm text-gray-600">
+            <div className="admin-panel p-4">
+              <p className="admin-panel-title mb-1">Práctica</p>
+              <p className="text-sm text-gray-600">
                 Entrenamiento con feedback. Independiente del examen; también se
                 habilita por estudiante en Usuarios.
               </p>

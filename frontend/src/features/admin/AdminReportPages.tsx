@@ -241,7 +241,7 @@ export function AdminStudentReportPage() {
                           <td className="py-2">
                             <Link
                               to={`/admin/reports/${a.id}`}
-                              className="text-brand-primary underline"
+                              className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
                             >
                               Ver evaluación
                             </Link>
@@ -296,7 +296,7 @@ export function AdminStudentReportPage() {
                           <td className="py-2">
                             <Link
                               to={`/admin/past-simple/reports/${attempt.id}`}
-                              className="text-brand-primary underline"
+                              className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
                             >
                               Ver evaluación
                             </Link>

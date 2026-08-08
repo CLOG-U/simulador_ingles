@@ -241,7 +241,7 @@ export function AdminResultsPage() {
                           ? `/admin/past-simple/reports/${row.id}`
                           : `/admin/reports/${row.id}`
                       }
-                      className="text-brand-primary underline"
+                      className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
                     >
                       Ver evaluación
                     </Link>

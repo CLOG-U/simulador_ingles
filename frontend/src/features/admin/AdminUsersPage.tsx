@@ -46,19 +46,30 @@ function formatApiError(err: unknown) {
 
 function ActionGroup({
   title,
-  accentClass,
   children,
 }: {
   title: string;
-  accentClass: string;
   children: ReactNode;
 }) {
   return (
-    <div className={`min-w-[200px] rounded-xl border p-3 ${accentClass}`}>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-700">
-        {title}
-      </p>
+    <div className="admin-panel min-w-[200px]">
+      <p className="admin-panel-title">{title}</p>
       <div className="grid gap-2">{children}</div>
+    </div>
+  );
+}
+
+function AttemptInfo({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="admin-panel min-w-[180px]">
+      <p className="admin-panel-title">{title}</p>
+      <div className="space-y-1 text-xs text-gray-700">{children}</div>
     </div>
   );
 }
@@ -486,41 +497,54 @@ export function AdminUsersPage() {
                       </span>
                     )}
                   </td>
-                  <td className="py-2">
+                  <td className="py-3">
                     {u.role === "STUDENT" ? (
-                      <div className="space-y-1 text-xs">
+                      <div className="flex flex-wrap gap-2">
                         {(["verb_exam", "past_simple_exam"] as const).map((examType) => {
                           const access = u.exam_access?.find(
                             (item) => item.exam_type === examType,
                           );
                           if (examType === "verb_exam") {
                             return (
-                              <p key={examType}>
-                                <strong>Verb:</strong>{" "}
-                                {access?.is_enabled ? "habilitado" : "bloqueado"} ·{" "}
-                                {access?.submitted_attempts ?? 0} completado(s) ·{" "}
-                                {access?.remaining_attempts ??
-                                  access?.allowed_attempts ??
-                                  1}{" "}
-                                pendiente(s)
-                              </p>
+                              <AttemptInfo key={examType} title="Verb Exam">
+                                <p>
+                                  {access?.is_enabled ? "Habilitado" : "Bloqueado"}
+                                </p>
+                                <p>
+                                  {access?.submitted_attempts ?? 0} completado(s)
+                                </p>
+                                <p>
+                                  {access?.remaining_attempts ??
+                                    access?.allowed_attempts ??
+                                    1}{" "}
+                                  pendiente(s)
+                                </p>
+                              </AttemptInfo>
                             );
                           }
                           return (
-                            <div key={examType} className="space-y-0.5">
-                              <p>
-                                <strong>Past Simple Examen:</strong>{" "}
-                                {access?.is_enabled ? "habilitado" : "bloqueado"} ·{" "}
-                                {access?.submitted_attempts ?? 0} completado(s) ·{" "}
-                                {access?.remaining_attempts ??
-                                  access?.allowed_attempts ??
-                                  1}{" "}
-                                pendiente(s)
-                              </p>
-                              <p>
-                                <strong>Past Simple Práctica:</strong>{" "}
-                                {access?.practice_enabled ? "habilitada" : "bloqueada"}
-                              </p>
+                            <div key={examType} className="flex flex-wrap gap-2">
+                              <AttemptInfo title="Past Simple Examen">
+                                <p>
+                                  {access?.is_enabled ? "Habilitado" : "Bloqueado"}
+                                </p>
+                                <p>
+                                  {access?.submitted_attempts ?? 0} completado(s)
+                                </p>
+                                <p>
+                                  {access?.remaining_attempts ??
+                                    access?.allowed_attempts ??
+                                    1}{" "}
+                                  pendiente(s)
+                                </p>
+                              </AttemptInfo>
+                              <AttemptInfo title="Past Simple Práctica">
+                                <p>
+                                  {access?.practice_enabled
+                                    ? "Habilitada"
+                                    : "Bloqueada"}
+                                </p>
+                              </AttemptInfo>
                             </div>
                           );
                         })}
@@ -531,10 +555,7 @@ export function AdminUsersPage() {
                   </td>
                   <td className="py-3">
                     <div className="flex flex-wrap gap-3">
-                      <ActionGroup
-                        title="Cuenta"
-                        accentClass="border-brand-primary/20 bg-brand-primary/5"
-                      >
+                      <ActionGroup title="Cuenta">
                         <button
                           type="button"
                           className="btn-admin-primary"
@@ -544,7 +565,7 @@ export function AdminUsersPage() {
                         </button>
                         <button
                           type="button"
-                          className="btn-admin-yellow"
+                          className="btn-admin-secondary"
                           onClick={() => openResetModal(u)}
                         >
                           Restablecer clave
@@ -552,7 +573,7 @@ export function AdminUsersPage() {
                         {u.role === "STUDENT" && (
                           <Link
                             to={`/admin/students/${u.id}/report`}
-                            className="btn-admin-sky"
+                            className="btn-admin-secondary"
                           >
                             Ver reporte
                           </Link>
@@ -567,11 +588,7 @@ export function AdminUsersPage() {
                             );
                             if (examType === "verb_exam") {
                               return (
-                                <ActionGroup
-                                  key={examType}
-                                  title="Verb Exam"
-                                  accentClass="border-brand-sky/30 bg-brand-sky/10"
-                                >
+                                <ActionGroup key={examType} title="Verb Exam">
                                   <button
                                     type="button"
                                     className={
@@ -627,10 +644,7 @@ export function AdminUsersPage() {
                                 key={examType}
                                 className="flex flex-wrap gap-3"
                               >
-                                <ActionGroup
-                                  title="Past Simple Examen"
-                                  accentClass="border-brand-purple/30 bg-brand-purple/10"
-                                >
+                                <ActionGroup title="Past Simple Examen">
                                   <button
                                     type="button"
                                     className={
@@ -660,7 +674,7 @@ export function AdminUsersPage() {
                                   </button>
                                   <button
                                     type="button"
-                                    className="btn-admin-purple"
+                                    className="btn-admin-primary"
                                     disabled={
                                       allowAttemptMutation.isPending &&
                                       allowAttemptMutation.variables?.userId ===
@@ -703,10 +717,7 @@ export function AdminUsersPage() {
                                   </button>
                                 </ActionGroup>
 
-                                <ActionGroup
-                                  title="Past Simple Práctica"
-                                  accentClass="border-brand-pink/30 bg-brand-pink/10"
-                                >
+                                <ActionGroup title="Past Simple Práctica">
                                   <button
                                     type="button"
                                     className={
