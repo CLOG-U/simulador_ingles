@@ -11,6 +11,7 @@ import type {
   ExamType,
   PastSimpleAttempt,
   PastSimpleConfig,
+  PastSimpleQuestion,
   PastSimpleQuestionAdmin,
   PastSimpleResult,
   UserMe,
@@ -120,6 +121,35 @@ export const pastSimpleApi = {
     }),
   result: (attemptId: string) =>
     apiFetch<PastSimpleResult>(`/past-simple/attempts/${attemptId}/result`),
+  practiceStatus: () =>
+    apiFetch<AttemptStatus>("/past-simple/practice/status"),
+  startPractice: () =>
+    apiFetch<PastSimpleAttempt>("/past-simple/practice/sessions", {
+      method: "POST",
+    }),
+  getPractice: (id: string) =>
+    apiFetch<PastSimpleAttempt>(`/past-simple/practice/sessions/${id}`),
+  checkPracticeAnswer: (
+    attemptId: string,
+    questionId: string,
+    answer: string | null,
+  ) =>
+    apiFetch<PastSimpleQuestion>(
+      `/past-simple/practice/sessions/${attemptId}/questions/${questionId}/check`,
+      {
+        method: "POST",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submitPractice: (attemptId: string) =>
+    apiFetch<PastSimpleResult>(
+      `/past-simple/practice/sessions/${attemptId}/submit`,
+      { method: "POST" },
+    ),
+  practiceResult: (attemptId: string) =>
+    apiFetch<PastSimpleResult>(
+      `/past-simple/practice/sessions/${attemptId}/result`,
+    ),
 };
 
 export const adminApi = {
@@ -210,6 +240,7 @@ export const adminApi = {
       Pick<
         PastSimpleConfig,
         | "is_enabled"
+        | "practice_enabled"
         | "passing_percentage"
         | "duration_minutes"
         | "review_policy"

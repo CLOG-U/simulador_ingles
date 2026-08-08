@@ -62,7 +62,10 @@ async def export_attempts_csv(
     past_result = await db.execute(
         select(PastSimpleAttempt, User)
         .join(User, User.id == PastSimpleAttempt.user_id)
-        .where(PastSimpleAttempt.status == AttemptStatus.SUBMITTED)
+        .where(
+            PastSimpleAttempt.mode == "exam",
+            PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
+        )
         .order_by(PastSimpleAttempt.submitted_at.desc())
     )
     for attempt, user in past_result.all():

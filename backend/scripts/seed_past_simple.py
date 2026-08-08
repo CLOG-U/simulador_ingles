@@ -50,6 +50,7 @@ async def seed_past_simple(session: AsyncSession) -> None:
             PastSimpleConfig(
                 id=uuid.uuid4(),
                 is_enabled=False,
+                practice_enabled=True,
                 question_count=24,
                 passing_percentage=70,
                 duration_minutes=None,

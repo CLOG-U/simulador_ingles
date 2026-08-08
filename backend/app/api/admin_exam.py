@@ -182,20 +182,23 @@ async def dashboard(
     past_finished = (
         await db.execute(
             select(func.count()).select_from(PastSimpleAttempt).where(
-                PastSimpleAttempt.status == AttemptStatus.SUBMITTED
+                PastSimpleAttempt.mode == "exam",
+                PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
             )
         )
     ).scalar_one()
     past_avg = (
         await db.execute(
             select(func.avg(PastSimpleAttempt.percentage)).where(
-                PastSimpleAttempt.status == AttemptStatus.SUBMITTED
+                PastSimpleAttempt.mode == "exam",
+                PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
             )
         )
     ).scalar_one()
     past_passed = (
         await db.execute(
             select(func.count()).select_from(PastSimpleAttempt).where(
+                PastSimpleAttempt.mode == "exam",
                 PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
                 PastSimpleAttempt.passed.is_(True),
             )

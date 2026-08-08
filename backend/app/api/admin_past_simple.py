@@ -51,6 +51,8 @@ async def update_config(
     changes = body.model_dump(exclude_unset=True)
     if "is_enabled" in changes:
         config.is_enabled = changes["is_enabled"]
+    if "practice_enabled" in changes:
+        config.practice_enabled = changes["practice_enabled"]
     if "passing_percentage" in changes:
         config.passing_percentage = changes["passing_percentage"]
     if "duration_minutes" in changes:
@@ -142,8 +144,10 @@ async def list_attempts(
     _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(PastSimpleAttempt, User).join(
-        User, User.id == PastSimpleAttempt.user_id
+    query = (
+        select(PastSimpleAttempt, User)
+        .join(User, User.id == PastSimpleAttempt.user_id)
+        .where(PastSimpleAttempt.mode == past_simple_service.MODE_EXAM)
     )
     if student_id:
         query = query.where(PastSimpleAttempt.user_id == student_id)
@@ -167,6 +171,8 @@ async def list_attempts(
             {
                 "id": str(attempt.id),
                 "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+                "mode": attempt.mode,
+                "exam_name": "Past Simple Exam",
                 "student_id": str(user.id),
                 "student_username": user.username,
                 "student_name": user.full_name,
@@ -257,6 +263,7 @@ async def get_user_exam_access(
                     .select_from(PastSimpleAttempt)
                     .where(
                         PastSimpleAttempt.user_id == user_id,
+                        PastSimpleAttempt.mode == past_simple_service.MODE_EXAM,
                         PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
                     )
                 )

@@ -5,8 +5,11 @@ Aplicación web de evaluaciones de inglés para estudiantes de la academia.
 ## Exámenes
 
 - **Verb Exam:** evaluación existente de forma base, pasado y significado en español.
-- **Past Simple Exam:** 24 preguntas mezcladas, dos por cada uno de 12 temas de
-  interrogación, `did`, `was/were`, respuestas cortas y Question Words.
+- **Past Simple Exam:** banco compartido de 100 preguntas; el examen toma 24 al azar
+  (2 por cada uno de 12 temas) sobre interrogación, `did`, `was/were`, respuestas
+  cortas y Question Words.
+- **Past Simple Practice:** módulo aparte de entrenamiento con el mismo banco y la
+  misma selección de 24 preguntas, feedback inmediato y sin consumir intentos del examen.
 
 Cada examen mantiene configuración, acceso por estudiante, intentos, resultados e
 historial independientes. El profesor habilita el acceso y autoriza nuevos intentos.

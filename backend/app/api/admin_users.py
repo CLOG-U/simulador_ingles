@@ -41,6 +41,7 @@ async def list_users(
         select(PastSimpleAttempt.user_id, func.count())
         .where(
             PastSimpleAttempt.user_id.in_(student_ids),
+            PastSimpleAttempt.mode == "exam",
             PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
         )
         .group_by(PastSimpleAttempt.user_id)
@@ -125,7 +126,10 @@ async def student_report(
     attempts = result.scalars().all()
     past_result = await db.execute(
         select(PastSimpleAttempt)
-        .where(PastSimpleAttempt.user_id == user_id)
+        .where(
+            PastSimpleAttempt.user_id == user_id,
+            PastSimpleAttempt.mode == "exam",
+        )
         .order_by(PastSimpleAttempt.started_at.desc())
     )
     past_attempts = past_result.scalars().all()

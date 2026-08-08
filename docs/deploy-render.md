@@ -45,6 +45,8 @@ El arranque del backend ejecuta automáticamente `alembic upgrade head` y los se
 idempotentes de Verb Exam y Past Simple Exam. La migración `002_multi_exam` conserva
 todos los intentos existentes, habilita Verb Exam para los estudiantes actuales y
 deja Past Simple Exam deshabilitado hasta que el profesor lo active.
+La migración `003_past_simple_practice` añade el modo práctica (habilitada por
+defecto) y el seed amplía el banco compartido a 100 preguntas.
 
 ### Crear profesor (sin Shell)
 

@@ -39,6 +39,19 @@ Prefijo base: `/api/v1`
 | POST | `/past-simple/attempts/{id}/submit` | Entregar (idempotente) |
 | GET | `/past-simple/attempts/{id}/result` | Resultado y revisión |
 
+### Past Simple Practice
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/past-simple/practice/status` | Disponibilidad de práctica |
+| POST | `/past-simple/practice/sessions` | Iniciar o reanudar práctica |
+| GET | `/past-simple/practice/sessions/{id}` | Detalle de la sesión |
+| POST | `/past-simple/practice/sessions/{id}/questions/{qid}/check` | Revisar respuesta con feedback |
+| POST | `/past-simple/practice/sessions/{id}/submit` | Finalizar práctica |
+| GET | `/past-simple/practice/sessions/{id}/result` | Resultado completo |
+
+La práctica usa el mismo banco (100 preguntas) y selecciona 24 balanceadas (2 por tema). No consume intentos del examen.
+
 ## Administración
 
 | Método | Ruta | Descripción |

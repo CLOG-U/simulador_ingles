@@ -122,6 +122,15 @@ export function StudentDashboard() {
     queryKey: ["attempt-status", "past_simple_exam"],
     queryFn: pastSimpleApi.attemptStatus,
   });
+  const practiceStatusQuery = useQuery({
+    queryKey: ["attempt-status", "past_simple_practice"],
+    queryFn: pastSimpleApi.practiceStatus,
+  });
+
+  const practiceAvailable = practiceStatusQuery.data?.is_available ?? false;
+  const practiceOpen =
+    practiceStatusQuery.data?.has_open_attempt &&
+    practiceStatusQuery.data.open_attempt_id;
 
   return (
     <AppShell title="Available Exams">
@@ -129,10 +138,11 @@ export function StudentDashboard() {
         <section>
           <h2 className="text-lg font-semibold">Hola, {user?.full_name}</h2>
           <p className="mt-1 text-gray-600">
-            Select an exam below. Your progress and results are stored independently.
+            Select an exam or practice session below. Practice does not count as
+            an exam attempt.
           </p>
         </section>
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           <ExamCard
             title="Verb Exam"
             description="Complete the base form, past form and Spanish meaning of English verbs."
@@ -163,6 +173,57 @@ export function StudentDashboard() {
             examPath={(id) => `/student/exams/past_simple_exam/attempts/${id}`}
             resultPath={(id) => `/student/exams/past_simple_exam/results/${id}`}
           />
+          <section className="card flex h-full flex-col">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold">Past Simple Practice</h2>
+              <span
+                className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                  practiceAvailable
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {practiceAvailable ? "Available" : "Locked"}
+              </span>
+            </div>
+            <p className="mt-2 flex-1 text-sm text-gray-600">
+              Prepare for the exam with immediate feedback. Uses the same 100-question
+              bank; each session picks 24 balanced questions.
+            </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Bank: {pastConfigQuery.data?.question_bank_size ?? "—"} questions ·
+              Session: 24
+            </p>
+            {practiceStatusQuery.isLoading ? (
+              <p className="mt-4 text-sm text-gray-600">Loading practice…</p>
+            ) : practiceStatusQuery.isError ? (
+              <button
+                type="button"
+                className="btn-primary mt-4"
+                onClick={() => void practiceStatusQuery.refetch()}
+              >
+                Try Again
+              </button>
+            ) : !practiceAvailable ? (
+              <p className="mt-4 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
+                Practice is not enabled for your account.
+              </p>
+            ) : practiceOpen ? (
+              <Link
+                to={`/student/practice/past_simple/sessions/${practiceStatusQuery.data!.open_attempt_id}`}
+                className="btn-primary mt-4"
+              >
+                Resume Practice
+              </Link>
+            ) : (
+              <Link
+                to="/student/practice/past_simple"
+                className="btn-primary mt-4"
+              >
+                Start Practice
+              </Link>
+            )}
+          </section>
         </div>
       </div>
     </AppShell>

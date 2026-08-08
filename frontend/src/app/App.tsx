@@ -30,6 +30,13 @@ import {
   PastSimpleStartRedirect,
 } from "../features/student/PastSimplePages";
 import {
+  PastSimplePracticeInstructionsPage,
+  PastSimplePracticeResultPage,
+  PastSimplePracticeReviewPage,
+  PastSimplePracticeSessionPage,
+  PastSimplePracticeStartRedirect,
+} from "../features/student/PastSimplePracticePages";
+import {
   ExamPage,
   ExamResultPage,
   ExamStartRedirect,
@@ -94,6 +101,26 @@ export function App() {
               <Route
                 path="/student/exams/past_simple_exam/results/:attemptId/review"
                 element={<PastSimpleReviewPage />}
+              />
+              <Route
+                path="/student/practice/past_simple"
+                element={<PastSimplePracticeInstructionsPage />}
+              />
+              <Route
+                path="/student/practice/past_simple/start"
+                element={<PastSimplePracticeStartRedirect />}
+              />
+              <Route
+                path="/student/practice/past_simple/sessions/:sessionId"
+                element={<PastSimplePracticeSessionPage />}
+              />
+              <Route
+                path="/student/practice/past_simple/results/:sessionId"
+                element={<PastSimplePracticeResultPage />}
+              />
+              <Route
+                path="/student/practice/past_simple/results/:sessionId/review"
+                element={<PastSimplePracticeReviewPage />}
               />
             </Route>
 

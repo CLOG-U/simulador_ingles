@@ -177,6 +177,7 @@ class PastSimpleConfig(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    practice_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     question_count: Mapped[int] = mapped_column(Integer, default=24, nullable=False)
     passing_percentage: Mapped[int] = mapped_column(Integer, default=70, nullable=False)
     duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -221,11 +222,15 @@ class PastSimpleQuestion(Base):
 
 class PastSimpleAttempt(Base):
     __tablename__ = "past_simple_attempts"
+    __table_args__ = (
+        CheckConstraint("mode IN ('exam', 'practice')", name="ck_past_simple_attempt_mode"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    mode: Mapped[str] = mapped_column(String(16), default="exam", nullable=False)
     attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
     config_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
     status: Mapped[AttemptStatus] = mapped_column(

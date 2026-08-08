@@ -24,6 +24,7 @@ vi.mock("../src/lib/endpoints", () => ({
   pastSimpleApi: {
     config: vi.fn(),
     attemptStatus: vi.fn(),
+    practiceStatus: vi.fn(),
   },
 }));
 
@@ -64,7 +65,9 @@ describe("StudentDashboard", () => {
     vi.mocked(pastSimpleApi.config).mockResolvedValue({
       exam_type: "past_simple_exam",
       is_enabled: false,
+      practice_enabled: true,
       question_count: 24,
+      question_bank_size: 100,
       passing_percentage: 70,
       duration_minutes: null,
       review_policy: "FULL",
@@ -80,14 +83,29 @@ describe("StudentDashboard", () => {
       can_start_new: false,
       last_submitted: null,
     });
+    vi.mocked(pastSimpleApi.practiceStatus).mockResolvedValue({
+      exam_type: "past_simple_exam",
+      mode: "practice",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: null,
+      can_start_new: true,
+      question_bank_size: 100,
+      last_submitted: null,
+    });
   });
 
-  it("shows independent Verb and Past Simple exam cards", async () => {
+  it("shows independent Verb, Past Simple exam and practice cards", async () => {
     renderDashboard();
-    expect(await screen.findByText("Locked")).toBeInTheDocument();
+    expect(await screen.findByText("Start Practice")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Verb Exam" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Past Simple Exam" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Past Simple Practice" }),
     ).toBeInTheDocument();
   });
 });

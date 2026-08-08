@@ -25,7 +25,9 @@ export interface PastSimpleConfig {
   exam_type: "past_simple_exam";
   title: string;
   is_enabled: boolean;
+  practice_enabled?: boolean;
   question_count: number;
+  question_bank_size?: number;
   passing_percentage: number;
   duration_minutes: number | null;
   review_policy: string;
@@ -61,12 +63,14 @@ export interface Attempt {
 
 export interface AttemptStatus {
   exam_type?: ExamType;
+  mode?: "exam" | "practice";
   is_available?: boolean;
   has_open_attempt: boolean;
   open_attempt_id: string | null;
   submitted_count: number;
-  max_attempts: number;
+  max_attempts: number | null;
   can_start_new: boolean;
+  question_bank_size?: number;
   last_submitted: {
     id: string;
     percentage: number | null;
@@ -187,6 +191,7 @@ export interface PastSimpleQuestion {
 export interface PastSimpleAttempt {
   id: string;
   exam_type: "past_simple_exam";
+  mode?: "exam" | "practice";
   exam_name: string;
   attempt_number: number;
   status: string;

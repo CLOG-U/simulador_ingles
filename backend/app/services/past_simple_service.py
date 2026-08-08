@@ -24,6 +24,7 @@ from app.services.past_simple_engine import (
 from app.services.past_simple_grading import (
     automatic_observation,
     grade_attempt,
+    grade_question,
     topic_performance,
 )
 
@@ -40,13 +41,26 @@ async def get_config(session: AsyncSession) -> PastSimpleConfig:
     return config
 
 
+MODE_EXAM = "exam"
+MODE_PRACTICE = "practice"
+
+
 async def get_visible_config(session: AsyncSession) -> dict:
     config = await get_config(session)
+    active_count = (
+        await session.execute(
+            select(func.count())
+            .select_from(PastSimpleQuestion)
+            .where(PastSimpleQuestion.active.is_(True))
+        )
+    ).scalar_one()
     return {
         "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
         "title": "Past Simple Exam",
         "is_enabled": config.is_enabled,
+        "practice_enabled": config.practice_enabled,
         "question_count": config.question_count,
+        "question_bank_size": active_count,
         "passing_percentage": config.passing_percentage,
         "duration_minutes": config.duration_minutes,
         "review_policy": config.review_policy.value,
@@ -56,12 +70,15 @@ async def get_visible_config(session: AsyncSession) -> dict:
 async def get_open_attempt(
     session: AsyncSession,
     user_id: uuid.UUID,
+    *,
+    mode: str = MODE_EXAM,
 ) -> PastSimpleAttempt | None:
     result = await session.execute(
         select(PastSimpleAttempt)
         .options(selectinload(PastSimpleAttempt.questions))
         .where(
             PastSimpleAttempt.user_id == user_id,
+            PastSimpleAttempt.mode == mode,
             PastSimpleAttempt.status == AttemptStatus.IN_PROGRESS,
         )
         .with_for_update()
@@ -80,48 +97,35 @@ async def get_open_attempt(
     return attempt
 
 
-async def _submitted_count(session: AsyncSession, user_id: uuid.UUID) -> int:
+async def _submitted_count(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    *,
+    mode: str = MODE_EXAM,
+) -> int:
     result = await session.execute(
         select(func.count())
         .select_from(PastSimpleAttempt)
         .where(
             PastSimpleAttempt.user_id == user_id,
+            PastSimpleAttempt.mode == mode,
             PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
         )
     )
     return result.scalar_one()
 
 
-async def create_or_get_attempt(
+async def _create_attempt_with_questions(
     session: AsyncSession,
+    *,
     user: User,
+    mode: str,
+    title: str,
+    review_policy: str,
+    duration_minutes: int | None,
+    passing_percentage: int,
+    question_count: int,
 ) -> PastSimpleAttempt:
-    if user.must_change_password:
-        raise AppError(
-            "PASSWORD_CHANGE_REQUIRED",
-            "Debes cambiar tu contraseña antes de iniciar la evaluación.",
-            status_code=403,
-        )
-
-    await session.execute(select(User).where(User.id == user.id).with_for_update())
-    access = await exam_access_service.ensure_exam_available(
-        session,
-        user_id=user.id,
-        exam_type=ExamType.PAST_SIMPLE_EXAM,
-    )
-    existing = await get_open_attempt(session, user.id)
-    if existing:
-        return existing
-
-    submitted_count = await _submitted_count(session, user.id)
-    if submitted_count >= access.allowed_attempts:
-        raise AppError(
-            "MAX_ATTEMPTS_REACHED",
-            "Ya completaste Past Simple Exam. Contacta al profesor para un nuevo intento.",
-            status_code=403,
-        )
-
-    config = await get_config(session)
     result = await session.execute(
         select(PastSimpleQuestion).where(PastSimpleQuestion.active.is_(True))
     )
@@ -137,30 +141,33 @@ async def create_or_get_attempt(
     max_number = (
         await session.execute(
             select(func.max(PastSimpleAttempt.attempt_number)).where(
-                PastSimpleAttempt.user_id == user.id
+                PastSimpleAttempt.user_id == user.id,
+                PastSimpleAttempt.mode == mode,
             )
         )
     ).scalar_one()
     expires_at = (
-        datetime.now(UTC) + timedelta(minutes=config.duration_minutes)
-        if config.duration_minutes
+        datetime.now(UTC) + timedelta(minutes=duration_minutes)
+        if duration_minutes
         else None
     )
     attempt = PastSimpleAttempt(
         id=uuid.uuid4(),
         user_id=user.id,
+        mode=mode,
         attempt_number=(max_number or 0) + 1,
         config_snapshot={
             "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
-            "title": "Past Simple Exam",
-            "question_count": config.question_count,
-            "passing_percentage": config.passing_percentage,
-            "duration_minutes": config.duration_minutes,
-            "review_policy": config.review_policy.value,
+            "mode": mode,
+            "title": title,
+            "question_count": question_count,
+            "passing_percentage": passing_percentage,
+            "duration_minutes": duration_minutes,
+            "review_policy": review_policy,
         },
         status=AttemptStatus.IN_PROGRESS,
         expires_at=expires_at,
-        total_questions=config.question_count,
+        total_questions=question_count,
     )
     session.add(attempt)
     await session.flush()
@@ -197,6 +204,89 @@ async def create_or_get_attempt(
         session,
         attempt_id=attempt.id,
         user_id=user.id,
+    )
+
+
+async def create_or_get_attempt(
+    session: AsyncSession,
+    user: User,
+) -> PastSimpleAttempt:
+    if user.must_change_password:
+        raise AppError(
+            "PASSWORD_CHANGE_REQUIRED",
+            "Debes cambiar tu contraseña antes de iniciar la evaluación.",
+            status_code=403,
+        )
+
+    await session.execute(select(User).where(User.id == user.id).with_for_update())
+    access = await exam_access_service.ensure_exam_available(
+        session,
+        user_id=user.id,
+        exam_type=ExamType.PAST_SIMPLE_EXAM,
+    )
+    existing = await get_open_attempt(session, user.id, mode=MODE_EXAM)
+    if existing:
+        return existing
+
+    submitted_count = await _submitted_count(session, user.id, mode=MODE_EXAM)
+    if submitted_count >= access.allowed_attempts:
+        raise AppError(
+            "MAX_ATTEMPTS_REACHED",
+            "Ya completaste Past Simple Exam. Contacta al profesor para un nuevo intento.",
+            status_code=403,
+        )
+
+    config = await get_config(session)
+    return await _create_attempt_with_questions(
+        session,
+        user=user,
+        mode=MODE_EXAM,
+        title="Past Simple Exam",
+        review_policy=config.review_policy.value,
+        duration_minutes=config.duration_minutes,
+        passing_percentage=config.passing_percentage,
+        question_count=config.question_count,
+    )
+
+
+async def create_or_get_practice(
+    session: AsyncSession,
+    user: User,
+) -> PastSimpleAttempt:
+    if user.must_change_password:
+        raise AppError(
+            "PASSWORD_CHANGE_REQUIRED",
+            "Debes cambiar tu contraseña antes de iniciar la práctica.",
+            status_code=403,
+        )
+
+    await session.execute(select(User).where(User.id == user.id).with_for_update())
+    config = await get_config(session)
+    access = await exam_access_service.get_or_create_access(
+        session,
+        user_id=user.id,
+        exam_type=ExamType.PAST_SIMPLE_EXAM,
+    )
+    if not config.practice_enabled or not access.is_enabled:
+        raise AppError(
+            "PRACTICE_NOT_AVAILABLE",
+            "La práctica de Past Simple no está habilitada para tu cuenta.",
+            status_code=403,
+        )
+
+    existing = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
+    if existing:
+        return existing
+
+    return await _create_attempt_with_questions(
+        session,
+        user=user,
+        mode=MODE_PRACTICE,
+        title="Past Simple Practice",
+        review_policy="FULL",
+        duration_minutes=None,
+        passing_percentage=config.passing_percentage,
+        question_count=config.question_count,
     )
 
 
@@ -299,10 +389,13 @@ def serialize_attempt(
     *,
     include_grades: bool,
 ) -> dict:
+    mode = attempt.mode or MODE_EXAM
+    is_practice = mode == MODE_PRACTICE
     return {
         "id": str(attempt.id),
         "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
-        "exam_name": "Past Simple Exam",
+        "mode": mode,
+        "exam_name": "Past Simple Practice" if is_practice else "Past Simple Exam",
         "attempt_number": attempt.attempt_number,
         "status": attempt.status.value,
         "started_at": attempt.started_at.isoformat(),
@@ -342,6 +435,40 @@ async def save_answer(
     await session.commit()
     await session.refresh(question)
     return question
+
+
+async def check_practice_answer(
+    session: AsyncSession,
+    *,
+    attempt: PastSimpleAttempt,
+    question_id: uuid.UUID,
+    answer: str | None,
+) -> dict:
+    if attempt.mode != MODE_PRACTICE:
+        raise AppError(
+            "NOT_PRACTICE",
+            "Solo la práctica permite revisar respuestas de inmediato.",
+            status_code=400,
+        )
+    locked_attempt = await _lock_attempt(
+        session,
+        attempt_id=attempt.id,
+        user_id=attempt.user_id,
+    )
+    if locked_attempt.status != AttemptStatus.IN_PROGRESS:
+        raise AppError("ATTEMPT_CLOSED", "Esta práctica ya fue entregada.", status_code=400)
+    question = next(
+        (item for item in locked_attempt.questions if item.id == question_id),
+        None,
+    )
+    if question is None:
+        raise AppError("NOT_FOUND", "Pregunta no encontrada.", status_code=404)
+    question.answer_raw = answer
+    question.answered_at = datetime.now(UTC)
+    grade_question(question)
+    await session.commit()
+    await session.refresh(question)
+    return serialize_question(question, include_grades=True)
 
 
 async def submit_attempt(
@@ -424,20 +551,26 @@ def serialize_result(
     return data
 
 
-async def get_attempt_status(session: AsyncSession, user_id: uuid.UUID) -> dict:
+async def get_attempt_status(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    *,
+    mode: str = MODE_EXAM,
+) -> dict:
     config = await get_config(session)
     access = await exam_access_service.get_or_create_access(
         session,
         user_id=user_id,
         exam_type=ExamType.PAST_SIMPLE_EXAM,
     )
-    open_attempt = await get_open_attempt(session, user_id)
-    submitted_count = await _submitted_count(session, user_id)
+    open_attempt = await get_open_attempt(session, user_id, mode=mode)
+    submitted_count = await _submitted_count(session, user_id, mode=mode)
     last_submitted = None
     result = await session.execute(
         select(PastSimpleAttempt)
         .where(
             PastSimpleAttempt.user_id == user_id,
+            PastSimpleAttempt.mode == mode,
             PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
         )
         .order_by(PastSimpleAttempt.submitted_at.desc())
@@ -454,9 +587,31 @@ async def get_attempt_status(session: AsyncSession, user_id: uuid.UUID) -> dict:
             ),
         }
 
+    if mode == MODE_PRACTICE:
+        available = config.practice_enabled and access.is_enabled
+        return {
+            "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+            "mode": MODE_PRACTICE,
+            "is_available": available,
+            "has_open_attempt": open_attempt is not None,
+            "open_attempt_id": str(open_attempt.id) if open_attempt else None,
+            "submitted_count": submitted_count,
+            "max_attempts": None,
+            "can_start_new": available,
+            "last_submitted": last_submitted,
+            "question_bank_size": (
+                await session.execute(
+                    select(func.count())
+                    .select_from(PastSimpleQuestion)
+                    .where(PastSimpleQuestion.active.is_(True))
+                )
+            ).scalar_one(),
+        }
+
     available = config.is_enabled and access.is_enabled
     return {
         "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+        "mode": MODE_EXAM,
         "is_available": available,
         "has_open_attempt": open_attempt is not None,
         "open_attempt_id": str(open_attempt.id) if open_attempt else None,

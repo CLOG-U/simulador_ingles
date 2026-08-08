@@ -136,3 +136,47 @@ async def test_past_simple_attempt_is_balanced_owned_and_idempotent(
     )
     assert no_retry.status_code == 403
     assert no_retry.json()["code"] == "MAX_ATTEMPTS_REACHED"
+
+    config.practice_enabled = True
+    await db_session.commit()
+    practice = await client.post(
+        "/api/v1/past-simple/practice/sessions",
+        headers=_auth(student),
+    )
+    assert practice.status_code == 200
+    practice_payload = practice.json()
+    assert practice_payload["mode"] == "practice"
+    assert len(practice_payload["questions"]) == 24
+    practice_id = practice_payload["id"]
+    practice_question_id = practice_payload["questions"][0]["id"]
+
+    checked = await client.post(
+        f"/api/v1/past-simple/practice/sessions/{practice_id}"
+        f"/questions/{practice_question_id}/check",
+        headers=_auth(student),
+        json={"answer": "wrong answer"},
+    )
+    assert checked.status_code == 200
+    checked_data = checked.json()
+    assert checked_data["status"] in {"correct", "incorrect", "unanswered"}
+    assert "correct_answer" in checked_data
+    assert "explanation" in checked_data
+
+    finished = await client.post(
+        f"/api/v1/past-simple/practice/sessions/{practice_id}/submit",
+        headers=_auth(student),
+    )
+    assert finished.status_code == 200
+    assert finished.json()["mode"] == "practice"
+
+    # Practice does not consume exam attempts and can be started again.
+    another_practice = await client.post(
+        "/api/v1/past-simple/practice/sessions",
+        headers=_auth(student),
+    )
+    assert another_practice.status_code == 200
+    still_blocked = await client.post(
+        "/api/v1/past-simple/attempts",
+        headers=_auth(student),
+    )
+    assert still_blocked.status_code == 403

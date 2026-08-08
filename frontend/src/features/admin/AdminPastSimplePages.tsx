@@ -61,9 +61,16 @@ export function AdminPastSimplePage() {
       }),
   });
 
-  const saveConfig = async (isEnabled = config?.is_enabled ?? false) => {
+  const saveConfig = async (
+    overrides: {
+      is_enabled?: boolean;
+      practice_enabled?: boolean;
+    } = {},
+  ) => {
     await adminApi.updatePastSimpleConfig({
-      is_enabled: isEnabled,
+      is_enabled: overrides.is_enabled ?? config?.is_enabled ?? false,
+      practice_enabled:
+        overrides.practice_enabled ?? config?.practice_enabled ?? true,
       passing_percentage:
         passing === "" ? config?.passing_percentage : Number(passing),
       duration_minutes: duration === "" ? null : Number(duration),
@@ -79,21 +86,44 @@ export function AdminPastSimplePage() {
             <div>
               <h2 className="text-xl font-semibold">Configuración</h2>
               <p className="text-sm text-gray-600">
-                24 preguntas · 2 por cada uno de los 12 temas
+                Banco: {config?.question_bank_size ?? "—"} preguntas · Examen y
+                práctica: 24 (2 por cada uno de los 12 temas)
               </p>
             </div>
-            <button
-              type="button"
-              className={`min-h-11 rounded-xl px-4 font-medium ${
-                config?.is_enabled
-                  ? "bg-green-100 text-green-800"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-              disabled={!config}
-              onClick={() => void saveConfig(!config?.is_enabled)}
-            >
-              {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`min-h-11 rounded-xl px-4 font-medium ${
+                  config?.is_enabled
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+                disabled={!config}
+                onClick={() =>
+                  void saveConfig({ is_enabled: !config?.is_enabled })
+                }
+              >
+                {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
+              </button>
+              <button
+                type="button"
+                className={`min-h-11 rounded-xl px-4 font-medium ${
+                  config?.practice_enabled
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+                disabled={!config}
+                onClick={() =>
+                  void saveConfig({
+                    practice_enabled: !config?.practice_enabled,
+                  })
+                }
+              >
+                {config?.practice_enabled
+                  ? "Práctica habilitada"
+                  : "Práctica deshabilitada"}
+              </button>
+            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <label>
@@ -121,7 +151,7 @@ export function AdminPastSimplePage() {
             type="button"
             className="btn-primary"
             disabled={!config}
-            onClick={() => void saveConfig()}
+            onClick={() => void saveConfig({})}
           >
             Guardar configuración
           </button>

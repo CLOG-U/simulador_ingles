@@ -25,12 +25,12 @@ from app.services.past_simple_grading import (
 from seed.past_simple_data import PAST_SIMPLE_QUESTIONS
 
 
-def test_question_bank_has_four_items_per_topic():
+def test_question_bank_has_enough_items_per_topic():
     counts = Counter(item.topic for item in PAST_SIMPLE_QUESTIONS)
-    assert len(PAST_SIMPLE_QUESTIONS) == 48
+    assert len(PAST_SIMPLE_QUESTIONS) == 100
     assert set(counts) == {topic.value for topic in PastSimpleTopic}
-    assert set(counts.values()) == {4}
-    assert len({item.stable_key for item in PAST_SIMPLE_QUESTIONS}) == 48
+    assert all(count >= 8 for count in counts.values())
+    assert len({item.stable_key for item in PAST_SIMPLE_QUESTIONS}) == 100
     assert all(
         item.correct_answer in item.options
         for item in PAST_SIMPLE_QUESTIONS

@@ -9,6 +9,7 @@ class SavePastSimpleAnswerRequest(BaseModel):
 
 class PastSimpleConfigUpdate(BaseModel):
     is_enabled: bool | None = None
+    practice_enabled: bool | None = None
     passing_percentage: int | None = Field(default=None, ge=0, le=100)
     duration_minutes: int | None = Field(default=None, ge=1, le=240)
     review_policy: ReviewPolicy | None = None
@@ -17,7 +18,12 @@ class PastSimpleConfigUpdate(BaseModel):
     @classmethod
     def reject_non_nullable_nulls(cls, data):
         if isinstance(data, dict):
-            for field in ("is_enabled", "passing_percentage", "review_policy"):
+            for field in (
+                "is_enabled",
+                "practice_enabled",
+                "passing_percentage",
+                "review_policy",
+            ):
                 if field in data and data[field] is None:
                     raise ValueError(f"{field} no puede ser null")
         return data
