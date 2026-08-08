@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -628,4 +628,30 @@ async def get_attempt_status(
             or submitted_count < access.allowed_attempts
         ),
         "last_submitted": last_submitted,
+    }
+
+
+async def reset_student_progress(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    actor_id: uuid.UUID,
+) -> dict:
+    """Elimina examen y práctica del estudiante y deja un intento disponible."""
+    deleted = await session.execute(
+        delete(PastSimpleAttempt).where(PastSimpleAttempt.user_id == user_id)
+    )
+    access = await exam_access_service.get_or_create_access(
+        session,
+        user_id=user_id,
+        exam_type=ExamType.PAST_SIMPLE_EXAM,
+    )
+    access.allowed_attempts = 1
+    access.updated_by = actor_id
+    await session.flush()
+    return {
+        "deleted_attempts": deleted.rowcount or 0,
+        "allowed_attempts": access.allowed_attempts,
+        "is_enabled": access.is_enabled,
+        "practice_enabled": access.practice_enabled,
     }

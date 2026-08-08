@@ -215,6 +215,13 @@ export const adminApi = {
       `/admin/users/${userId}/exams/${examType}/allow-new-attempt`,
       { method: "POST" },
     ),
+  resetPastSimpleProgress: (userId: string) =>
+    apiFetch<{
+      status: string;
+      exam_type: ExamType;
+      deleted_attempts: number;
+      allowed_attempts: number;
+    }>(`/admin/users/${userId}/exams/past_simple_exam/reset`, { method: "POST" }),
   listVerbs: (search?: string) => {
     const q = search ? `?search=${encodeURIComponent(search)}` : "";
     return apiFetch<{ items: VerbItem[]; total: number }>(`/admin/verbs${q}`);

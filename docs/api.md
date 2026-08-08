@@ -70,6 +70,7 @@ La práctica usa el mismo banco (100 preguntas) y selecciona 24 balanceadas (2 p
 | GET/PATCH | `/admin/past-simple/questions` | Banco Past Simple |
 | GET | `/admin/past-simple/attempts` | Resultados Past Simple |
 | GET | `/admin/past-simple/attempts/{id}` | Reporte detallado |
+| POST | `/admin/users/{id}/exams/past_simple_exam/reset` | Resetear examen y práctica del estudiante |
 | GET | `/admin/users/{id}/exam-access` | Accesos del estudiante |
 | PATCH | `/admin/users/{id}/exam-access/{exam_type}` | Habilitar o bloquear examen |
 | POST | `/admin/users/{id}/exams/{exam_type}/allow-new-attempt` | Autorizar reintento |

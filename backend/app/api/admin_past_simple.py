@@ -354,3 +354,29 @@ async def allow_new_attempt(
     )
     await db.commit()
     return {"status": "ok", "exam_type": parsed_type.value}
+
+
+@router.post("/users/{user_id}/exams/past_simple_exam/reset")
+async def reset_past_simple_progress(
+    user_id: uuid.UUID,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await user_service.get_user(db, user_id)
+    if user.role != UserRole.STUDENT:
+        raise AppError("NOT_FOUND", "Estudiante no encontrado.", status_code=404)
+    result = await past_simple_service.reset_student_progress(
+        db,
+        user_id=user_id,
+        actor_id=admin.id,
+    )
+    await log_audit(
+        db,
+        actor_user_id=admin.id,
+        action="PAST_SIMPLE_PROGRESS_RESET",
+        target_type="user",
+        target_id=str(user_id),
+        metadata=result,
+    )
+    await db.commit()
+    return {"status": "ok", "exam_type": ExamType.PAST_SIMPLE_EXAM.value, **result}

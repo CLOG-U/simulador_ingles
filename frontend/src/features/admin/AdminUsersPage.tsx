@@ -172,6 +172,16 @@ export function AdminUsersPage() {
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
   });
+  const resetPastSimpleMutation = useMutation({
+    mutationFn: (userId: string) => adminApi.resetPastSimpleProgress(userId),
+    onSuccess: (result) => {
+      setActionNotice(
+        `Past Simple reiniciado (${result.deleted_attempts} intento(s) eliminados).`,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err) => setActionNotice(formatApiError(err)),
+  });
 
   const handleCopyPassword = async () => {
     if (!credentialModal?.password) return;
@@ -565,28 +575,49 @@ export function AdminUsersPage() {
                                 </button>
                               </div>
                               {examType === "past_simple_exam" && (
-                                <button
-                                  type="button"
-                                  className="text-brand-primary underline"
-                                  disabled={
-                                    accessMutation.isPending &&
-                                    accessMutation.variables?.userId === u.id &&
-                                    accessMutation.variables?.examType === examType &&
-                                    accessMutation.variables?.practiceEnabled !==
-                                      undefined
-                                  }
-                                  onClick={() =>
-                                    accessMutation.mutate({
-                                      userId: u.id,
-                                      examType,
-                                      practiceEnabled: !access?.practice_enabled,
-                                    })
-                                  }
-                                >
-                                  {access?.practice_enabled
-                                    ? "Bloquear Past Simple Práctica"
-                                    : "Habilitar Past Simple Práctica"}
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    className="text-brand-primary underline"
+                                    disabled={
+                                      accessMutation.isPending &&
+                                      accessMutation.variables?.userId === u.id &&
+                                      accessMutation.variables?.examType ===
+                                        examType &&
+                                      accessMutation.variables?.practiceEnabled !==
+                                        undefined
+                                    }
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType,
+                                        practiceEnabled: !access?.practice_enabled,
+                                      })
+                                    }
+                                  >
+                                    {access?.practice_enabled
+                                      ? "Bloquear Past Simple Práctica"
+                                      : "Habilitar Past Simple Práctica"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="text-danger underline"
+                                    disabled={
+                                      resetPastSimpleMutation.isPending &&
+                                      resetPastSimpleMutation.variables === u.id
+                                    }
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear Past Simple de ${u.username}?\n\nSe eliminarán el examen y la práctica (intentos abiertos y entregados) y quedará 1 intento disponible.`,
+                                      );
+                                      if (confirmed) {
+                                        resetPastSimpleMutation.mutate(u.id);
+                                      }
+                                    }}
+                                  >
+                                    Resetear examen y práctica
+                                  </button>
+                                </>
                               )}
                             </div>
                           );
