@@ -88,7 +88,10 @@ export function PastSimplePracticeInstructionsPage() {
           </li>
           <li>Each practice session: 24 questions (2 per topic)</li>
           <li>Check answers as you go</li>
-          <li>Unlimited practice sessions</li>
+          <li>
+            Sessions completed: {status?.submitted_count ?? 0}
+            {status?.max_attempts != null ? ` of ${status.max_attempts}` : ""}
+          </li>
         </ul>
         <div className="flex flex-wrap gap-3">
           {status?.has_open_attempt && status.open_attempt_id ? (
@@ -104,7 +107,9 @@ export function PastSimplePracticeInstructionsPage() {
             </Link>
           ) : (
             <p className="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
-              Practice is not enabled for your account.
+              {status?.is_available
+                ? "You already completed your practice sessions. Contact your teacher for a new attempt."
+                : "Practice is not enabled for your account."}
             </p>
           )}
           <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
