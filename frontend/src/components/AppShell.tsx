@@ -6,15 +6,18 @@ interface AppShellProps {
   title: string;
   children: ReactNode;
   nav?: { to: string; label: string }[];
+  /** Wider content column for dense admin tables/actions. */
+  wide?: boolean;
 }
 
-export function AppShell({ title, children, nav = [] }: AppShellProps) {
+export function AppShell({ title, children, nav = [], wide = false }: AppShellProps) {
   const { user, logout } = useAuth();
+  const shellWidth = wide ? "max-w-7xl" : "max-w-5xl";
 
   return (
     <div className="min-h-screen bg-surface">
       <header className="bg-brand-primary text-brand-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+        <div className={`mx-auto flex ${shellWidth} items-center justify-between px-4 py-4 sm:px-6`}>
           <div>
             <p className="text-xs text-brand-sky">Powerful English Academy</p>
             <h1 className="text-lg font-bold">{title}</h1>
@@ -32,7 +35,7 @@ export function AppShell({ title, children, nav = [] }: AppShellProps) {
         </div>
         {nav.length > 0 && (
           <nav className="border-t border-brand-primary-dark/30">
-            <ul className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-2 py-2 text-sm">
+            <ul className={`mx-auto flex ${shellWidth} gap-1 overflow-x-auto px-2 py-2 text-sm sm:px-4`}>
               {nav.map((item) => (
                 <li key={item.to}>
                   <Link
@@ -47,7 +50,7 @@ export function AppShell({ title, children, nav = [] }: AppShellProps) {
           </nav>
         )}
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+      <main className={`mx-auto ${shellWidth} px-4 py-6 sm:px-6`}>{children}</main>
     </div>
   );
 }

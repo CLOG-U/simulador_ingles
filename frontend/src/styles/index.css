@@ -45,7 +45,7 @@
   }
 
   .admin-panel {
-    @apply rounded-xl border border-gray-200 bg-gray-50 p-3;
+    @apply box-border rounded-xl border border-gray-200 bg-gray-50 p-3;
   }
 
   .admin-panel-title {

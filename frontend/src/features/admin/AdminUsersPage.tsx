@@ -52,7 +52,7 @@ function ActionGroup({
   children: ReactNode;
 }) {
   return (
-    <div className="admin-panel min-w-[200px]">
+    <div className="admin-panel w-full min-w-[10.5rem] max-w-[14rem] shrink-0">
       <p className="admin-panel-title">{title}</p>
       <div className="grid gap-2">{children}</div>
     </div>
@@ -67,7 +67,7 @@ function AttemptInfo({
   children: ReactNode;
 }) {
   return (
-    <div className="admin-panel min-w-[180px]">
+    <div className="admin-panel w-full min-w-[9.5rem] max-w-[13rem] shrink-0">
       <p className="admin-panel-title">{title}</p>
       <div className="space-y-1 text-xs text-gray-700">{children}</div>
     </div>
@@ -246,7 +246,7 @@ export function AdminUsersPage() {
   };
 
   return (
-    <AppShell title="Usuarios" nav={adminNav}>
+    <AppShell title="Usuarios" nav={adminNav} wide>
       {credentialModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="card max-w-lg space-y-4" role="dialog" aria-labelledby="cred-title">
@@ -473,31 +473,31 @@ export function AdminUsersPage() {
         isEmpty={!data?.items.length}
         emptyMessage="No hay usuarios registrados."
       >
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] text-left text-sm">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white p-3 sm:p-4">
+          <table className="w-full min-w-[1180px] border-separate border-spacing-0 text-left text-sm">
             <thead>
               <tr className="border-b">
-                <th className="py-2 pr-3">Usuario</th>
-                <th className="py-2 pr-3">Nombre</th>
-                <th className="py-2 pr-3">Estado</th>
-                <th className="py-2 pr-3">Intentos</th>
-                <th className="py-2">Acciones</th>
+                <th className="py-2 pr-4 align-bottom">Usuario</th>
+                <th className="py-2 pr-4 align-bottom">Nombre</th>
+                <th className="py-2 pr-4 align-bottom">Estado</th>
+                <th className="py-2 pr-4 align-bottom">Intentos</th>
+                <th className="py-2 pl-1 align-bottom">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {data?.items.map((u) => (
-                <tr key={u.id} className="border-b">
-                  <td className="py-2">{u.username}</td>
-                  <td className="py-2">{u.full_name}</td>
-                  <td className="py-2">
+                <tr key={u.id} className="border-b last:border-b-0">
+                  <td className="py-3 pr-4 align-top font-medium">{u.username}</td>
+                  <td className="py-3 pr-4 align-top">{u.full_name}</td>
+                  <td className="py-3 pr-4 align-top">
                     {u.is_active ? "Activo" : "Inactivo"}
                     {u.must_change_password && (
-                      <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+                      <span className="mt-1 block w-fit rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
                         Debe cambiar clave
                       </span>
                     )}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 pr-4 align-top">
                     {u.role === "STUDENT" ? (
                       <div className="flex flex-wrap gap-2">
                         {(["verb_exam", "past_simple_exam"] as const).map((examType) => {
@@ -553,8 +553,8 @@ export function AdminUsersPage() {
                       "—"
                     )}
                   </td>
-                  <td className="py-3">
-                    <div className="flex flex-wrap gap-3">
+                  <td className="py-3 pl-1 align-top">
+                    <div className="flex flex-wrap gap-2">
                       <ActionGroup title="Cuenta">
                         <button
                           type="button"
@@ -642,7 +642,7 @@ export function AdminUsersPage() {
                             return (
                               <div
                                 key={examType}
-                                className="flex flex-wrap gap-3"
+                                className="flex flex-wrap gap-2"
                               >
                                 <ActionGroup title="Past Simple Examen">
                                   <button
