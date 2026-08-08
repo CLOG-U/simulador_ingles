@@ -108,7 +108,7 @@ def test_order_words_never_use_the_correct_answer_order():
 def test_english_normalization_accepts_formatting_but_not_grammar_errors():
     expected = normalize_english_answer("What did she study yesterday?")
     assert normalize_english_answer("  WHAT   DID she study yesterday. ") == expected
-    assert normalize_english_answer("No, she didn’t.") == "no she didn't"
+    assert normalize_english_answer("No, she didn’t.") == "no she did not"
     assert normalize_english_answer("What did she studied yesterday?") != expected
     assert normalize_english_answer("What she did study yesterday?") != expected
 
@@ -127,6 +127,28 @@ def test_english_answers_match_with_or_without_final_punctuation():
     )
     assert normalize_english_answer("Where did the bus stop") == (
         normalize_english_answer("Where did the bus stop?")
+    )
+
+
+def test_english_answers_accept_acute_accent_apostrophe():
+    expected = normalize_english_answer("No, she didn't.")
+    assert normalize_english_answer("No, she didn´t.") == expected
+    assert normalize_english_answer("No, she didn`t.") == expected
+    assert normalize_english_answer("Wasn´t") == normalize_english_answer("Wasn't")
+
+
+def test_english_answers_accept_contraction_or_full_form():
+    assert normalize_english_answer("No, she didn't.") == normalize_english_answer(
+        "No, she did not."
+    )
+    assert normalize_english_answer("No, they did not.") == normalize_english_answer(
+        "No, they didn't."
+    )
+    assert normalize_english_answer("Wasn't") == normalize_english_answer("Was not")
+    assert normalize_english_answer("Weren't") == normalize_english_answer("Were not")
+    # La forma expandida no debe confundirse con un error gramatical distinto.
+    assert normalize_english_answer("No, she did not.") != normalize_english_answer(
+        "No, she not."
     )
 
 
