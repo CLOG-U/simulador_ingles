@@ -97,7 +97,7 @@ export function AdminPastSimplePage() {
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border p-4">
+            <div className="rounded-xl border border-brand-purple/30 bg-brand-purple/10 p-4">
               <p className="font-medium">Examen oficial</p>
               <p className="mt-1 text-sm text-gray-600">
                 Evaluación calificada. También requiere habilitar al estudiante
@@ -105,10 +105,8 @@ export function AdminPastSimplePage() {
               </p>
               <button
                 type="button"
-                className={`mt-3 min-h-11 rounded-xl px-4 font-medium ${
-                  config?.is_enabled
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-200 text-gray-700"
+                className={`mt-3 ${
+                  config?.is_enabled ? "btn-admin-success" : "btn-admin-muted"
                 }`}
                 disabled={!config}
                 onClick={() => void toggleExam()}
@@ -116,7 +114,7 @@ export function AdminPastSimplePage() {
                 {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
               </button>
             </div>
-            <div className="rounded-xl border p-4">
+            <div className="rounded-xl border border-brand-pink/30 bg-brand-pink/10 p-4">
               <p className="font-medium">Práctica</p>
               <p className="mt-1 text-sm text-gray-600">
                 Entrenamiento con feedback. Independiente del examen; también se
@@ -124,10 +122,8 @@ export function AdminPastSimplePage() {
               </p>
               <button
                 type="button"
-                className={`mt-3 min-h-11 rounded-xl px-4 font-medium ${
-                  config?.practice_enabled
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-200 text-gray-700"
+                className={`mt-3 ${
+                  config?.practice_enabled ? "btn-admin-success" : "btn-admin-muted"
                 }`}
                 disabled={!config}
                 onClick={() => void togglePractice()}
