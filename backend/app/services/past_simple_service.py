@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -278,16 +279,27 @@ async def create_or_get_practice(
     if existing:
         return existing
 
-    return await _create_attempt_with_questions(
-        session,
-        user=user,
-        mode=MODE_PRACTICE,
-        title="Past Simple Practice",
-        review_policy="FULL",
-        duration_minutes=None,
-        passing_percentage=config.passing_percentage,
-        question_count=config.question_count,
-    )
+    try:
+        return await _create_attempt_with_questions(
+            session,
+            user=user,
+            mode=MODE_PRACTICE,
+            title="Past Simple Practice",
+            review_policy="FULL",
+            duration_minutes=None,
+            passing_percentage=config.passing_percentage,
+            question_count=config.question_count,
+        )
+    except IntegrityError:
+        await session.rollback()
+        recovered = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
+        if recovered:
+            return recovered
+        raise AppError(
+            "PRACTICE_START_FAILED",
+            "No se pudo iniciar la práctica. Intenta de nuevo.",
+            status_code=409,
+        )
 
 
 async def get_attempt_for_user(

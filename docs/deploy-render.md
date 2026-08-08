@@ -47,6 +47,8 @@ todos los intentos existentes, habilita Verb Exam para los estudiantes actuales 
 deja Past Simple Exam deshabilitado hasta que el profesor lo active.
 La migración `003_past_simple_practice` añade el modo práctica (habilitada por
 defecto) y el seed amplía el banco compartido a 100 preguntas.
+La migración `004_practice_constraints` separa la unicidad de intentos por modo
+para que examen y práctica puedan coexistir.
 
 ### Crear profesor (sin Shell)
 

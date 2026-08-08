@@ -135,17 +135,31 @@ export function PastSimplePracticeStartRedirect() {
   }, [mutate]);
 
   if (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "Practice could not be started.";
     return (
       <AppShell title="Past Simple Practice">
         <section className="card space-y-4">
-          <p className="text-danger">
-            {error instanceof ApiError
-              ? error.message
-              : "Practice could not be started."}
-          </p>
-          <Link to="/student" className="btn-primary">
-            Back to Exams
-          </Link>
+          <p className="text-danger">{message}</p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => {
+                startedRef.current = false;
+                mutate();
+              }}
+            >
+              Try Again
+            </button>
+            <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
+              Back to Exams
+            </Link>
+          </div>
         </section>
       </AppShell>
     );
