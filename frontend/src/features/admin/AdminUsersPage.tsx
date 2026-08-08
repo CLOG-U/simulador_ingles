@@ -173,10 +173,17 @@ export function AdminUsersPage() {
     },
   });
   const resetPastSimpleMutation = useMutation({
-    mutationFn: (userId: string) => adminApi.resetPastSimpleProgress(userId),
+    mutationFn: ({
+      userId,
+      mode,
+    }: {
+      userId: string;
+      mode: "exam" | "practice";
+    }) => adminApi.resetPastSimpleProgress(userId, mode),
     onSuccess: (result) => {
+      const label = result.mode === "practice" ? "práctica" : "examen";
       setActionNotice(
-        `Past Simple reiniciado (${result.deleted_attempts} intento(s) eliminados).`,
+        `Past Simple ${label} reiniciado (${result.deleted_attempts} intento(s) eliminados).`,
       );
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
@@ -604,18 +611,48 @@ export function AdminUsersPage() {
                                     className="text-danger underline"
                                     disabled={
                                       resetPastSimpleMutation.isPending &&
-                                      resetPastSimpleMutation.variables === u.id
+                                      resetPastSimpleMutation.variables?.userId ===
+                                        u.id &&
+                                      resetPastSimpleMutation.variables?.mode ===
+                                        "exam"
                                     }
                                     onClick={() => {
                                       const confirmed = window.confirm(
-                                        `¿Resetear Past Simple de ${u.username}?\n\nSe eliminarán el examen y la práctica (intentos abiertos y entregados) y quedará 1 intento disponible.`,
+                                        `¿Resetear el EXAMEN Past Simple de ${u.username}?\n\nSe eliminarán solo los intentos del examen (no la práctica) y quedará 1 intento disponible.`,
                                       );
                                       if (confirmed) {
-                                        resetPastSimpleMutation.mutate(u.id);
+                                        resetPastSimpleMutation.mutate({
+                                          userId: u.id,
+                                          mode: "exam",
+                                        });
                                       }
                                     }}
                                   >
-                                    Resetear examen y práctica
+                                    Resetear examen
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="text-danger underline"
+                                    disabled={
+                                      resetPastSimpleMutation.isPending &&
+                                      resetPastSimpleMutation.variables?.userId ===
+                                        u.id &&
+                                      resetPastSimpleMutation.variables?.mode ===
+                                        "practice"
+                                    }
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear la PRÁCTICA Past Simple de ${u.username}?\n\nSe eliminarán solo las sesiones de práctica (no el examen).`,
+                                      );
+                                      if (confirmed) {
+                                        resetPastSimpleMutation.mutate({
+                                          userId: u.id,
+                                          mode: "practice",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear práctica
                                   </button>
                                 </>
                               )}

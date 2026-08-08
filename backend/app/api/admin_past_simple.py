@@ -361,6 +361,7 @@ async def reset_past_simple_progress(
     user_id: uuid.UUID,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
+    mode: str = Query("exam", pattern="^(exam|practice)$"),
 ):
     user = await user_service.get_user(db, user_id)
     if user.role != UserRole.STUDENT:
@@ -369,6 +370,7 @@ async def reset_past_simple_progress(
         db,
         user_id=user_id,
         actor_id=admin.id,
+        mode=mode,
     )
     await log_audit(
         db,

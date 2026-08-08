@@ -215,13 +215,17 @@ export const adminApi = {
       `/admin/users/${userId}/exams/${examType}/allow-new-attempt`,
       { method: "POST" },
     ),
-  resetPastSimpleProgress: (userId: string) =>
+  resetPastSimpleProgress: (userId: string, mode: "exam" | "practice") =>
     apiFetch<{
       status: string;
       exam_type: ExamType;
+      mode: "exam" | "practice";
       deleted_attempts: number;
       allowed_attempts: number;
-    }>(`/admin/users/${userId}/exams/past_simple_exam/reset`, { method: "POST" }),
+    }>(
+      `/admin/users/${userId}/exams/past_simple_exam/reset?mode=${mode}`,
+      { method: "POST" },
+    ),
   listVerbs: (search?: string) => {
     const q = search ? `?search=${encodeURIComponent(search)}` : "";
     return apiFetch<{ items: VerbItem[]; total: number }>(`/admin/verbs${q}`);

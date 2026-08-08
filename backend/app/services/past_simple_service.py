@@ -636,20 +636,33 @@ async def reset_student_progress(
     *,
     user_id: uuid.UUID,
     actor_id: uuid.UUID,
+    mode: str,
 ) -> dict:
-    """Elimina examen y práctica del estudiante y deja un intento disponible."""
+    """Elimina intentos del modo indicado (examen o práctica)."""
+    if mode not in {MODE_EXAM, MODE_PRACTICE}:
+        raise AppError(
+            "INVALID_MODE",
+            "Modo inválido. Usa exam o practice.",
+            status_code=400,
+        )
+
     deleted = await session.execute(
-        delete(PastSimpleAttempt).where(PastSimpleAttempt.user_id == user_id)
+        delete(PastSimpleAttempt).where(
+            PastSimpleAttempt.user_id == user_id,
+            PastSimpleAttempt.mode == mode,
+        )
     )
     access = await exam_access_service.get_or_create_access(
         session,
         user_id=user_id,
         exam_type=ExamType.PAST_SIMPLE_EXAM,
     )
-    access.allowed_attempts = 1
+    if mode == MODE_EXAM:
+        access.allowed_attempts = 1
     access.updated_by = actor_id
     await session.flush()
     return {
+        "mode": mode,
         "deleted_attempts": deleted.rowcount or 0,
         "allowed_attempts": access.allowed_attempts,
         "is_enabled": access.is_enabled,
