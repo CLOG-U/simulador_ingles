@@ -37,7 +37,6 @@ async def _student(db_session: AsyncSession, username: str) -> User:
             is_enabled=True,
             practice_enabled=True,
             allowed_attempts=1,
-            practice_allowed_attempts=1,
         )
     )
     await db_session.commit()
@@ -171,25 +170,7 @@ async def test_past_simple_attempt_is_balanced_owned_and_idempotent(
     assert finished.status_code == 200
     assert finished.json()["mode"] == "practice"
 
-    # Practice has its own attempt limit and does not consume exam attempts.
-    blocked_practice = await client.post(
-        "/api/v1/past-simple/practice/sessions",
-        headers=_auth(student),
-    )
-    assert blocked_practice.status_code == 403
-    assert blocked_practice.json()["code"] == "MAX_PRACTICE_ATTEMPTS_REACHED"
-
-    access = (
-        await db_session.execute(
-            select(ExamAccess).where(
-                ExamAccess.user_id == student.id,
-                ExamAccess.exam_type == ExamType.PAST_SIMPLE_EXAM.value,
-            )
-        )
-    ).scalar_one()
-    access.practice_allowed_attempts = 2
-    await db_session.commit()
-
+    # Practice is unlimited and does not consume exam attempts.
     another_practice = await client.post(
         "/api/v1/past-simple/practice/sessions",
         headers=_auth(student),

@@ -113,11 +113,9 @@ export interface ExamAccess {
   is_enabled: boolean;
   practice_enabled?: boolean;
   allowed_attempts: number;
-  practice_allowed_attempts?: number;
   submitted_attempts?: number;
   remaining_attempts?: number;
   practice_submitted_attempts?: number;
-  practice_remaining_attempts?: number;
 }
 
 export interface VerbItem {
@@ -164,6 +162,8 @@ export interface AdminStudentReport {
   student: AdminUser;
   attempts: AdminAttemptSummary[];
   past_simple_attempts: PastSimpleAttemptSummary[];
+  past_simple_practice_attempts?: PastSimpleAttemptSummary[];
+  practice_sessions_completed?: number;
 }
 
 export interface AdminAttemptReport extends AttemptResult {
@@ -239,6 +239,7 @@ export interface PastSimpleAttemptSummary {
   id: string;
   exam_type: "past_simple_exam";
   exam_name: string;
+  mode?: "exam" | "practice";
   attempt_number: number;
   status: string;
   started_at: string;

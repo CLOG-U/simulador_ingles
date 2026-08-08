@@ -287,13 +287,9 @@ async def get_user_exam_access(
                 "is_enabled": access.is_enabled,
                 "practice_enabled": access.practice_enabled,
                 "allowed_attempts": access.allowed_attempts,
-                "practice_allowed_attempts": access.practice_allowed_attempts,
                 "submitted_attempts": submitted,
                 "remaining_attempts": max(0, access.allowed_attempts - submitted),
                 "practice_submitted_attempts": practice_submitted,
-                "practice_remaining_attempts": max(
-                    0, access.practice_allowed_attempts - practice_submitted
-                ),
             }
         )
     await db.commit()
@@ -338,7 +334,6 @@ async def update_user_exam_access(
         "is_enabled": access.is_enabled,
         "practice_enabled": access.practice_enabled,
         "allowed_attempts": access.allowed_attempts,
-        "practice_allowed_attempts": access.practice_allowed_attempts,
     }
 
 

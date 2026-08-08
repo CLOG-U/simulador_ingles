@@ -69,7 +69,6 @@ async def list_users(
                             "is_enabled": access.is_enabled,
                             "practice_enabled": access.practice_enabled,
                             "allowed_attempts": access.allowed_attempts,
-                            "practice_allowed_attempts": access.practice_allowed_attempts,
                             "submitted_attempts": (
                                 attempt_stats[user.id]["attempts_used"]
                                 if access.exam_type == ExamType.VERB_EXAM.value
@@ -87,16 +86,6 @@ async def list_users(
                             ),
                             "practice_submitted_attempts": (
                                 past_practice_counts.get(user.id, 0)
-                                if access.exam_type
-                                == ExamType.PAST_SIMPLE_EXAM.value
-                                else 0
-                            ),
-                            "practice_remaining_attempts": (
-                                max(
-                                    0,
-                                    access.practice_allowed_attempts
-                                    - past_practice_counts.get(user.id, 0),
-                                )
                                 if access.exam_type
                                 == ExamType.PAST_SIMPLE_EXAM.value
                                 else 0
@@ -160,8 +149,44 @@ async def student_report(
         .order_by(PastSimpleAttempt.started_at.desc())
     )
     past_attempts = past_result.scalars().all()
+    practice_result = await db.execute(
+        select(PastSimpleAttempt)
+        .where(
+            PastSimpleAttempt.user_id == user_id,
+            PastSimpleAttempt.mode == "practice",
+        )
+        .order_by(PastSimpleAttempt.started_at.desc())
+    )
+    practice_attempts = practice_result.scalars().all()
     stats = await exam_service.get_student_attempt_stats(db, [user_id])
     attempt_summary = stats.get(user_id, {})
+
+    def _serialize_past_simple(attempt: PastSimpleAttempt, *, exam_name: str) -> dict:
+        return {
+            "id": str(attempt.id),
+            "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+            "exam_name": exam_name,
+            "mode": attempt.mode,
+            "attempt_number": attempt.attempt_number,
+            "status": attempt.status.value,
+            "started_at": attempt.started_at.isoformat(),
+            "submitted_at": (
+                attempt.submitted_at.isoformat() if attempt.submitted_at else None
+            ),
+            "percentage": (
+                float(attempt.percentage) if attempt.percentage is not None else None
+            ),
+            "score_out_of_ten": (
+                float(attempt.score_out_of_ten)
+                if attempt.score_out_of_ten is not None
+                else None
+            ),
+            "passed": attempt.passed,
+            "correct_answers": attempt.correct_answers,
+            "incorrect_answers": attempt.incorrect_answers,
+            "unanswered_answers": attempt.unanswered_answers,
+            "total_questions": attempt.total_questions,
+        }
 
     return {
         "student": AdminUserResponse.model_validate(user).model_copy(update=attempt_summary),
@@ -182,36 +207,18 @@ async def student_report(
             for a in attempts
         ],
         "past_simple_attempts": [
-            {
-                "id": str(attempt.id),
-                "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
-                "exam_name": "Past Simple Exam",
-                "attempt_number": attempt.attempt_number,
-                "status": attempt.status.value,
-                "started_at": attempt.started_at.isoformat(),
-                "submitted_at": (
-                    attempt.submitted_at.isoformat()
-                    if attempt.submitted_at
-                    else None
-                ),
-                "percentage": (
-                    float(attempt.percentage)
-                    if attempt.percentage is not None
-                    else None
-                ),
-                "score_out_of_ten": (
-                    float(attempt.score_out_of_ten)
-                    if attempt.score_out_of_ten is not None
-                    else None
-                ),
-                "passed": attempt.passed,
-                "correct_answers": attempt.correct_answers,
-                "incorrect_answers": attempt.incorrect_answers,
-                "unanswered_answers": attempt.unanswered_answers,
-                "total_questions": attempt.total_questions,
-            }
+            _serialize_past_simple(attempt, exam_name="Past Simple Exam")
             for attempt in past_attempts
         ],
+        "past_simple_practice_attempts": [
+            _serialize_past_simple(attempt, exam_name="Past Simple Practice")
+            for attempt in practice_attempts
+        ],
+        "practice_sessions_completed": sum(
+            1
+            for attempt in practice_attempts
+            if attempt.status == AttemptStatus.SUBMITTED
+        ),
     }
 
 

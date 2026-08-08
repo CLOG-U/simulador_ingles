@@ -207,6 +207,15 @@ export function AdminStudentReportPage() {
                 {data.student.attempts_remaining ?? "—"} restante(s)
                 {data.student.has_open_attempt ? " · examen en curso" : ""}
               </p>
+              <p className="text-sm">
+                Sesiones Past Simple Practice:{" "}
+                {data.practice_sessions_completed ??
+                  data.past_simple_practice_attempts?.filter(
+                    (item) => item.status === "SUBMITTED",
+                  ).length ??
+                  0}{" "}
+                completada(s)
+              </p>
             </section>
 
             <section className="card">
@@ -299,6 +308,64 @@ export function AdminStudentReportPage() {
                               className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
                             >
                               Ver evaluación
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className="card">
+              <h3 className="mb-3 font-semibold">
+                Historial de Past Simple Practice
+              </h3>
+              {(data.past_simple_practice_attempts?.length ?? 0) === 0 ? (
+                <p className="text-sm text-gray-600">
+                  Este estudiante aún no tiene sesiones de práctica.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[700px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="py-2">Sesión</th>
+                        <th className="py-2">Fecha inicio</th>
+                        <th className="py-2">Entrega</th>
+                        <th className="py-2">Estado</th>
+                        <th className="py-2">Nota</th>
+                        <th className="py-2">Correctas</th>
+                        <th className="py-2">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.past_simple_practice_attempts?.map((attempt) => (
+                        <tr key={attempt.id} className="border-b">
+                          <td className="py-2">#{attempt.attempt_number}</td>
+                          <td className="py-2">{formatDate(attempt.started_at)}</td>
+                          <td className="py-2">{formatDate(attempt.submitted_at)}</td>
+                          <td className="py-2">
+                            {STATUS_LABELS[attempt.status] ?? attempt.status}
+                          </td>
+                          <td className="py-2">
+                            {attempt.percentage != null
+                              ? `${attempt.percentage.toFixed(1)}%`
+                              : "—"}
+                          </td>
+                          <td className="py-2">
+                            {attempt.correct_answers != null &&
+                            attempt.total_questions != null
+                              ? `${attempt.correct_answers} / ${attempt.total_questions}`
+                              : "—"}
+                          </td>
+                          <td className="py-2">
+                            <Link
+                              to={`/admin/past-simple/reports/${attempt.id}`}
+                              className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
+                            >
+                              Ver reporte
                             </Link>
                           </td>
                         </tr>

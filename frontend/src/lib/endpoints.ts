@@ -230,7 +230,6 @@ export const adminApi = {
       mode: "exam" | "practice";
       deleted_attempts: number;
       allowed_attempts: number;
-      practice_allowed_attempts?: number;
     }>(
       `/admin/users/${userId}/exams/${examType}/reset?mode=${mode}`,
       { method: "POST" },

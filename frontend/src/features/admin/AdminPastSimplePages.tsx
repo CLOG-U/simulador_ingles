@@ -230,7 +230,14 @@ export function AdminPastSimpleAttemptReportPage() {
   });
 
   return (
-    <AppShell title="Reporte Past Simple Exam" nav={adminNav}>
+    <AppShell
+      title={
+        data?.mode === "practice"
+          ? "Reporte Past Simple Practice"
+          : "Reporte Past Simple Exam"
+      }
+      nav={adminNav}
+    >
       <QueryState
         isLoading={isLoading}
         isError={isError}
@@ -244,7 +251,12 @@ export function AdminPastSimpleAttemptReportPage() {
                 {data.student_name} ({data.student_username})
               </h2>
               <p className="text-sm text-gray-600">
-                Past Simple Exam · Intento {data.attempt_number}
+                {data.exam_name ??
+                  (data.mode === "practice"
+                    ? "Past Simple Practice"
+                    : "Past Simple Exam")}{" "}
+                · {data.mode === "practice" ? "Sesión" : "Intento"}{" "}
+                {data.attempt_number}
               </p>
               <p className="text-sm text-gray-600">
                 Inicio: {formatDate(data.started_at)} · Entrega:{" "}

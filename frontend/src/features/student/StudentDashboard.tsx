@@ -127,13 +127,11 @@ export function StudentDashboard() {
     queryFn: pastSimpleApi.practiceStatus,
   });
 
-  const practiceStatus = practiceStatusQuery.data;
-  const practiceAvailable = practiceStatus?.is_available ?? false;
+  const practiceAvailable = practiceStatusQuery.data?.is_available ?? false;
   const practiceOpen =
-    practiceStatus?.has_open_attempt && practiceStatus.open_attempt_id;
-  const practiceCanStart = practiceStatus?.can_start_new ?? false;
-  const practiceSubmitted = practiceStatus?.submitted_count ?? 0;
-  const practiceMax = practiceStatus?.max_attempts;
+    practiceStatusQuery.data?.has_open_attempt &&
+    practiceStatusQuery.data.open_attempt_id;
+  const practiceSubmitted = practiceStatusQuery.data?.submitted_count ?? 0;
 
   return (
     <AppShell title="Available Exams">
@@ -198,8 +196,7 @@ export function StudentDashboard() {
               Session: 24
             </p>
             <p className="mt-1 text-sm text-gray-600">
-              Sessions: {practiceSubmitted}
-              {practiceMax != null ? ` of ${practiceMax}` : ""} completed
+              Sessions completed: {practiceSubmitted}
             </p>
             {practiceStatusQuery.isLoading ? (
               <p className="mt-4 text-sm text-gray-600">Loading practice…</p>
@@ -217,23 +214,18 @@ export function StudentDashboard() {
               </p>
             ) : practiceOpen ? (
               <Link
-                to={`/student/practice/past_simple/sessions/${practiceStatus!.open_attempt_id}`}
+                to={`/student/practice/past_simple/sessions/${practiceStatusQuery.data!.open_attempt_id}`}
                 className="btn-primary mt-4"
               >
                 Resume Practice
               </Link>
-            ) : practiceCanStart ? (
+            ) : (
               <Link
                 to="/student/practice/past_simple"
                 className="btn-primary mt-4"
               >
                 Start Practice
               </Link>
-            ) : (
-              <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                You already completed your practice sessions. Contact your teacher
-                for a new attempt.
-              </p>
             )}
           </section>
         </div>

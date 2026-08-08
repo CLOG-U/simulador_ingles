@@ -145,7 +145,6 @@ async def create_user(
                     is_enabled=True,
                     practice_enabled=False,
                     allowed_attempts=config.max_attempts if config else 1,
-                    practice_allowed_attempts=1,
                 ),
                 ExamAccess(
                     id=uuid.uuid4(),
@@ -154,7 +153,6 @@ async def create_user(
                     is_enabled=False,
                     practice_enabled=False,
                     allowed_attempts=1,
-                    practice_allowed_attempts=1,
                 ),
             ]
         )

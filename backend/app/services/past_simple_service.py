@@ -263,7 +263,7 @@ async def create_or_get_practice(
 
     await session.execute(select(User).where(User.id == user.id).with_for_update())
     config = await get_config(session)
-    access = await exam_access_service.ensure_practice_available(
+    await exam_access_service.ensure_practice_available(
         session,
         user_id=user.id,
     )
@@ -271,14 +271,6 @@ async def create_or_get_practice(
     existing = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
     if existing:
         return existing
-
-    submitted_count = await _submitted_count(session, user.id, mode=MODE_PRACTICE)
-    if submitted_count >= access.practice_allowed_attempts:
-        raise AppError(
-            "MAX_PRACTICE_ATTEMPTS_REACHED",
-            "Ya completaste tus sesiones de práctica. Contacta al profesor para un nuevo intento.",
-            status_code=403,
-        )
 
     try:
         return await _create_attempt_with_questions(
@@ -609,12 +601,8 @@ async def get_attempt_status(
             "has_open_attempt": open_attempt is not None,
             "open_attempt_id": str(open_attempt.id) if open_attempt else None,
             "submitted_count": submitted_count,
-            "max_attempts": access.practice_allowed_attempts,
-            "can_start_new": available
-            and (
-                open_attempt is not None
-                or submitted_count < access.practice_allowed_attempts
-            ),
+            "max_attempts": None,
+            "can_start_new": available,
             "last_submitted": last_submitted,
             "question_bank_size": (
                 await session.execute(
@@ -671,15 +659,12 @@ async def reset_student_progress(
     )
     if mode == MODE_EXAM:
         access.allowed_attempts = 1
-    else:
-        access.practice_allowed_attempts = 1
     access.updated_by = actor_id
     await session.flush()
     return {
         "mode": mode,
         "deleted_attempts": deleted.rowcount or 0,
         "allowed_attempts": access.allowed_attempts,
-        "practice_allowed_attempts": access.practice_allowed_attempts,
         "is_enabled": access.is_enabled,
         "practice_enabled": access.practice_enabled,
     }

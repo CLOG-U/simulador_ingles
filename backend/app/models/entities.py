@@ -150,10 +150,6 @@ class ExamAccess(Base):
             name="ck_exam_access_type",
         ),
         CheckConstraint("allowed_attempts >= 1", name="ck_exam_access_attempts"),
-        CheckConstraint(
-            "practice_allowed_attempts >= 1",
-            name="ck_exam_access_practice_attempts",
-        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -164,7 +160,6 @@ class ExamAccess(Base):
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     practice_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     allowed_attempts: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    practice_allowed_attempts: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     updated_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

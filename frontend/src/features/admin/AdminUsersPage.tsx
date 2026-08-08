@@ -559,13 +559,7 @@ export function AdminUsersPage() {
                                 </p>
                                 <p>
                                   {access?.practice_submitted_attempts ?? 0}{" "}
-                                  completada(s)
-                                </p>
-                                <p>
-                                  {access?.practice_remaining_attempts ??
-                                    access?.practice_allowed_attempts ??
-                                    1}{" "}
-                                  pendiente(s)
+                                  sesión(es) completada(s)
                                 </p>
                               </AttemptInfo>
                             </div>
@@ -789,23 +783,13 @@ export function AdminUsersPage() {
                                     ? "Bloquear"
                                     : "Habilitar"}
                                 </button>
-                                <button
-                                  type="button"
-                                  className="btn-admin-primary"
-                                  disabled={busyAllow(
-                                    "past_simple_exam",
-                                    "practice",
-                                  )}
-                                  onClick={() =>
-                                    allowAttemptMutation.mutate({
-                                      userId: u.id,
-                                      examType: "past_simple_exam",
-                                      mode: "practice",
-                                    })
-                                  }
+                                <Link
+                                  to={`/admin/students/${u.id}/report`}
+                                  className="btn-admin-secondary"
                                 >
-                                  Nuevo intento
-                                </button>
+                                  Ver sesiones (
+                                  {pastAccess?.practice_submitted_attempts ?? 0})
+                                </Link>
                                 <button
                                   type="button"
                                   className="btn-admin-danger"
@@ -815,7 +799,7 @@ export function AdminUsersPage() {
                                   )}
                                   onClick={() => {
                                     const confirmed = window.confirm(
-                                      `¿Resetear la PRÁCTICA Past Simple de ${u.username}?\n\nSe eliminarán solo las sesiones de práctica (no el examen) y quedará 1 intento disponible.`,
+                                      `¿Resetear la PRÁCTICA Past Simple de ${u.username}?\n\nSe eliminarán solo las sesiones de práctica (no el examen).`,
                                     );
                                     if (confirmed) {
                                       resetModuleMutation.mutate({
