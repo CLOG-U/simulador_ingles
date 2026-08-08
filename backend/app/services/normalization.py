@@ -15,9 +15,32 @@ def normalize_spanish(value: str) -> str:
     )
 
 
+_ENGLISH_PUNCTUATION = str.maketrans(
+    "",
+    "",
+    # Incluye punto final, signos de pregunta/exclamación y variantes tipográficas.
+    ".,?!;:"
+    "¿¡"
+    "\"“”„‟"
+    "…‥"
+    "·•"
+    "()[]{}"
+)
+
+
 def normalize_english_answer(value: str) -> str:
-    """Normaliza respuestas escritas sin relajar la estructura gramatical."""
-    normalized = value.replace("’", "'").replace("‘", "'")
+    """Normaliza respuestas escritas sin relajar la estructura gramatical.
+
+    Ignora mayúsculas, espacios extra y puntuación (incluido el punto o
+    signo de interrogación final), para que "Did she go?" y "Did she go"
+    cuenten igual.
+    """
+    normalized = (
+        value.replace("’", "'")
+        .replace("‘", "'")
+        .replace("‛", "'")
+        .replace("′", "'")
+    )
     normalized = normalize_text(normalized)
-    normalized = normalized.translate(str.maketrans("", "", ".,?!;:"))
+    normalized = normalized.translate(_ENGLISH_PUNCTUATION)
     return " ".join(normalized.split())

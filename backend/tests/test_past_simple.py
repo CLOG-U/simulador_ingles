@@ -113,6 +113,23 @@ def test_english_normalization_accepts_formatting_but_not_grammar_errors():
     assert normalize_english_answer("What she did study yesterday?") != expected
 
 
+def test_english_answers_match_with_or_without_final_punctuation():
+    with_question = "Did she watch the movie?"
+    without_question = "Did she watch the movie"
+    with_period = "Yes, she did."
+    without_period = "Yes, she did"
+
+    assert normalize_english_answer(with_question) == normalize_english_answer(
+        without_question
+    )
+    assert normalize_english_answer(with_period) == normalize_english_answer(
+        without_period
+    )
+    assert normalize_english_answer("Where did the bus stop") == (
+        normalize_english_answer("Where did the bus stop?")
+    )
+
+
 def test_config_update_rejects_null_for_non_nullable_fields():
     with pytest.raises(ValidationError):
         PastSimpleConfigUpdate.model_validate({"is_enabled": None})
