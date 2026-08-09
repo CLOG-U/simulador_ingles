@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
-import type { UserRole } from "../lib/types";
+import { isStaffRole, type UserRole } from "../lib/types";
 
 interface ProtectedRouteProps {
   roles?: UserRole[];
@@ -26,7 +26,7 @@ export function ProtectedRoute({ roles }: ProtectedRouteProps) {
   }
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to={user.role === "ADMIN" ? "/admin" : "/student"} replace />;
+    return <Navigate to={isStaffRole(user.role) ? "/admin" : "/student"} replace />;
   }
 
   return <Outlet />;

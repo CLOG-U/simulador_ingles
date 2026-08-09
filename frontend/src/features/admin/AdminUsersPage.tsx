@@ -5,7 +5,7 @@ import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
 import { ApiError } from "../../lib/api";
 import { adminApi } from "../../lib/endpoints";
-import type { AdminUser, ExamType } from "../../lib/types";
+import { roleLabel, type AdminUser, type ExamType } from "../../lib/types";
 import { useAuth } from "../auth/AuthProvider";
 
 type CredentialModal = {
@@ -78,10 +78,16 @@ function AttemptInfo({
 export function AdminUsersPage() {
   const { user: currentUser } = useAuth();
   const [search, setSearch] = useState("");
-  const [createForm, setCreateForm] = useState({
+  const [createForm, setCreateForm] = useState<{
+    username: string;
+    full_name: string;
+    password: string;
+    role: "STUDENT" | "ADMIN";
+  }>({
     username: "",
     full_name: "",
     password: "",
+    role: "STUDENT",
   });
   const [createError, setCreateError] = useState<string | null>(null);
   const [editModal, setEditModal] = useState<EditModal>(null);
@@ -97,18 +103,25 @@ export function AdminUsersPage() {
     queryFn: () => adminApi.listUsers({ search: search || undefined }),
   });
 
+  const canCreateAdmins = currentUser?.role === "SUPERADMIN";
+
   const createMutation = useMutation({
     mutationFn: () =>
       adminApi.createUser({
         username: createForm.username.trim(),
         full_name: createForm.full_name.trim(),
-        role: "STUDENT",
+        role: createForm.role,
         ...(createForm.password.trim() ? { password: createForm.password.trim() } : {}),
       }),
     onSuccess: (res) => {
       setCreateError(null);
       setActionNotice(null);
-      setCreateForm({ username: "", full_name: "", password: "" });
+      setCreateForm({
+        username: "",
+        full_name: "",
+        password: "",
+        role: "STUDENT",
+      });
       setCredentialModal({
         type: "created",
         username: res.user.username,
@@ -429,15 +442,54 @@ export function AdminUsersPage() {
       )}
 
       <section className="card mb-6 space-y-3">
-        <h2 className="font-semibold">Crear estudiante</h2>
+        <h2 className="font-semibold">Crear usuario</h2>
         <p className="text-sm text-gray-600">
-          Puedes definir usuario, nombre y contraseña. Si dejas la contraseña vacía, se generará una
-          temporal automáticamente.
+          Elige el tipo de cuenta, luego define usuario, nombre y contraseña. Si dejas la
+          contraseña vacía, se generará una temporal automáticamente.
         </p>
         {createError && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-danger">{createError}</p>
         )}
         <div className="grid gap-3 sm:grid-cols-2">
+          <fieldset className="sm:col-span-2">
+            <legend className="mb-2 text-sm font-medium text-gray-700">Tipo de cuenta</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                  createForm.role === "STUDENT"
+                    ? "border-brand-primary bg-brand-primary/5 ring-2 ring-brand-primary/30"
+                    : "border-gray-200 bg-white hover:bg-gray-50"
+                }`}
+                onClick={() => setCreateForm({ ...createForm, role: "STUDENT" })}
+              >
+                <p className="text-sm font-semibold text-brand-primary">Estudiante</p>
+                <p className="mt-1 text-xs text-gray-600">
+                  Accede a exámenes y práctica. No ve el panel de administración.
+                </p>
+              </button>
+              <button
+                type="button"
+                disabled={!canCreateAdmins}
+                className={`rounded-xl border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  createForm.role === "ADMIN"
+                    ? "border-brand-primary bg-brand-primary/5 ring-2 ring-brand-primary/30"
+                    : "border-gray-200 bg-white hover:bg-gray-50"
+                }`}
+                onClick={() => {
+                  if (!canCreateAdmins) return;
+                  setCreateForm({ ...createForm, role: "ADMIN" });
+                }}
+              >
+                <p className="text-sm font-semibold text-brand-primary">Administrador</p>
+                <p className="mt-1 text-xs text-gray-600">
+                  {canCreateAdmins
+                    ? "Mismas funciones del panel (usuarios, exámenes, reportes). Solo el Superadmin puede crearlos."
+                    : "Solo el Superadmin puede crear administradores."}
+                </p>
+              </button>
+            </div>
+          </fieldset>
           <input
             placeholder="Usuario"
             value={createForm.username}
@@ -472,10 +524,16 @@ export function AdminUsersPage() {
               setCreateError("La contraseña debe tener al menos 8 caracteres.");
               return;
             }
+            if (createForm.role === "ADMIN" && !canCreateAdmins) {
+              setCreateError("Solo el Superadmin puede crear administradores.");
+              return;
+            }
             createMutation.mutate();
           }}
         >
-          Crear cuenta
+          {createForm.role === "ADMIN"
+            ? "Crear administrador"
+            : "Crear estudiante"}
         </button>
         {actionNotice && (
           <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">{actionNotice}</p>
@@ -502,6 +560,7 @@ export function AdminUsersPage() {
               <tr className="border-b">
                 <th className="py-2 pr-4 align-bottom">Usuario</th>
                 <th className="py-2 pr-4 align-bottom">Nombre</th>
+                <th className="py-2 pr-4 align-bottom">Rol</th>
                 <th className="py-2 pr-4 align-bottom">Estado</th>
                 <th className="py-2 pr-4 align-bottom">Intentos</th>
                 <th className="py-2 pl-1 align-bottom">Acciones</th>
@@ -512,6 +571,19 @@ export function AdminUsersPage() {
                 <tr key={u.id} className="border-b last:border-b-0">
                   <td className="py-3 pr-4 align-top font-medium">{u.username}</td>
                   <td className="py-3 pr-4 align-top">{u.full_name}</td>
+                  <td className="py-3 pr-4 align-top">
+                    <span
+                      className={`inline-flex rounded-lg px-2 py-1 text-xs font-semibold ${
+                        u.role === "SUPERADMIN"
+                          ? "bg-brand-primary/10 text-brand-primary"
+                          : u.role === "ADMIN"
+                            ? "bg-gray-100 text-gray-800"
+                            : "bg-brand-sky/15 text-brand-primary-dark"
+                      }`}
+                    >
+                      {roleLabel(u.role)}
+                    </span>
+                  </td>
                   <td className="py-3 pr-4 align-top">
                     {u.is_active ? "Activo" : "Inactivo"}
                     {u.must_change_password && (
@@ -583,20 +655,25 @@ export function AdminUsersPage() {
                   <td className="py-3 pl-1 align-top">
                     <div className="flex flex-wrap gap-2">
                       <ActionGroup title="Cuenta">
-                        <button
-                          type="button"
-                          className="btn-admin-primary"
-                          onClick={() => openEditModal(u)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-admin-secondary"
-                          onClick={() => openResetModal(u)}
-                        >
-                          Restablecer clave
-                        </button>
+                        {(currentUser?.role === "SUPERADMIN" ||
+                          u.role === "STUDENT") && (
+                          <>
+                            <button
+                              type="button"
+                              className="btn-admin-primary"
+                              onClick={() => openEditModal(u)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-admin-secondary"
+                              onClick={() => openResetModal(u)}
+                            >
+                              Restablecer clave
+                            </button>
+                          </>
+                        )}
                         {u.role === "STUDENT" && (
                           <Link
                             to={`/admin/students/${u.id}/report`}
@@ -605,7 +682,9 @@ export function AdminUsersPage() {
                             Ver reporte
                           </Link>
                         )}
-                        {currentUser?.id !== u.id && (
+                        {currentUser?.id !== u.id &&
+                          (currentUser?.role === "SUPERADMIN" ||
+                            u.role === "STUDENT") && (
                           <button
                             type="button"
                             className="btn-admin-danger"
@@ -615,7 +694,7 @@ export function AdminUsersPage() {
                             }
                             onClick={() => {
                               const confirmed = window.confirm(
-                                `¿Eliminar al usuario ${u.username}?\n\nSe borrarán su cuenta, intentos, prácticas y accesos. Esta acción no se puede deshacer.`,
+                                `¿Eliminar al usuario ${u.username} (${roleLabel(u.role)})?\n\nSe borrarán su cuenta, intentos, prácticas y accesos. Esta acción no se puede deshacer.`,
                               );
                               if (confirmed) {
                                 deleteUserMutation.mutate(u.id);

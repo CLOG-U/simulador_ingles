@@ -36,7 +36,10 @@ export function LoginPage() {
       notifyAuthChanged();
       if (result.must_change_password) {
         navigate("/change-password");
-      } else if (result.user.role === "ADMIN") {
+      } else if (
+        result.user.role === "ADMIN" ||
+        result.user.role === "SUPERADMIN"
+      ) {
         navigate("/admin");
       } else {
         navigate("/student");

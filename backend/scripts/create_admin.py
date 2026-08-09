@@ -32,7 +32,7 @@ async def create_admin(
         username_normalized=normalized,
         full_name=full_name.strip(),
         password_hash=hash_password(password),
-        role=UserRole.ADMIN,
+        role=UserRole.SUPERADMIN,
         is_active=True,
         must_change_password=False,
     )
@@ -70,7 +70,7 @@ async def run() -> None:
             user = await create_admin(
                 session, username=username, full_name=full_name, password=password
             )
-        print(f"Administrador '{user.username}' creado correctamente.")
+        print(f"Superadmin '{user.username}' creado correctamente.")
     except ValueError as exc:
         if bootstrap:
             print(str(exc), "- se omite (bootstrap).")

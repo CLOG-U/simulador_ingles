@@ -101,10 +101,9 @@ async def attempt_result(
         raise AppError("NOT_SUBMITTED", "La evaluación aún no ha sido entregada.", status_code=400)
 
     policy = attempt.config_snapshot.get("review_policy", "FULL")
-    include_grades = policy == "FULL" or (
-        policy == "SCORE_ONLY" and current_user.role.value == "ADMIN"
-    )
-    show_questions = policy in ("FULL", "AFTER_CLOSE") or current_user.role.value == "ADMIN"
+    is_staff = current_user.role.value in {"ADMIN", "SUPERADMIN"}
+    include_grades = policy == "FULL" or (policy == "SCORE_ONLY" and is_staff)
+    show_questions = policy in ("FULL", "AFTER_CLOSE") or is_staff
 
     data = {
         "id": str(attempt.id),
