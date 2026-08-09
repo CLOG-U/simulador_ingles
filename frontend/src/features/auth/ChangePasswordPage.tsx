@@ -63,7 +63,16 @@ export function ChangePasswordPage() {
 
   return (
     <div className="min-h-screen bg-surface px-4 py-8">
-      <div className="mx-auto max-w-md">
+      <div className="mx-auto max-w-md space-y-4">
+        <div className="flex justify-center">
+          <img
+            src="/pea-logo.png"
+            alt="Powerful English Academy"
+            className="h-16 w-16 rounded-xl object-cover"
+            width={64}
+            height={64}
+          />
+        </div>
         <form onSubmit={handleSubmit(onSubmit)} className="card space-y-4">
           <h1 className="text-xl font-bold">Cambiar contraseña</h1>
           {mustChange ? (

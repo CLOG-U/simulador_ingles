@@ -1,0 +1,27 @@
+---
+description: Never add co-authors to git commits
+alwaysApply: true
+---
+
+# No co-authors in commits
+
+- Never add `Co-authored-by`, `Co-Authored-By`, or any other co-author / trailer credit to commit messages.
+- Never set the git author or committer to `Cursor Agent`, `cursoragent@cursor.com`, or any Cursor/agent identity.
+- Commits must be authored only by the main repository user (the human owner). No secondary authors, co-authors, or agent attribution.
+- When amending or rewriting commits, strip any existing co-author trailers so the final history has none.
+
+## How to commit in this repo
+
+Cursor may inject a `commit-msg` hook that appends `Co-authored-by`. Always bypass it:
+
+1. Set author/committer to the human owner (never Cursor Agent).
+2. Commit with `--no-verify` (or `-c core.hooksPath=/dev/null`) so no co-author trailer is added.
+3. After commit, verify with `git log -1 --format=full` that there is no `Co-authored-by` line and Author is not Cursor Agent.
+
+Example:
+
+```bash
+git -c user.name="Carlos Luis Ortiz García" \
+    -c user.email="e1756704332@live.uleam.edu.ec" \
+    commit --no-verify -m "message"
+```

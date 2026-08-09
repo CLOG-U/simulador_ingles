@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Strip any co-author trailers so commits stay single-author.
+set -euo pipefail
+msg_file="$1"
+tmp="$(mktemp)"
+grep -viE '^[[:space:]]*Co-authored-by:' "$msg_file" >"$tmp" || true
+# Trim trailing blank lines
+sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp" 2>/dev/null || true
+mv "$tmp" "$msg_file"
