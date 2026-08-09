@@ -4,6 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { AcademyLogo } from "../../components/AcademyLogo";
 import { authApi } from "../../lib/endpoints";
 import { ApiError } from "../../lib/api";
 import { notifyAuthChanged } from "../../lib/authEvents";
@@ -52,8 +53,9 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-surface">
       <header className="bg-brand-primary px-4 py-8 text-brand-white">
-        <div className="mx-auto max-w-md text-center">
-          <p className="text-sm text-brand-sky">Powerful English Academy</p>
+        <div className="mx-auto flex max-w-md flex-col items-center text-center">
+          <AcademyLogo sizeClassName="h-24 w-24 rounded-2xl shadow-sm" />
+          <p className="mt-4 text-sm text-brand-sky">Powerful English Academy</p>
           <h1 className="mt-2 text-2xl font-bold">English Exam Platform</h1>
         </div>
       </header>

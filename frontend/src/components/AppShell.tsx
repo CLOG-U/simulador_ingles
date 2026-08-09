@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
+import { AcademyLogo } from "./AcademyLogo";
 
 interface AppShellProps {
   title: string;
@@ -18,9 +19,12 @@ export function AppShell({ title, children, nav = [], wide = false }: AppShellPr
     <div className="min-h-screen bg-surface">
       <header className="bg-brand-primary text-brand-white">
         <div className={`mx-auto flex ${shellWidth} items-center justify-between px-4 py-4 sm:px-6`}>
-          <div>
-            <p className="text-xs text-brand-sky">Powerful English Academy</p>
-            <h1 className="text-lg font-bold">{title}</h1>
+          <div className="flex min-w-0 items-center gap-3">
+            <AcademyLogo sizeClassName="h-11 w-11 sm:h-12 sm:w-12" />
+            <div className="min-w-0">
+              <p className="text-xs text-brand-sky">Powerful English Academy</p>
+              <h1 className="truncate text-lg font-bold">{title}</h1>
+            </div>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span>{user?.full_name}</span>
