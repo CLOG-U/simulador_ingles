@@ -114,11 +114,32 @@ async def create_user(
     session: AsyncSession,
     *,
     actor_id: uuid.UUID,
+    actor_role: UserRole,
     username: str,
     full_name: str,
     role: UserRole,
     password: str | None = None,
 ) -> tuple[User, str]:
+    if role == UserRole.SUPERADMIN:
+        raise AppError(
+            "INVALID_ROLE",
+            "No se pueden crear cuentas Superadmin desde el panel. "
+            "Usa el script de bootstrap.",
+            status_code=400,
+        )
+    if role == UserRole.ADMIN and actor_role != UserRole.SUPERADMIN:
+        raise AppError(
+            "FORBIDDEN",
+            "Solo el Superadmin puede crear otros administradores.",
+            status_code=403,
+        )
+    if role not in {UserRole.ADMIN, UserRole.STUDENT}:
+        raise AppError(
+            "INVALID_ROLE",
+            "Rol inválido. Elige Administrador o Estudiante.",
+            status_code=400,
+        )
+
     normalized = await _ensure_username_available(session, username)
     assigned_password, must_change_password = _resolve_password(password)
 
@@ -173,12 +194,19 @@ async def update_user(
     session: AsyncSession,
     *,
     actor_id: uuid.UUID,
+    actor_role: UserRole,
     user: User,
     username: str | None = None,
     full_name: str | None = None,
     password: str | None = None,
     is_active: bool | None = None,
 ) -> User:
+    if actor_role == UserRole.ADMIN and user.role != UserRole.STUDENT:
+        raise AppError(
+            "FORBIDDEN",
+            "Los administradores solo pueden editar cuentas de estudiantes.",
+            status_code=403,
+        )
     if username is not None:
         normalized = await _ensure_username_available(session, username, exclude_user_id=user.id)
         user.username = username.strip()
@@ -210,6 +238,7 @@ async def delete_user(
     session: AsyncSession,
     *,
     actor_id: uuid.UUID,
+    actor_role: UserRole,
     user: User,
 ) -> dict:
     if user.id == actor_id:
@@ -218,20 +247,38 @@ async def delete_user(
             "No puedes eliminar tu propia cuenta.",
             status_code=400,
         )
-    if user.role == UserRole.ADMIN:
-        admin_count = (
+    if actor_role == UserRole.ADMIN and user.role != UserRole.STUDENT:
+        raise AppError(
+            "FORBIDDEN",
+            "Los administradores solo pueden eliminar cuentas de estudiantes.",
+            status_code=403,
+        )
+    if user.role == UserRole.SUPERADMIN:
+        if actor_role != UserRole.SUPERADMIN:
+            raise AppError(
+                "FORBIDDEN",
+                "Solo un Superadmin puede eliminar otra cuenta Superadmin.",
+                status_code=403,
+            )
+        superadmin_count = (
             await session.execute(
                 select(func.count())
                 .select_from(User)
-                .where(User.role == UserRole.ADMIN)
+                .where(User.role == UserRole.SUPERADMIN)
             )
         ).scalar_one()
-        if admin_count <= 1:
+        if superadmin_count <= 1:
             raise AppError(
-                "LAST_ADMIN",
-                "No se puede eliminar el único administrador del sistema.",
+                "LAST_SUPERADMIN",
+                "No se puede eliminar el único Superadmin del sistema.",
                 status_code=400,
             )
+    elif user.role == UserRole.ADMIN and actor_role != UserRole.SUPERADMIN:
+        raise AppError(
+            "FORBIDDEN",
+            "Solo el Superadmin puede eliminar administradores.",
+            status_code=403,
+        )
 
     await _revoke_user_sessions(session, user.id)
     await log_audit(
@@ -259,9 +306,16 @@ async def reset_password(
     session: AsyncSession,
     *,
     actor_id: uuid.UUID,
+    actor_role: UserRole,
     user: User,
     password: str | None = None,
 ) -> str:
+    if actor_role == UserRole.ADMIN and user.role != UserRole.STUDENT:
+        raise AppError(
+            "FORBIDDEN",
+            "Los administradores solo pueden restablecer claves de estudiantes.",
+            status_code=403,
+        )
     assigned_password, must_change_password = _resolve_password(password)
     user.password_hash = hash_password(assigned_password)
     user.must_change_password = must_change_password
@@ -282,6 +336,7 @@ async def import_users_csv(
     session: AsyncSession,
     *,
     actor_id: uuid.UUID,
+    actor_role: UserRole,
     content: str,
 ) -> list[tuple[User, str]]:
     reader = csv.DictReader(io.StringIO(content))
@@ -300,6 +355,7 @@ async def import_users_csv(
         user, temp = await create_user(
             session,
             actor_id=actor_id,
+            actor_role=actor_role,
             username=row["username"],
             full_name=row["full_name"],
             role=UserRole.STUDENT,

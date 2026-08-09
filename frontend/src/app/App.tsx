@@ -124,7 +124,7 @@ export function App() {
               />
             </Route>
 
-            <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
+            <Route element={<ProtectedRoute roles={["SUPERADMIN", "ADMIN"]} />}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/verbs" element={<AdminVerbsPage />} />

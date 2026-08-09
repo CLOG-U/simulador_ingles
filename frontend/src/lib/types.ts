@@ -1,4 +1,14 @@
-export type UserRole = "ADMIN" | "STUDENT";
+export type UserRole = "SUPERADMIN" | "ADMIN" | "STUDENT";
+
+export function isStaffRole(role: UserRole | undefined | null): boolean {
+  return role === "SUPERADMIN" || role === "ADMIN";
+}
+
+export function roleLabel(role: UserRole): string {
+  if (role === "SUPERADMIN") return "Superadmin";
+  if (role === "ADMIN") return "Administrador";
+  return "Estudiante";
+}
 export type ExamType = "verb_exam" | "past_simple_exam";
 
 export interface UserMe {

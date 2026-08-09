@@ -35,7 +35,12 @@ export function ChangePasswordPage() {
 
   useEffect(() => {
     if (user && !user.must_change_password) {
-      navigate(user.role === "ADMIN" ? "/admin" : "/student", { replace: true });
+      navigate(
+        user.role === "ADMIN" || user.role === "SUPERADMIN"
+          ? "/admin"
+          : "/student",
+        { replace: true },
+      );
     }
   }, [user, navigate]);
 
@@ -45,7 +50,12 @@ export function ChangePasswordPage() {
       const result = await authApi.changePassword(data.current_password, data.new_password);
       const updated = result.user;
       queryClient.setQueryData(["auth", "me"], updated);
-      navigate(updated.role === "ADMIN" ? "/admin" : "/student", { replace: true });
+      navigate(
+        updated.role === "ADMIN" || updated.role === "SUPERADMIN"
+          ? "/admin"
+          : "/student",
+        { replace: true },
+      );
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo cambiar la contraseña");
     }

@@ -34,8 +34,13 @@ def require_role(*roles: UserRole):
     return dependency
 
 
-require_admin = require_role(UserRole.ADMIN)
+require_admin = require_role(UserRole.SUPERADMIN, UserRole.ADMIN)
+require_superadmin = require_role(UserRole.SUPERADMIN)
 require_student = require_role(UserRole.STUDENT)
+
+
+def is_staff_role(role: UserRole) -> bool:
+    return role in {UserRole.SUPERADMIN, UserRole.ADMIN}
 
 
 async def require_student_ready(current_user: User = Depends(require_student)) -> User:

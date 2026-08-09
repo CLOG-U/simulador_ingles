@@ -113,6 +113,7 @@ async def create_user(
     user, temp_password = await user_service.create_user(
         db,
         actor_id=admin.id,
+        actor_role=admin.role,
         username=body.username,
         full_name=body.full_name,
         role=body.role,
@@ -243,6 +244,7 @@ async def update_user(
     updated = await user_service.update_user(
         db,
         actor_id=admin.id,
+        actor_role=admin.role,
         user=user,
         username=body.username,
         full_name=body.full_name,
@@ -262,6 +264,7 @@ async def delete_user(
     result = await user_service.delete_user(
         db,
         actor_id=admin.id,
+        actor_role=admin.role,
         user=user,
     )
     return {"status": "ok", **result}
@@ -278,7 +281,12 @@ async def import_users(
         from app.core.errors import AppError
 
         raise AppError("FILE_TOO_LARGE", "El archivo CSV es demasiado grande.", status_code=400)
-    created = await user_service.import_users_csv(db, actor_id=admin.id, content=raw)
+    created = await user_service.import_users_csv(
+        db,
+        actor_id=admin.id,
+        actor_role=admin.role,
+        content=raw,
+    )
     return {
         "imported": len(created),
         "users": [
@@ -303,6 +311,7 @@ async def reset_password(
     temp_password = await user_service.reset_password(
         db,
         actor_id=admin.id,
+        actor_role=admin.role,
         user=user,
         password=body.password if body else None,
     )
