@@ -108,8 +108,8 @@ export function PastSimplePracticeInstructionsPage() {
               Practice is not enabled for your account.
             </p>
           )}
-          <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
-            Back to Exams
+          <Link to="/student/practice" className="inline-flex rounded-xl border px-4 py-2.5">
+            Back to Practice
           </Link>
         </div>
       </section>
@@ -157,8 +157,8 @@ export function PastSimplePracticeStartRedirect() {
             >
               Try Again
             </button>
-            <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
-              Back to Exams
+            <Link to="/student/practice" className="inline-flex rounded-xl border px-4 py-2.5">
+              Back to Practice
             </Link>
           </div>
         </section>
@@ -454,8 +454,8 @@ function PracticeResultView({
           <Link to="/student/practice/past_simple/start" className="btn-primary">
             Practice Again
           </Link>
-          <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
-            Back to Exams
+          <Link to="/student/practice" className="inline-flex rounded-xl border px-4 py-2.5">
+            Back to Practice
           </Link>
         </div>
       </div>
@@ -518,8 +518,8 @@ export function PastSimplePracticeReviewPage() {
           >
             Back to Result
           </Link>
-          <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
-            Back to Exams
+          <Link to="/student/practice" className="inline-flex rounded-xl border px-4 py-2.5">
+            Back to Practice
           </Link>
         </div>
       </div>

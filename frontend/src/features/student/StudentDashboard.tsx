@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { AppShell } from "../../components/AppShell";
+import { AppShell, studentNav } from "../../components/AppShell";
 import { examApi, pastSimpleApi } from "../../lib/endpoints";
 import type { AttemptStatus } from "../../lib/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -104,8 +104,60 @@ function ExamCard({
   );
 }
 
+function ModuleCard({
+  title,
+  description,
+  to,
+  cta,
+}: {
+  title: string;
+  description: string;
+  to: string;
+  cta: string;
+}) {
+  return (
+    <section className="card flex h-full flex-col">
+      <h2 className="text-xl font-semibold">{title}</h2>
+      <p className="mt-2 flex-1 text-sm text-gray-600">{description}</p>
+      <Link to={to} className="btn-primary mt-4">
+        {cta}
+      </Link>
+    </section>
+  );
+}
+
+/** Student home: choose between Exámenes and Práctica. */
 export function StudentDashboard() {
   const { user } = useAuth();
+
+  return (
+    <AppShell title="Inicio" nav={studentNav}>
+      <div className="space-y-6">
+        <section>
+          <h2 className="text-lg font-semibold">Hola, {user?.full_name}</h2>
+          <p className="mt-1 text-gray-600">Elige un módulo para continuar.</p>
+        </section>
+        <div className="grid gap-5 md:grid-cols-2">
+          <ModuleCard
+            title="Exámenes"
+            description="Evaluaciones oficiales: Verb Exam y Past Simple Exam."
+            to="/student/exams"
+            cta="Ir a Exámenes"
+          />
+          <ModuleCard
+            title="Práctica"
+            description="Sesiones de práctica con feedback. No cuentan como intento de examen."
+            to="/student/practice"
+            cta="Ir a Práctica"
+          />
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+
+/** Exámenes module: Verb Exam + Past Simple Exam. */
+export function StudentExamsPage() {
   const verbConfigQuery = useQuery({
     queryKey: ["exam-config", "verb_exam"],
     queryFn: examApi.config,
@@ -122,28 +174,17 @@ export function StudentDashboard() {
     queryKey: ["attempt-status", "past_simple_exam"],
     queryFn: pastSimpleApi.attemptStatus,
   });
-  const practiceStatusQuery = useQuery({
-    queryKey: ["attempt-status", "past_simple_practice"],
-    queryFn: pastSimpleApi.practiceStatus,
-  });
-
-  const practiceAvailable = practiceStatusQuery.data?.is_available ?? false;
-  const practiceOpen =
-    practiceStatusQuery.data?.has_open_attempt &&
-    practiceStatusQuery.data.open_attempt_id;
-  const practiceSubmitted = practiceStatusQuery.data?.submitted_count ?? 0;
 
   return (
-    <AppShell title="Available Exams">
+    <AppShell title="Exámenes" nav={studentNav}>
       <div className="space-y-6">
         <section>
-          <h2 className="text-lg font-semibold">Hola, {user?.full_name}</h2>
+          <h2 className="text-lg font-semibold">Exámenes</h2>
           <p className="mt-1 text-gray-600">
-            Select an exam or practice session below. Practice does not count as
-            an exam attempt.
+            Selecciona un examen oficial. Los intentos quedan registrados.
           </p>
         </section>
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2">
           <ExamCard
             title="Verb Exam"
             description="Complete the base form, past form and Spanish meaning of English verbs."
@@ -174,6 +215,39 @@ export function StudentDashboard() {
             examPath={(id) => `/student/exams/past_simple_exam/attempts/${id}`}
             resultPath={(id) => `/student/exams/past_simple_exam/results/${id}`}
           />
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+
+/** Práctica module: Past Simple Practice. */
+export function StudentPracticePage() {
+  const pastConfigQuery = useQuery({
+    queryKey: ["exam-config", "past_simple_exam"],
+    queryFn: pastSimpleApi.config,
+  });
+  const practiceStatusQuery = useQuery({
+    queryKey: ["attempt-status", "past_simple_practice"],
+    queryFn: pastSimpleApi.practiceStatus,
+  });
+
+  const practiceAvailable = practiceStatusQuery.data?.is_available ?? false;
+  const practiceOpen =
+    practiceStatusQuery.data?.has_open_attempt &&
+    practiceStatusQuery.data.open_attempt_id;
+  const practiceSubmitted = practiceStatusQuery.data?.submitted_count ?? 0;
+
+  return (
+    <AppShell title="Práctica" nav={studentNav}>
+      <div className="space-y-6">
+        <section>
+          <h2 className="text-lg font-semibold">Práctica</h2>
+          <p className="mt-1 text-gray-600">
+            Entrena con feedback inmediato. No cuenta como intento de examen.
+          </p>
+        </section>
+        <div className="grid gap-5 md:grid-cols-2">
           <section className="card flex h-full flex-col">
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-xl font-semibold">Past Simple Practice</h2>

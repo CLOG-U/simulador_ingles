@@ -39,7 +39,7 @@ function RequestError({
           <button type="button" className="btn-primary" onClick={onRetry}>
             Try Again
           </button>
-          <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
+          <Link to="/student/exams" className="inline-flex rounded-xl border px-4 py-2.5">
             Back to Exams
           </Link>
         </div>
@@ -67,7 +67,7 @@ export function PastSimpleInstructionsPage() {
           <Link to="/student/exams/past_simple_exam/start" className="btn-primary">
             Start Exam
           </Link>
-          <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
+          <Link to="/student/exams" className="inline-flex rounded-xl border px-4 py-2.5">
             Back to Exams
           </Link>
         </div>
@@ -103,7 +103,7 @@ export function PastSimpleStartRedirect() {
               ? error.message
               : "The exam could not be started. Please try again later."}
           </p>
-          <Link to="/student" className="btn-primary">
+          <Link to="/student/exams" className="btn-primary">
             Back to Exams
           </Link>
         </section>
@@ -353,7 +353,7 @@ export function PastSimpleExamPage() {
             <button type="button" className="btn-primary" onClick={() => void refetch()}>
               Try Again
             </button>
-            <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
+            <Link to="/student/exams" className="inline-flex rounded-xl border px-4 py-2.5">
               Back to Exams
             </Link>
           </div>
@@ -576,7 +576,7 @@ export function PastSimpleResultPage() {
               Review Answers
             </Link>
           )}
-          <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
+          <Link to="/student/exams" className="inline-flex rounded-xl border px-4 py-2.5">
             Back to Exams
           </Link>
         </div>
@@ -655,7 +655,7 @@ export function PastSimpleReviewPage() {
           >
             Back to Result
           </Link>
-          <Link to="/student" className="inline-flex rounded-xl border px-4 py-2.5">
+          <Link to="/student/exams" className="inline-flex rounded-xl border px-4 py-2.5">
             Back to Exams
           </Link>
         </div>

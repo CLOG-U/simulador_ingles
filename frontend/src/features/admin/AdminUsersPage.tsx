@@ -75,6 +75,23 @@ function AttemptInfo({
   );
 }
 
+function ModuleGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="w-full min-w-[11rem] shrink-0 rounded-lg border border-gray-200 bg-gray-50/80 p-2">
+      <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+        {title}
+      </p>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
 export function AdminUsersPage() {
   const { user: currentUser } = useAuth();
   const [search, setSearch] = useState("");
@@ -594,60 +611,67 @@ export function AdminUsersPage() {
                   </td>
                   <td className="py-3 pr-4 align-top">
                     {u.role === "STUDENT" ? (
-                      <div className="flex flex-wrap gap-2">
-                        {(["verb_exam", "past_simple_exam"] as const).map((examType) => {
-                          const access = u.exam_access?.find(
-                            (item) => item.exam_type === examType,
-                          );
-                          if (examType === "verb_exam") {
-                            return (
-                              <AttemptInfo key={examType} title="Verb Exam">
+                      (() => {
+                        const verbAccess = u.exam_access?.find(
+                          (item) => item.exam_type === "verb_exam",
+                        );
+                        const pastAccess = u.exam_access?.find(
+                          (item) => item.exam_type === "past_simple_exam",
+                        );
+                        return (
+                          <div className="flex flex-wrap gap-2">
+                            <ModuleGroup title="Exámenes">
+                              <AttemptInfo title="Verb Exam">
                                 <p>
-                                  {access?.is_enabled ? "Habilitado" : "Bloqueado"}
+                                  {verbAccess?.is_enabled
+                                    ? "Habilitado"
+                                    : "Bloqueado"}
                                 </p>
                                 <p>
-                                  {access?.submitted_attempts ?? 0} completado(s)
+                                  {verbAccess?.submitted_attempts ?? 0}{" "}
+                                  completado(s)
                                 </p>
                                 <p>
-                                  {access?.remaining_attempts ??
-                                    access?.allowed_attempts ??
+                                  {verbAccess?.remaining_attempts ??
+                                    verbAccess?.allowed_attempts ??
                                     1}{" "}
                                   pendiente(s)
                                 </p>
                               </AttemptInfo>
-                            );
-                          }
-                          return (
-                            <div key={examType} className="flex flex-wrap gap-2">
                               <AttemptInfo title="Past Simple Examen">
                                 <p>
-                                  {access?.is_enabled ? "Habilitado" : "Bloqueado"}
+                                  {pastAccess?.is_enabled
+                                    ? "Habilitado"
+                                    : "Bloqueado"}
                                 </p>
                                 <p>
-                                  {access?.submitted_attempts ?? 0} completado(s)
+                                  {pastAccess?.submitted_attempts ?? 0}{" "}
+                                  completado(s)
                                 </p>
                                 <p>
-                                  {access?.remaining_attempts ??
-                                    access?.allowed_attempts ??
+                                  {pastAccess?.remaining_attempts ??
+                                    pastAccess?.allowed_attempts ??
                                     1}{" "}
                                   pendiente(s)
                                 </p>
                               </AttemptInfo>
+                            </ModuleGroup>
+                            <ModuleGroup title="Práctica">
                               <AttemptInfo title="Past Simple Práctica">
                                 <p>
-                                  {access?.practice_enabled
+                                  {pastAccess?.practice_enabled
                                     ? "Habilitada"
                                     : "Bloqueada"}
                                 </p>
                                 <p>
-                                  {access?.practice_submitted_attempts ?? 0}{" "}
+                                  {pastAccess?.practice_submitted_attempts ?? 0}{" "}
                                   sesión(es) completada(s)
                                 </p>
                               </AttemptInfo>
-                            </div>
-                          );
-                        })}
-                      </div>
+                            </ModuleGroup>
+                          </div>
+                        );
+                      })()
                     ) : (
                       "—"
                     )}
@@ -746,182 +770,188 @@ export function AdminUsersPage() {
 
                           return (
                             <>
-                              <ActionGroup title="Verb Exam">
-                                <button
-                                  type="button"
-                                  className={
-                                    verbAccess?.is_enabled
-                                      ? "btn-admin-muted"
-                                      : "btn-admin-success"
-                                  }
-                                  disabled={busyAccess("verb_exam", "exam")}
-                                  onClick={() =>
-                                    accessMutation.mutate({
-                                      userId: u.id,
-                                      examType: "verb_exam",
-                                      isEnabled: !verbAccess?.is_enabled,
-                                    })
-                                  }
-                                >
-                                  {verbAccess?.is_enabled
-                                    ? "Bloquear"
-                                    : "Habilitar"}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn-admin-primary"
-                                  disabled={busyAllow("verb_exam", "exam")}
-                                  onClick={() =>
-                                    allowAttemptMutation.mutate({
-                                      userId: u.id,
-                                      examType: "verb_exam",
-                                      mode: "exam",
-                                    })
-                                  }
-                                >
-                                  Nuevo intento
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn-admin-danger"
-                                  disabled={busyReset("verb_exam", "exam")}
-                                  onClick={() => {
-                                    const confirmed = window.confirm(
-                                      `¿Resetear Verb Exam de ${u.username}?\n\nSe eliminarán sus intentos y quedará 1 disponible.`,
-                                    );
-                                    if (confirmed) {
-                                      resetModuleMutation.mutate({
+                              <ModuleGroup title="Exámenes">
+                                <ActionGroup title="Verb Exam">
+                                  <button
+                                    type="button"
+                                    className={
+                                      verbAccess?.is_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess("verb_exam", "exam")}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "verb_exam",
+                                        isEnabled: !verbAccess?.is_enabled,
+                                      })
+                                    }
+                                  >
+                                    {verbAccess?.is_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-primary"
+                                    disabled={busyAllow("verb_exam", "exam")}
+                                    onClick={() =>
+                                      allowAttemptMutation.mutate({
                                         userId: u.id,
                                         examType: "verb_exam",
                                         mode: "exam",
-                                      });
+                                      })
                                     }
-                                  }}
-                                >
-                                  Resetear
-                                </button>
-                              </ActionGroup>
+                                  >
+                                    Nuevo intento
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset("verb_exam", "exam")}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear Verb Exam de ${u.username}?\n\nSe eliminarán sus intentos y quedará 1 disponible.`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "verb_exam",
+                                          mode: "exam",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
 
-                              <ActionGroup title="Past Simple Examen">
-                                <button
-                                  type="button"
-                                  className={
-                                    pastAccess?.is_enabled
-                                      ? "btn-admin-muted"
-                                      : "btn-admin-success"
-                                  }
-                                  disabled={busyAccess(
-                                    "past_simple_exam",
-                                    "exam",
-                                  )}
-                                  onClick={() =>
-                                    accessMutation.mutate({
-                                      userId: u.id,
-                                      examType: "past_simple_exam",
-                                      isEnabled: !pastAccess?.is_enabled,
-                                    })
-                                  }
-                                >
-                                  {pastAccess?.is_enabled
-                                    ? "Bloquear"
-                                    : "Habilitar"}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn-admin-primary"
-                                  disabled={busyAllow(
-                                    "past_simple_exam",
-                                    "exam",
-                                  )}
-                                  onClick={() =>
-                                    allowAttemptMutation.mutate({
-                                      userId: u.id,
-                                      examType: "past_simple_exam",
-                                      mode: "exam",
-                                    })
-                                  }
-                                >
-                                  Nuevo intento
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn-admin-danger"
-                                  disabled={busyReset(
-                                    "past_simple_exam",
-                                    "exam",
-                                  )}
-                                  onClick={() => {
-                                    const confirmed = window.confirm(
-                                      `¿Resetear el EXAMEN Past Simple de ${u.username}?\n\nSe eliminarán solo los intentos del examen (no la práctica) y quedará 1 intento disponible.`,
-                                    );
-                                    if (confirmed) {
-                                      resetModuleMutation.mutate({
+                                <ActionGroup title="Past Simple Examen">
+                                  <button
+                                    type="button"
+                                    className={
+                                      pastAccess?.is_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "past_simple_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "past_simple_exam",
+                                        isEnabled: !pastAccess?.is_enabled,
+                                      })
+                                    }
+                                  >
+                                    {pastAccess?.is_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-primary"
+                                    disabled={busyAllow(
+                                      "past_simple_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      allowAttemptMutation.mutate({
                                         userId: u.id,
                                         examType: "past_simple_exam",
                                         mode: "exam",
-                                      });
+                                      })
                                     }
-                                  }}
-                                >
-                                  Resetear
-                                </button>
-                              </ActionGroup>
+                                  >
+                                    Nuevo intento
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "past_simple_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear el EXAMEN Past Simple de ${u.username}?\n\nSe eliminarán solo los intentos del examen (no la práctica) y quedará 1 intento disponible.`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "past_simple_exam",
+                                          mode: "exam",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+                              </ModuleGroup>
 
-                              <ActionGroup title="Past Simple Práctica">
-                                <button
-                                  type="button"
-                                  className={
-                                    pastAccess?.practice_enabled
-                                      ? "btn-admin-muted"
-                                      : "btn-admin-success"
-                                  }
-                                  disabled={busyAccess(
-                                    "past_simple_exam",
-                                    "practice",
-                                  )}
-                                  onClick={() =>
-                                    accessMutation.mutate({
-                                      userId: u.id,
-                                      examType: "past_simple_exam",
-                                      practiceEnabled:
-                                        !pastAccess?.practice_enabled,
-                                    })
-                                  }
-                                >
-                                  {pastAccess?.practice_enabled
-                                    ? "Bloquear"
-                                    : "Habilitar"}
-                                </button>
-                                <Link
-                                  to={`/admin/students/${u.id}/report`}
-                                  className="btn-admin-secondary"
-                                >
-                                  Ver sesiones (
-                                  {pastAccess?.practice_submitted_attempts ?? 0})
-                                </Link>
-                                <button
-                                  type="button"
-                                  className="btn-admin-danger"
-                                  disabled={busyReset(
-                                    "past_simple_exam",
-                                    "practice",
-                                  )}
-                                  onClick={() => {
-                                    const confirmed = window.confirm(
-                                      `¿Resetear la PRÁCTICA Past Simple de ${u.username}?\n\nSe eliminarán solo las sesiones de práctica (no el examen).`,
-                                    );
-                                    if (confirmed) {
-                                      resetModuleMutation.mutate({
+                              <ModuleGroup title="Práctica">
+                                <ActionGroup title="Past Simple Práctica">
+                                  <button
+                                    type="button"
+                                    className={
+                                      pastAccess?.practice_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "past_simple_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
                                         userId: u.id,
                                         examType: "past_simple_exam",
-                                        mode: "practice",
-                                      });
+                                        practiceEnabled:
+                                          !pastAccess?.practice_enabled,
+                                      })
                                     }
-                                  }}
-                                >
-                                  Resetear
-                                </button>
-                              </ActionGroup>
+                                  >
+                                    {pastAccess?.practice_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <Link
+                                    to={`/admin/students/${u.id}/report`}
+                                    className="btn-admin-secondary"
+                                  >
+                                    Ver sesiones (
+                                    {pastAccess?.practice_submitted_attempts ??
+                                      0}
+                                    )
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "past_simple_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear la PRÁCTICA Past Simple de ${u.username}?\n\nSe eliminarán solo las sesiones de práctica (no el examen).`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "past_simple_exam",
+                                          mode: "practice",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+                              </ModuleGroup>
                             </>
                           );
                         })()}

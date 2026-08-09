@@ -63,8 +63,8 @@ export function ExamStartRedirect() {
         <div className="card space-y-4">
           <p className={isMaxAttempts ? "text-amber-800" : "text-danger"}>{message}</p>
           {isMaxAttempts && (
-            <Link to="/student" className="btn-primary inline-flex">
-              Volver al panel
+            <Link to="/student/exams" className="btn-primary inline-flex">
+              Volver a Exámenes
             </Link>
           )}
         </div>
@@ -446,8 +446,8 @@ export function ExamResultPage() {
             ))}
           </div>
         )}
-        <Link to="/student" className="btn-primary mt-4 inline-flex">
-          Volver al panel
+        <Link to="/student/exams" className="btn-primary mt-4 inline-flex">
+          Volver a Exámenes
         </Link>
       </section>
     </AppShell>

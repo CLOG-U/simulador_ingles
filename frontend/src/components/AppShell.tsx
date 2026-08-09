@@ -59,6 +59,12 @@ export function AppShell({ title: _title, children, nav = [], wide = false }: Ap
   );
 }
 
+export const studentNav = [
+  { to: "/student", label: "Inicio" },
+  { to: "/student/exams", label: "Exámenes" },
+  { to: "/student/practice", label: "Práctica" },
+];
+
 export const adminNav = [
   { to: "/admin", label: "Resumen" },
   { to: "/admin/users", label: "Usuarios" },

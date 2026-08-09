@@ -41,7 +41,11 @@ import {
   ExamResultPage,
   ExamStartRedirect,
 } from "../features/student/ExamPages";
-import { StudentDashboard } from "../features/student/StudentDashboard";
+import {
+  StudentDashboard,
+  StudentExamsPage,
+  StudentPracticePage,
+} from "../features/student/StudentDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +66,8 @@ export function App() {
 
             <Route element={<ProtectedRoute roles={["STUDENT"]} />}>
               <Route path="/student" element={<StudentDashboard />} />
+              <Route path="/student/exams" element={<StudentExamsPage />} />
+              <Route path="/student/practice" element={<StudentPracticePage />} />
               <Route path="/student/instructions" element={<ExamInstructionsPage />} />
               <Route path="/student/exam/start" element={<ExamStartRedirect />} />
               <Route path="/student/exam/:attemptId" element={<ExamPage />} />
