@@ -192,6 +192,11 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
+  deleteUser: (userId: string) =>
+    apiFetch<{ status: string; id: string; username: string; role: string }>(
+      `/admin/users/${userId}`,
+      { method: "DELETE" },
+    ),
   resetPassword: (userId: string, password?: string) =>
     apiFetch<{ temporary_password: string }>(`/admin/users/${userId}/reset-password`, {
       method: "POST",

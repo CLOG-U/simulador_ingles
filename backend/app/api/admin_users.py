@@ -252,6 +252,21 @@ async def update_user(
     return AdminUserResponse.model_validate(updated)
 
 
+@router.delete("/{user_id}")
+async def delete_user(
+    user_id: uuid.UUID,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await user_service.get_user(db, user_id)
+    result = await user_service.delete_user(
+        db,
+        actor_id=admin.id,
+        user=user,
+    )
+    return {"status": "ok", **result}
+
+
 @router.post("/import")
 async def import_users(
     admin: User = Depends(require_admin),

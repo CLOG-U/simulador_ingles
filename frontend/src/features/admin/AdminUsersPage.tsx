@@ -6,6 +6,7 @@ import { QueryState } from "../../components/QueryState";
 import { ApiError } from "../../lib/api";
 import { adminApi } from "../../lib/endpoints";
 import type { AdminUser, ExamType } from "../../lib/types";
+import { useAuth } from "../auth/AuthProvider";
 
 type CredentialModal = {
   type: "created" | "reset" | "updated";
@@ -75,6 +76,7 @@ function AttemptInfo({
 }
 
 export function AdminUsersPage() {
+  const { user: currentUser } = useAuth();
   const [search, setSearch] = useState("");
   const [createForm, setCreateForm] = useState({
     username: "",
@@ -228,6 +230,14 @@ export function AdminUsersPage() {
       setActionNotice(
         `${moduleLabel} reiniciado (${result.deleted_attempts} intento(s) eliminados).`,
       );
+      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err) => setActionNotice(formatApiError(err)),
+  });
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => adminApi.deleteUser(userId),
+    onSuccess: (result) => {
+      setActionNotice(`Usuario ${result.username} eliminado.`);
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (err) => setActionNotice(formatApiError(err)),
@@ -594,6 +604,26 @@ export function AdminUsersPage() {
                           >
                             Ver reporte
                           </Link>
+                        )}
+                        {currentUser?.id !== u.id && (
+                          <button
+                            type="button"
+                            className="btn-admin-danger"
+                            disabled={
+                              deleteUserMutation.isPending &&
+                              deleteUserMutation.variables === u.id
+                            }
+                            onClick={() => {
+                              const confirmed = window.confirm(
+                                `¿Eliminar al usuario ${u.username}?\n\nSe borrarán su cuenta, intentos, prácticas y accesos. Esta acción no se puede deshacer.`,
+                              );
+                              if (confirmed) {
+                                deleteUserMutation.mutate(u.id);
+                              }
+                            }}
+                          >
+                            Eliminar
+                          </button>
                         )}
                       </ActionGroup>
 

@@ -3,7 +3,7 @@ import io
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
@@ -204,6 +204,55 @@ async def update_user(
     await session.commit()
     await session.refresh(user)
     return user
+
+
+async def delete_user(
+    session: AsyncSession,
+    *,
+    actor_id: uuid.UUID,
+    user: User,
+) -> dict:
+    if user.id == actor_id:
+        raise AppError(
+            "CANNOT_DELETE_SELF",
+            "No puedes eliminar tu propia cuenta.",
+            status_code=400,
+        )
+    if user.role == UserRole.ADMIN:
+        admin_count = (
+            await session.execute(
+                select(func.count())
+                .select_from(User)
+                .where(User.role == UserRole.ADMIN)
+            )
+        ).scalar_one()
+        if admin_count <= 1:
+            raise AppError(
+                "LAST_ADMIN",
+                "No se puede eliminar el único administrador del sistema.",
+                status_code=400,
+            )
+
+    await _revoke_user_sessions(session, user.id)
+    await log_audit(
+        session,
+        actor_user_id=actor_id,
+        action="USER_DELETED",
+        target_type="user",
+        target_id=str(user.id),
+        metadata={
+            "username": user.username,
+            "full_name": user.full_name,
+            "role": user.role.value,
+        },
+    )
+    await session.execute(delete(User).where(User.id == user.id))
+    await session.commit()
+    return {
+        "id": str(user.id),
+        "username": user.username,
+        "role": user.role.value,
+    }
 
 
 async def reset_password(
