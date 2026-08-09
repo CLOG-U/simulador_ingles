@@ -12,16 +12,17 @@ alwaysApply: true
 
 ## How to commit in this repo
 
-Cursor may inject a `commit-msg` hook that appends `Co-authored-by`. Always bypass it:
+Cursor may inject a `commit-msg` hook that appends `Co-authored-by`, and may sign commits with a key GitHub marks Unverified. Always bypass both:
 
 1. Set author/committer to the human owner (never Cursor Agent).
-2. Commit with `--no-verify` (or `-c core.hooksPath=/dev/null`) so no co-author trailer is added.
-3. After commit, verify with `git log -1 --format=full` that there is no `Co-authored-by` line and Author is not Cursor Agent.
+2. Commit with `--no-verify` and `--no-gpg-sign` (repo has `commit.gpgsign=false` locally).
+3. After commit, verify with `git log -1 --format=full` / `git cat-file commit HEAD` that there is no `Co-authored-by`, Author is not Cursor Agent, and there is no `gpgsig` block.
 
 Example:
 
 ```bash
 git -c user.name="Carlos Luis Ortiz García" \
     -c user.email="e1756704332@live.uleam.edu.ec" \
-    commit --no-verify -m "message"
+    -c commit.gpgsign=false \
+    commit --no-verify --no-gpg-sign -m "message"
 ```
