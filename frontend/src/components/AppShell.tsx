@@ -11,7 +11,7 @@ interface AppShellProps {
   wide?: boolean;
 }
 
-export function AppShell({ title, children, nav = [], wide = false }: AppShellProps) {
+export function AppShell({ title: _title, children, nav = [], wide = false }: AppShellProps) {
   const { user, logout } = useAuth();
   const shellWidth = wide ? "max-w-7xl" : "max-w-5xl";
 
@@ -22,8 +22,8 @@ export function AppShell({ title, children, nav = [], wide = false }: AppShellPr
           <div className="flex min-w-0 items-center gap-3">
             <AcademyLogo sizeClassName="h-11 w-11 sm:h-12 sm:w-12" />
             <div className="min-w-0">
-              <p className="text-xs text-brand-sky">Powerful English Academy</p>
-              <h1 className="truncate text-lg font-bold">{title}</h1>
+              <p className="text-xs text-brand-sky">Plataforma de estudio</p>
+              <h1 className="truncate text-lg font-bold">Powerful English Academy</h1>
             </div>
           </div>
           <div className="flex items-center gap-3 text-sm">
