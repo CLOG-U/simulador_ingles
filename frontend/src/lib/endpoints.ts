@@ -220,7 +220,14 @@ export const adminApi = {
     examType: ExamType,
     mode: "exam" | "practice" = "exam",
   ) =>
-    apiFetch<{ status: string; exam_type: ExamType; mode: "exam" | "practice" }>(
+    apiFetch<{
+      status: string;
+      exam_type: ExamType;
+      mode: "exam" | "practice";
+      allowed_attempts: number;
+      submitted_attempts: number;
+      remaining_attempts: number;
+    }>(
       `/admin/users/${userId}/exams/${examType}/allow-new-attempt?mode=${mode}`,
       { method: "POST" },
     ),

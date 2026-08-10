@@ -245,14 +245,17 @@ export function AdminUsersPage() {
       examType: ExamType;
       mode?: "exam" | "practice";
     }) => adminApi.authorizeNewAttempt(userId, examType, mode),
-    onSuccess: (_result, variables) => {
-      setActionNotice(
-        variables.mode === "practice"
-          ? "Nuevo intento de práctica habilitado."
-          : "Nuevo intento habilitado para el estudiante.",
-      );
+    onSuccess: (result, variables) => {
+      if (variables.mode === "practice") {
+        setActionNotice("Nuevo intento de práctica habilitado.");
+      } else {
+        setActionNotice(
+          `Intento acumulado: cupo total ${result.allowed_attempts} (${result.remaining_attempts} pendiente(s)).`,
+        );
+      }
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
+    onError: (err) => setActionNotice(formatApiError(err)),
   });
   const accessMutation = useMutation({
     mutationFn: ({
@@ -681,6 +684,10 @@ export function AdminUsersPage() {
                                     : "Bloqueado"}
                                 </p>
                                 <p>
+                                  Cupo: {verbAccess?.allowed_attempts ?? 1}{" "}
+                                  intento(s)
+                                </p>
+                                <p>
                                   {verbAccess?.submitted_attempts ?? 0}{" "}
                                   completado(s)
                                 </p>
@@ -696,6 +703,10 @@ export function AdminUsersPage() {
                                   {pastAccess?.is_enabled
                                     ? "Habilitado"
                                     : "Bloqueado"}
+                                </p>
+                                <p>
+                                  Cupo: {pastAccess?.allowed_attempts ?? 1}{" "}
+                                  intento(s)
                                 </p>
                                 <p>
                                   {pastAccess?.submitted_attempts ?? 0}{" "}
@@ -850,6 +861,7 @@ export function AdminUsersPage() {
                                   <button
                                     type="button"
                                     className="btn-admin-primary"
+                                    title="Suma 1 al cupo total de intentos (se acumula)"
                                     disabled={busyAllow("verb_exam", "exam")}
                                     onClick={() =>
                                       allowAttemptMutation.mutate({
@@ -859,7 +871,7 @@ export function AdminUsersPage() {
                                       })
                                     }
                                   >
-                                    Nuevo intento
+                                    Sumar intento
                                   </button>
                                   <button
                                     type="button"
@@ -909,6 +921,7 @@ export function AdminUsersPage() {
                                   <button
                                     type="button"
                                     className="btn-admin-primary"
+                                    title="Suma 1 al cupo total de intentos (se acumula)"
                                     disabled={busyAllow(
                                       "past_simple_exam",
                                       "exam",
@@ -921,7 +934,7 @@ export function AdminUsersPage() {
                                       })
                                     }
                                   >
-                                    Nuevo intento
+                                    Sumar intento
                                   </button>
                                   <button
                                     type="button"

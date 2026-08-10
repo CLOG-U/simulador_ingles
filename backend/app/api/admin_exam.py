@@ -280,13 +280,17 @@ async def allow_new_attempt(
     user = await user_service.get_user(db, user_id)
     if user.role != UserRole.STUDENT:
         raise AppError("NOT_FOUND", "Estudiante no encontrado", status_code=404)
-    await exam_service.allow_new_attempt(db, user_id, actor_id=admin.id)
+    access = await exam_service.allow_new_attempt(db, user_id, actor_id=admin.id)
     await log_audit(
         db,
         actor_user_id=admin.id,
         action="ALLOW_NEW_ATTEMPT",
         target_type="user",
         target_id=str(user_id),
+        metadata={"allowed_attempts": access.allowed_attempts},
     )
     await db.commit()
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "allowed_attempts": access.allowed_attempts,
+    }

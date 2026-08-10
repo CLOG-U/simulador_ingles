@@ -417,8 +417,8 @@ async def allow_new_attempt(
     user_id: uuid.UUID,
     *,
     actor_id: uuid.UUID,
-) -> None:
-    await exam_access_service.authorize_new_attempt(
+):
+    return await exam_access_service.authorize_new_attempt(
         session,
         user_id=user_id,
         exam_type=ExamType.VERB_EXAM,

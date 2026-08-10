@@ -356,25 +356,57 @@ async def allow_new_attempt(
             status_code=400,
         )
     if parsed_type == ExamType.VERB_EXAM:
-        await exam_service.allow_new_attempt(db, user_id, actor_id=admin.id)
+        access = await exam_service.allow_new_attempt(db, user_id, actor_id=admin.id)
+        submitted = (
+            await db.execute(
+                select(func.count())
+                .select_from(Attempt)
+                .where(
+                    Attempt.user_id == user_id,
+                    Attempt.status == AttemptStatus.SUBMITTED,
+                )
+            )
+        ).scalar_one()
     else:
-        await exam_access_service.authorize_new_attempt(
+        access = await exam_access_service.authorize_new_attempt(
             db,
             user_id=user_id,
             exam_type=parsed_type,
             actor_id=admin.id,
             mode=mode,
         )
+        submitted = (
+            await db.execute(
+                select(func.count())
+                .select_from(PastSimpleAttempt)
+                .where(
+                    PastSimpleAttempt.user_id == user_id,
+                    PastSimpleAttempt.mode == past_simple_service.MODE_EXAM,
+                    PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
+                )
+            )
+        ).scalar_one()
     await log_audit(
         db,
         actor_user_id=admin.id,
         action="ALLOW_NEW_ATTEMPT",
         target_type="user",
         target_id=str(user_id),
-        metadata={"exam_type": parsed_type.value, "mode": mode},
+        metadata={
+            "exam_type": parsed_type.value,
+            "mode": mode,
+            "allowed_attempts": access.allowed_attempts,
+        },
     )
     await db.commit()
-    return {"status": "ok", "exam_type": parsed_type.value, "mode": mode}
+    return {
+        "status": "ok",
+        "exam_type": parsed_type.value,
+        "mode": mode,
+        "allowed_attempts": access.allowed_attempts,
+        "submitted_attempts": submitted,
+        "remaining_attempts": max(0, access.allowed_attempts - submitted),
+    }
 
 
 @router.post("/users/{user_id}/exams/{exam_type}/reset")

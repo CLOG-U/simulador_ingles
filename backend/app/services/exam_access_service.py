@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
@@ -125,7 +125,10 @@ async def authorize_new_attempt(
     actor_id: uuid.UUID,
     mode: str = "exam",
 ) -> ExamAccess:
-    """Incrementa el cupo de intentos de examen (la práctica no tiene cupo)."""
+    """Suma +1 al cupo de intentos de examen (se acumula con cada autorización).
+
+    La práctica no tiene cupo.
+    """
     if mode == "practice":
         raise AppError(
             "INVALID_MODE",
@@ -144,19 +147,11 @@ async def authorize_new_attempt(
         user_id=user_id,
         exam_type=exam_type,
     )
-    result = await session.execute(
-        update(ExamAccess)
-        .where(ExamAccess.id == access.id)
-        .values(
-            allowed_attempts=ExamAccess.allowed_attempts + 1,
-            is_enabled=True,
-            updated_by=actor_id,
-        )
-        .returning(ExamAccess.allowed_attempts)
-    )
-    access.allowed_attempts = result.scalar_one()
+    # Acumular: cada clic de "Nuevo intento" suma uno al cupo total.
+    access.allowed_attempts = int(access.allowed_attempts) + 1
     access.is_enabled = True
     access.updated_by = actor_id
+    await session.flush()
     return access
 
 
