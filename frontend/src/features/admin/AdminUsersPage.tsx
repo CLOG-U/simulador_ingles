@@ -53,10 +53,20 @@ function ActionGroup({
   children: ReactNode;
 }) {
   return (
-    <div className="admin-panel w-full min-w-[10.5rem] max-w-[14rem] shrink-0">
-      <p className="admin-panel-title">{title}</p>
-      <div className="grid gap-2">{children}</div>
-    </div>
+    <details className="admin-panel group w-full min-w-[10.5rem] max-w-[14rem] shrink-0">
+      <summary className="admin-panel-title mb-0 cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center justify-between gap-2">
+          <span>{title}</span>
+          <span
+            className="text-[10px] font-semibold text-gray-400 transition-transform group-open:rotate-180"
+            aria-hidden
+          >
+            ▾
+          </span>
+        </span>
+      </summary>
+      <div className="mt-2 grid gap-2">{children}</div>
+    </details>
   );
 }
 
@@ -68,10 +78,20 @@ function AttemptInfo({
   children: ReactNode;
 }) {
   return (
-    <div className="admin-panel w-full min-w-[9.5rem] max-w-[13rem] shrink-0">
-      <p className="admin-panel-title">{title}</p>
-      <div className="space-y-1 text-xs text-gray-700">{children}</div>
-    </div>
+    <details className="admin-panel group w-full min-w-[9.5rem] max-w-[13rem] shrink-0">
+      <summary className="admin-panel-title mb-0 cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center justify-between gap-2">
+          <span>{title}</span>
+          <span
+            className="text-[10px] font-semibold text-gray-400 transition-transform group-open:rotate-180"
+            aria-hidden
+          >
+            ▾
+          </span>
+        </span>
+      </summary>
+      <div className="mt-2 space-y-1 text-xs text-gray-700">{children}</div>
+    </details>
   );
 }
 
@@ -83,12 +103,20 @@ function ModuleGroup({
   children: ReactNode;
 }) {
   return (
-    <div className="w-full min-w-[11rem] shrink-0 rounded-lg border border-gray-200 bg-gray-50/80 p-2">
-      <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-        {title}
-      </p>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
+    <details className="group w-full min-w-[11rem] shrink-0 rounded-lg border border-gray-200 bg-gray-50/80 p-2 open:min-w-[16rem]">
+      <summary className="cursor-pointer list-none select-none px-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center justify-between gap-2">
+          <span>{title}</span>
+          <span
+            className="text-[10px] font-semibold text-gray-400 transition-transform group-open:rotate-180"
+            aria-hidden
+          >
+            ▾
+          </span>
+        </span>
+      </summary>
+      <div className="mt-2 flex flex-wrap gap-2">{children}</div>
+    </details>
   );
 }
 
