@@ -742,6 +742,15 @@ export function AdminUsersPage() {
                   </td>
                   <td>
                     <div className="flex flex-wrap gap-2">
+                      {u.role === "STUDENT" && (
+                        <Link
+                          to={`/admin/students/${u.id}/report`}
+                          className="btn-admin-primary inline-flex w-auto min-w-[9.5rem] shrink-0 px-4 shadow-sm"
+                          title="Reporte independiente del estudiante"
+                        >
+                          Ver reporte
+                        </Link>
+                      )}
                       <ModuleGroup title="Cuenta" tone="account">
                         <div className="grid w-full min-w-[10.5rem] max-w-[14rem] gap-2">
                           {(currentUser?.role === "SUPERADMIN" ||
@@ -762,14 +771,6 @@ export function AdminUsersPage() {
                                 Restablecer clave
                               </button>
                             </>
-                          )}
-                          {u.role === "STUDENT" && (
-                            <Link
-                              to={`/admin/students/${u.id}/report`}
-                              className="btn-admin-secondary"
-                            >
-                              Ver reporte
-                            </Link>
                           )}
                           {currentUser?.id !== u.id &&
                             (currentUser?.role === "SUPERADMIN" ||

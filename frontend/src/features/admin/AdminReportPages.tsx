@@ -189,7 +189,7 @@ export function AdminStudentReportPage() {
   });
 
   return (
-    <AppShell title="Reporte del estudiante" nav={adminNav}>
+    <AppShell title="Reporte del estudiante" nav={adminNav} wide>
       <QueryState
         isLoading={isLoading}
         isError={isError}
@@ -198,24 +198,42 @@ export function AdminStudentReportPage() {
       >
         {data && (
           <div className="space-y-4">
-            <section className="card space-y-2">
-              <h2 className="text-xl font-bold">{data.student.full_name}</h2>
-              <p className="text-sm text-gray-600">Usuario: {data.student.username}</p>
-              <p className="text-sm">
-                Intentos Verb Exam: {data.student.attempts_used ?? 0} de{" "}
-                {data.student.attempts_max ?? "—"} usados ·{" "}
-                {data.student.attempts_remaining ?? "—"} restante(s)
-                {data.student.has_open_attempt ? " · examen en curso" : ""}
-              </p>
-              <p className="text-sm">
-                Sesiones Past Simple Practice:{" "}
-                {data.practice_sessions_completed ??
-                  data.past_simple_practice_attempts?.filter(
-                    (item) => item.status === "SUBMITTED",
-                  ).length ??
-                  0}{" "}
-                completada(s)
-              </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Link
+                to="/admin/users"
+                className="inline-flex min-h-11 items-center rounded-xl border border-brand-primary/20 bg-white px-4 text-sm font-semibold text-brand-primary transition-colors hover:bg-brand-primary/5"
+              >
+                ← Volver a usuarios
+              </Link>
+            </div>
+
+            <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-primary/10 bg-white shadow-sm">
+              <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-white/80">
+                  Reporte independiente
+                </p>
+                <h2 className="mt-1 text-xl font-bold">{data.student.full_name}</h2>
+                <p className="mt-1 text-sm text-brand-white/90">
+                  Usuario: {data.student.username}
+                </p>
+              </div>
+              <div className="space-y-2 px-6 py-4 text-sm">
+                <p>
+                  Intentos Verb Exam: {data.student.attempts_used ?? 0} de{" "}
+                  {data.student.attempts_max ?? "—"} usados ·{" "}
+                  {data.student.attempts_remaining ?? "—"} restante(s)
+                  {data.student.has_open_attempt ? " · examen en curso" : ""}
+                </p>
+                <p>
+                  Sesiones Past Simple Practice:{" "}
+                  {data.practice_sessions_completed ??
+                    data.past_simple_practice_attempts?.filter(
+                      (item) => item.status === "SUBMITTED",
+                    ).length ??
+                    0}{" "}
+                  completada(s)
+                </p>
+              </div>
             </section>
 
             <section className="card">
