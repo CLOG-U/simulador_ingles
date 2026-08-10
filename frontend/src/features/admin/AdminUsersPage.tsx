@@ -58,14 +58,14 @@ function ActionGroup({
         <span className="flex items-center justify-between gap-2">
           <span>{title}</span>
           <span
-            className="text-[10px] font-semibold text-gray-400 transition-transform group-open:rotate-180"
+            className="text-[10px] font-semibold text-brand-sky transition-transform group-open:rotate-180"
             aria-hidden
           >
             ▾
           </span>
         </span>
       </summary>
-      <div className="mt-2 grid gap-2">{children}</div>
+      <div className="mt-2 grid animate-[fadeIn_180ms_ease-out] gap-2">{children}</div>
     </details>
   );
 }
@@ -83,7 +83,7 @@ function AttemptInfo({
         <span className="flex items-center justify-between gap-2">
           <span>{title}</span>
           <span
-            className="text-[10px] font-semibold text-gray-400 transition-transform group-open:rotate-180"
+            className="text-[10px] font-semibold text-brand-sky transition-transform group-open:rotate-180"
             aria-hidden
           >
             ▾
@@ -97,18 +97,27 @@ function AttemptInfo({
 
 function ModuleGroup({
   title,
+  tone = "exam",
   children,
 }: {
   title: string;
+  tone?: "exam" | "practice" | "account";
   children: ReactNode;
 }) {
+  const toneClass =
+    tone === "practice"
+      ? "admin-module-practice"
+      : tone === "account"
+        ? "admin-module-account"
+        : "admin-module-exam";
+
   return (
-    <details className="group w-full min-w-[11rem] shrink-0 rounded-lg border border-gray-200 bg-gray-50/80 p-2 open:min-w-[16rem]">
-      <summary className="cursor-pointer list-none select-none px-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 [&::-webkit-details-marker]:hidden">
+    <details className={`admin-module group ${toneClass}`}>
+      <summary className="admin-module-summary">
         <span className="flex items-center justify-between gap-2">
           <span>{title}</span>
           <span
-            className="text-[10px] font-semibold text-gray-400 transition-transform group-open:rotate-180"
+            className="text-[10px] font-semibold opacity-70 transition-transform group-open:rotate-180"
             aria-hidden
           >
             ▾
@@ -486,11 +495,16 @@ export function AdminUsersPage() {
         </div>
       )}
 
-      <section className="card mb-6 space-y-3">
-        <h2 className="font-semibold">Crear usuario</h2>
+      <section className="mb-6 overflow-hidden rounded-[var(--radius-card)] border border-brand-primary/10 bg-white shadow-sm">
+        <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
+          <h2 className="font-semibold">Crear usuario</h2>
+          <p className="mt-1 text-sm text-brand-white/90">
+            Elige el tipo de cuenta, luego define usuario, nombre y contraseña.
+          </p>
+        </div>
+        <div className="space-y-3 p-6">
         <p className="text-sm text-gray-600">
-          Elige el tipo de cuenta, luego define usuario, nombre y contraseña. Si dejas la
-          contraseña vacía, se generará una temporal automáticamente.
+          Si dejas la contraseña vacía, se generará una temporal automáticamente.
         </p>
         {createError && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-danger">{createError}</p>
@@ -583,14 +597,17 @@ export function AdminUsersPage() {
         {actionNotice && (
           <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">{actionNotice}</p>
         )}
+        </div>
       </section>
 
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Buscar usuario…"
-        className="mb-4 w-full rounded-xl border px-4 py-2"
-      />
+      <div className="mb-4">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar usuario…"
+          className="admin-search"
+        />
+      </div>
 
       <QueryState
         isLoading={isLoading}
@@ -599,45 +616,53 @@ export function AdminUsersPage() {
         isEmpty={!data?.items.length}
         emptyMessage="No hay usuarios registrados."
       >
-        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white p-3 sm:p-4">
-          <table className="w-full min-w-[1180px] border-separate border-spacing-0 text-left text-sm">
+        <div className="admin-table-wrap">
+          <table className="admin-table">
             <thead>
-              <tr className="border-b">
-                <th className="py-2 pr-4 align-bottom">Usuario</th>
-                <th className="py-2 pr-4 align-bottom">Nombre</th>
-                <th className="py-2 pr-4 align-bottom">Rol</th>
-                <th className="py-2 pr-4 align-bottom">Estado</th>
-                <th className="py-2 pr-4 align-bottom">Intentos</th>
-                <th className="py-2 pl-1 align-bottom">Acciones</th>
+              <tr>
+                <th>Usuario</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Intentos</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {data?.items.map((u) => (
-                <tr key={u.id} className="border-b last:border-b-0">
-                  <td className="py-3 pr-4 align-top font-medium">{u.username}</td>
-                  <td className="py-3 pr-4 align-top">{u.full_name}</td>
-                  <td className="py-3 pr-4 align-top">
+                <tr key={u.id}>
+                  <td className="font-semibold text-brand-primary-dark">{u.username}</td>
+                  <td>{u.full_name}</td>
+                  <td>
                     <span
-                      className={`inline-flex rounded-lg px-2 py-1 text-xs font-semibold ${
+                      className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${
                         u.role === "SUPERADMIN"
-                          ? "bg-brand-primary/10 text-brand-primary"
+                          ? "bg-brand-primary text-brand-white"
                           : u.role === "ADMIN"
-                            ? "bg-gray-100 text-gray-800"
-                            : "bg-brand-sky/15 text-brand-primary-dark"
+                            ? "bg-brand-primary/15 text-brand-primary"
+                            : "bg-brand-sky/20 text-brand-primary-dark"
                       }`}
                     >
                       {roleLabel(u.role)}
                     </span>
                   </td>
-                  <td className="py-3 pr-4 align-top">
-                    {u.is_active ? "Activo" : "Inactivo"}
+                  <td>
+                    <span
+                      className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                        u.is_active
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-200 text-gray-600"
+                      }`}
+                    >
+                      {u.is_active ? "Activo" : "Inactivo"}
+                    </span>
                     {u.must_change_password && (
-                      <span className="mt-1 block w-fit rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+                      <span className="mt-1 block w-fit rounded-lg bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                         Debe cambiar clave
                       </span>
                     )}
                   </td>
-                  <td className="py-3 pr-4 align-top">
+                  <td>
                     {u.role === "STUDENT" ? (
                       (() => {
                         const verbAccess = u.exam_access?.find(
@@ -648,7 +673,7 @@ export function AdminUsersPage() {
                         );
                         return (
                           <div className="flex flex-wrap gap-2">
-                            <ModuleGroup title="Exámenes">
+                            <ModuleGroup title="Exámenes" tone="exam">
                               <AttemptInfo title="Verb Exam">
                                 <p>
                                   {verbAccess?.is_enabled
@@ -684,7 +709,7 @@ export function AdminUsersPage() {
                                 </p>
                               </AttemptInfo>
                             </ModuleGroup>
-                            <ModuleGroup title="Práctica">
+                            <ModuleGroup title="Práctica" tone="practice">
                               <AttemptInfo title="Past Simple Práctica">
                                 <p>
                                   {pastAccess?.practice_enabled
@@ -704,59 +729,61 @@ export function AdminUsersPage() {
                       "—"
                     )}
                   </td>
-                  <td className="py-3 pl-1 align-top">
+                  <td>
                     <div className="flex flex-wrap gap-2">
-                      <ActionGroup title="Cuenta">
-                        {(currentUser?.role === "SUPERADMIN" ||
-                          u.role === "STUDENT") && (
-                          <>
-                            <button
-                              type="button"
-                              className="btn-admin-primary"
-                              onClick={() => openEditModal(u)}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-admin-secondary"
-                              onClick={() => openResetModal(u)}
-                            >
-                              Restablecer clave
-                            </button>
-                          </>
-                        )}
-                        {u.role === "STUDENT" && (
-                          <Link
-                            to={`/admin/students/${u.id}/report`}
-                            className="btn-admin-secondary"
-                          >
-                            Ver reporte
-                          </Link>
-                        )}
-                        {currentUser?.id !== u.id &&
-                          (currentUser?.role === "SUPERADMIN" ||
+                      <ModuleGroup title="Cuenta" tone="account">
+                        <div className="grid w-full min-w-[10.5rem] max-w-[14rem] gap-2">
+                          {(currentUser?.role === "SUPERADMIN" ||
                             u.role === "STUDENT") && (
-                          <button
-                            type="button"
-                            className="btn-admin-danger"
-                            disabled={
-                              deleteUserMutation.isPending &&
-                              deleteUserMutation.variables === u.id
-                            }
-                            onClick={() => {
-                              const confirmed = window.confirm(
-                                `¿Eliminar al usuario ${u.username} (${roleLabel(u.role)})?\n\nSe borrarán su cuenta, intentos, prácticas y accesos. Esta acción no se puede deshacer.`,
-                              );
-                              if (confirmed) {
-                                deleteUserMutation.mutate(u.id);
+                            <>
+                              <button
+                                type="button"
+                                className="btn-admin-primary"
+                                onClick={() => openEditModal(u)}
+                              >
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-admin-secondary"
+                                onClick={() => openResetModal(u)}
+                              >
+                                Restablecer clave
+                              </button>
+                            </>
+                          )}
+                          {u.role === "STUDENT" && (
+                            <Link
+                              to={`/admin/students/${u.id}/report`}
+                              className="btn-admin-secondary"
+                            >
+                              Ver reporte
+                            </Link>
+                          )}
+                          {currentUser?.id !== u.id &&
+                            (currentUser?.role === "SUPERADMIN" ||
+                              u.role === "STUDENT") && (
+                            <button
+                              type="button"
+                              className="btn-admin-danger"
+                              disabled={
+                                deleteUserMutation.isPending &&
+                                deleteUserMutation.variables === u.id
                               }
-                            }}
-                          >
-                            Eliminar
-                          </button>
-                        )}
-                      </ActionGroup>
+                              onClick={() => {
+                                const confirmed = window.confirm(
+                                  `¿Eliminar al usuario ${u.username} (${roleLabel(u.role)})?\n\nSe borrarán su cuenta, intentos, prácticas y accesos. Esta acción no se puede deshacer.`,
+                                );
+                                if (confirmed) {
+                                  deleteUserMutation.mutate(u.id);
+                                }
+                              }}
+                            >
+                              Eliminar
+                            </button>
+                          )}
+                        </div>
+                      </ModuleGroup>
 
                       {u.role === "STUDENT" &&
                         (() => {
@@ -798,7 +825,7 @@ export function AdminUsersPage() {
 
                           return (
                             <>
-                              <ModuleGroup title="Exámenes">
+                              <ModuleGroup title="Exámenes" tone="exam">
                                 <ActionGroup title="Verb Exam">
                                   <button
                                     type="button"
@@ -921,7 +948,7 @@ export function AdminUsersPage() {
                                 </ActionGroup>
                               </ModuleGroup>
 
-                              <ModuleGroup title="Práctica">
+                              <ModuleGroup title="Práctica" tone="practice">
                                 <ActionGroup title="Past Simple Práctica">
                                   <button
                                     type="button"

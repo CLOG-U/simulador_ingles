@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
 import { AcademyLogo } from "./AcademyLogo";
 
@@ -16,8 +16,8 @@ export function AppShell({ title: _title, children, nav = [], wide = false }: Ap
   const shellWidth = wide ? "max-w-7xl" : "max-w-5xl";
 
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="bg-brand-primary text-brand-white">
+    <div className="shell-backdrop min-h-screen">
+      <header className="bg-gradient-to-r from-brand-primary via-brand-primary to-brand-primary-dark text-brand-white shadow-sm">
         <div className={`mx-auto flex ${shellWidth} items-center justify-between px-4 py-4 sm:px-6`}>
           <div className="flex min-w-0 items-center gap-3">
             <AcademyLogo sizeClassName="h-11 w-11 sm:h-12 sm:w-12" />
@@ -27,27 +27,32 @@ export function AppShell({ title: _title, children, nav = [], wide = false }: Ap
             </div>
           </div>
           <div className="flex items-center gap-3 text-sm">
-            <span>{user?.full_name}</span>
+            <span className="hidden rounded-lg bg-white/10 px-3 py-1.5 sm:inline">
+              {user?.full_name}
+            </span>
             <button
               type="button"
               onClick={() => void logout().then(() => (window.location.href = "/login"))}
-              className="min-h-11 rounded-lg px-3 underline"
+              className="min-h-11 rounded-lg bg-brand-yellow px-3 font-semibold text-brand-primary-dark transition-transform hover:scale-[1.02]"
             >
               Salir
             </button>
           </div>
         </div>
         {nav.length > 0 && (
-          <nav className="border-t border-brand-primary-dark/30">
+          <nav className="border-t border-white/15 bg-brand-primary-dark/25">
             <ul className={`mx-auto flex ${shellWidth} gap-1 overflow-x-auto px-2 py-2 text-sm sm:px-4`}>
               {nav.map((item) => (
                 <li key={item.to}>
-                  <Link
+                  <NavLink
                     to={item.to}
-                    className="block min-h-11 whitespace-nowrap rounded-lg px-3 py-2 hover:bg-brand-primary-dark"
+                    end={item.to === "/student" || item.to === "/admin"}
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? "nav-link-active" : ""}`
+                    }
                   >
                     {item.label}
-                  </Link>
+                  </NavLink>
                 </li>
               ))}
             </ul>
