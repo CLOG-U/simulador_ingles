@@ -73,9 +73,8 @@ export const studentNav = [
 export const adminNav = [
   { to: "/admin", label: "Resumen" },
   { to: "/admin/users", label: "Usuarios" },
-  { to: "/admin/verbs", label: "Verbos" },
-  { to: "/admin/past-simple", label: "Past Simple" },
-  { to: "/admin/config", label: "Configuración" },
+  { to: "/admin/exams", label: "Exámenes" },
+  { to: "/admin/practice", label: "Práctica" },
   { to: "/admin/results", label: "Resultados" },
   { to: "/admin/audit", label: "Auditoría" },
 ];

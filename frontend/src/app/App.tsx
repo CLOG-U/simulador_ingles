@@ -7,9 +7,7 @@ import { ChangePasswordPage } from "../features/auth/ChangePasswordPage";
 import { LoginPage } from "../features/auth/LoginPage";
 import {
   AdminAuditPage,
-  AdminConfigPage,
   AdminResultsPage,
-  AdminVerbsPage,
 } from "../features/admin/AdminPages";
 import { AdminDashboard } from "../features/admin/AdminDashboard";
 import { AdminUsersPage } from "../features/admin/AdminUsersPage";
@@ -17,10 +15,14 @@ import {
   AdminAttemptReportPage,
   AdminStudentReportPage,
 } from "../features/admin/AdminReportPages";
+import { AdminPastSimpleAttemptReportPage } from "../features/admin/AdminPastSimplePages";
 import {
-  AdminPastSimpleAttemptReportPage,
-  AdminPastSimplePage,
-} from "../features/admin/AdminPastSimplePages";
+  AdminExamsHubPage,
+  AdminPastSimpleExamPage,
+  AdminPastSimplePracticePage,
+  AdminPracticeHubPage,
+  AdminVerbExamPage,
+} from "../features/admin/AdminModules";
 import { ExamInstructionsPage } from "../features/student/ExamInstructionsPage";
 import {
   PastSimpleExamPage,
@@ -133,15 +135,33 @@ export function App() {
             <Route element={<ProtectedRoute roles={["SUPERADMIN", "ADMIN"]} />}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
-              <Route path="/admin/verbs" element={<AdminVerbsPage />} />
-              <Route path="/admin/past-simple" element={<AdminPastSimplePage />} />
-              <Route path="/admin/config" element={<AdminConfigPage />} />
+              <Route path="/admin/exams" element={<AdminExamsHubPage />} />
+              <Route path="/admin/exams/verb" element={<AdminVerbExamPage />} />
+              <Route
+                path="/admin/exams/past-simple"
+                element={<AdminPastSimpleExamPage />}
+              />
+              <Route path="/admin/practice" element={<AdminPracticeHubPage />} />
+              <Route
+                path="/admin/practice/past-simple"
+                element={<AdminPastSimplePracticePage />}
+              />
               <Route path="/admin/results" element={<AdminResultsPage />} />
               <Route path="/admin/students/:userId/report" element={<AdminStudentReportPage />} />
               <Route path="/admin/reports/:attemptId" element={<AdminAttemptReportPage />} />
               <Route
                 path="/admin/past-simple/reports/:attemptId"
                 element={<AdminPastSimpleAttemptReportPage />}
+              />
+              {/* Compatibilidad con rutas antiguas */}
+              <Route path="/admin/verbs" element={<Navigate to="/admin/exams/verb" replace />} />
+              <Route
+                path="/admin/config"
+                element={<Navigate to="/admin/exams/verb" replace />}
+              />
+              <Route
+                path="/admin/past-simple"
+                element={<Navigate to="/admin/exams/past-simple" replace />}
               />
               <Route path="/admin/audit" element={<AdminAuditPage />} />
             </Route>
