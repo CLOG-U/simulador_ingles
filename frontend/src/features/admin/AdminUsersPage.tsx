@@ -746,9 +746,9 @@ export function AdminUsersPage() {
                         <Link
                           to={`/admin/students/${u.id}/report`}
                           className="btn-admin-primary inline-flex w-auto min-w-[9.5rem] shrink-0 px-4 shadow-sm"
-                          title="Reporte independiente del estudiante"
+                          title="Reporte general del estudiante"
                         >
-                          Ver reporte
+                          Reporte general
                         </Link>
                       )}
                       <ModuleGroup title="Cuenta" tone="account">

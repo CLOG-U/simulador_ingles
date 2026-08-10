@@ -308,9 +308,9 @@ export const adminApi = {
         body: JSON.stringify({ active }),
       },
     ),
-  listPastSimpleAttempts: () =>
+  listPastSimpleAttempts: (mode: "exam" | "practice" = "exam") =>
     apiFetch<{ items: AdminAttemptListItem[]; total: number }>(
-      "/admin/past-simple/attempts",
+      `/admin/past-simple/attempts?mode=${mode}`,
     ),
   pastSimpleAttemptReport: (attemptId: string) =>
     apiFetch<PastSimpleResult>(`/admin/past-simple/attempts/${attemptId}`),

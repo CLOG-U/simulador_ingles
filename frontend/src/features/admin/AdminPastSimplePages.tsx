@@ -373,10 +373,29 @@ export function AdminPastSimpleAttemptReportPage() {
                 to={`/admin/students/${data.student_id}/report`}
                 className="btn-primary"
               >
-                Reporte del estudiante
+                Reporte general
               </Link>
-              <Link to="/admin/results" className="inline-flex rounded-xl border px-4 py-2.5">
-                Volver a resultados
+              <Link
+                to={
+                  data.mode === "practice"
+                    ? `/admin/students/${data.student_id}/practice/past-simple`
+                    : `/admin/students/${data.student_id}/exams/past-simple`
+                }
+                className="inline-flex rounded-xl border px-4 py-2.5"
+              >
+                {data.mode === "practice"
+                  ? "Reporte Practice"
+                  : "Reporte Past Simple Exam"}
+              </Link>
+              <Link
+                to={
+                  data.mode === "practice"
+                    ? "/admin/practice/past-simple"
+                    : "/admin/exams/past-simple"
+                }
+                className="inline-flex rounded-xl border px-4 py-2.5"
+              >
+                Volver al módulo
               </Link>
             </div>
           </div>

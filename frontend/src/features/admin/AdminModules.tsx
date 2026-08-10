@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
 import { adminApi } from "../../lib/endpoints";
+import { ModuleReportsSection } from "./AdminReportTables";
 
 const TOPIC_LABELS: Record<string, string> = {
   interrogative_structure: "Interrogative structure",
@@ -174,6 +175,10 @@ export function AdminVerbExamPage() {
     queryKey: ["admin-verbs", search],
     queryFn: () => adminApi.listVerbs(search || undefined),
   });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-attempts", "verb_exam"],
+    queryFn: adminApi.listAttempts,
+  });
 
   useEffect(() => {
     if (!config) return;
@@ -333,6 +338,17 @@ export function AdminVerbExamPage() {
             </div>
           </QueryState>
         </section>
+
+        <ModuleReportsSection
+          title="Reportes de Verb Exam"
+          description="Intentos de este examen. Entra al reporte específico de cada evaluación."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/exams/verb/reports/${id}`}
+          emptyMessage="Aún no hay intentos de Verb Exam."
+        />
       </div>
     </AppShell>
   );
@@ -348,6 +364,10 @@ export function AdminPastSimpleExamPage() {
   const questionsQuery = useQuery({
     queryKey: ["admin-past-simple-questions"],
     queryFn: adminApi.listPastSimpleQuestions,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-past-simple-attempts", "exam"],
+    queryFn: () => adminApi.listPastSimpleAttempts("exam"),
   });
   const [passing, setPassing] = useState<number | "">("");
   const [duration, setDuration] = useState<number | "">("");
@@ -466,6 +486,17 @@ export function AdminPastSimpleExamPage() {
           error={questionsQuery.error}
           onToggle={(id, active) => toggleQuestion.mutate({ id, active })}
         />
+
+        <ModuleReportsSection
+          title="Reportes de Past Simple Exam"
+          description="Intentos del examen oficial. Entra al reporte específico de cada evaluación."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/exams/past-simple/reports/${id}`}
+          emptyMessage="Aún no hay intentos de Past Simple Exam."
+        />
       </div>
     </AppShell>
   );
@@ -481,6 +512,10 @@ export function AdminPastSimplePracticePage() {
   const questionsQuery = useQuery({
     queryKey: ["admin-past-simple-questions"],
     queryFn: adminApi.listPastSimpleQuestions,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-past-simple-attempts", "practice"],
+    queryFn: () => adminApi.listPastSimpleAttempts("practice"),
   });
   const [notice, setNotice] = useState("");
 
@@ -564,6 +599,17 @@ export function AdminPastSimplePracticePage() {
           isError={questionsQuery.isError}
           error={questionsQuery.error}
           onToggle={(id, active) => toggleQuestion.mutate({ id, active })}
+        />
+
+        <ModuleReportsSection
+          title="Reportes de Past Simple Practice"
+          description="Sesiones de práctica. Entra al reporte específico de cada sesión."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/practice/past-simple/reports/${id}`}
+          emptyMessage="Aún no hay sesiones de práctica."
         />
       </div>
     </AppShell>

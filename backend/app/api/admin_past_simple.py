@@ -141,13 +141,14 @@ async def list_attempts(
     status: AttemptStatus | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
+    mode: str = Query("exam", pattern="^(exam|practice)$"),
     _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     query = (
         select(PastSimpleAttempt, User)
         .join(User, User.id == PastSimpleAttempt.user_id)
-        .where(PastSimpleAttempt.mode == past_simple_service.MODE_EXAM)
+        .where(PastSimpleAttempt.mode == mode)
     )
     if student_id:
         query = query.where(PastSimpleAttempt.user_id == student_id)
@@ -172,7 +173,11 @@ async def list_attempts(
                 "id": str(attempt.id),
                 "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
                 "mode": attempt.mode,
-                "exam_name": "Past Simple Exam",
+                "exam_name": (
+                    "Past Simple Practice"
+                    if mode == past_simple_service.MODE_PRACTICE
+                    else "Past Simple Exam"
+                ),
                 "student_id": str(user.id),
                 "student_username": user.username,
                 "student_name": user.full_name,

@@ -13,6 +13,7 @@ import { AdminDashboard } from "../features/admin/AdminDashboard";
 import { AdminUsersPage } from "../features/admin/AdminUsersPage";
 import {
   AdminAttemptReportPage,
+  AdminStudentModuleReportPage,
   AdminStudentReportPage,
 } from "../features/admin/AdminReportPages";
 import { AdminPastSimpleAttemptReportPage } from "../features/admin/AdminPastSimplePages";
@@ -147,10 +148,36 @@ export function App() {
                 element={<AdminPastSimplePracticePage />}
               />
               <Route path="/admin/results" element={<AdminResultsPage />} />
-              <Route path="/admin/students/:userId/report" element={<AdminStudentReportPage />} />
-              <Route path="/admin/reports/:attemptId" element={<AdminAttemptReportPage />} />
               <Route
-                path="/admin/past-simple/reports/:attemptId"
+                path="/admin/students/:userId/report"
+                element={<AdminStudentReportPage />}
+              />
+              <Route
+                path="/admin/students/:userId/exams/verb"
+                element={<AdminStudentModuleReportPage module="verb" />}
+              />
+              <Route
+                path="/admin/students/:userId/exams/past-simple"
+                element={
+                  <AdminStudentModuleReportPage module="past-simple-exam" />
+                }
+              />
+              <Route
+                path="/admin/students/:userId/practice/past-simple"
+                element={
+                  <AdminStudentModuleReportPage module="past-simple-practice" />
+                }
+              />
+              <Route
+                path="/admin/exams/verb/reports/:attemptId"
+                element={<AdminAttemptReportPage />}
+              />
+              <Route
+                path="/admin/exams/past-simple/reports/:attemptId"
+                element={<AdminPastSimpleAttemptReportPage />}
+              />
+              <Route
+                path="/admin/practice/past-simple/reports/:attemptId"
                 element={<AdminPastSimpleAttemptReportPage />}
               />
               {/* Compatibilidad con rutas antiguas */}
@@ -162,6 +189,14 @@ export function App() {
               <Route
                 path="/admin/past-simple"
                 element={<Navigate to="/admin/exams/past-simple" replace />}
+              />
+              <Route
+                path="/admin/reports/:attemptId"
+                element={<AdminAttemptReportPage />}
+              />
+              <Route
+                path="/admin/past-simple/reports/:attemptId"
+                element={<AdminPastSimpleAttemptReportPage />}
               />
               <Route path="/admin/audit" element={<AdminAuditPage />} />
             </Route>

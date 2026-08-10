@@ -75,6 +75,6 @@ export const adminNav = [
   { to: "/admin/users", label: "Usuarios" },
   { to: "/admin/exams", label: "Exámenes" },
   { to: "/admin/practice", label: "Práctica" },
-  { to: "/admin/results", label: "Resultados" },
+  { to: "/admin/results", label: "Reporte general" },
   { to: "/admin/audit", label: "Auditoría" },
 ];

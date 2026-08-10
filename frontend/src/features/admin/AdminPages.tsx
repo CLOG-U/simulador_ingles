@@ -152,8 +152,8 @@ export function AdminResultsPage() {
     queryFn: adminApi.listAttempts,
   });
   const pastQuery = useQuery({
-    queryKey: ["admin-past-simple-attempts"],
-    queryFn: adminApi.listPastSimpleAttempts,
+    queryKey: ["admin-past-simple-attempts", "exam"],
+    queryFn: () => adminApi.listPastSimpleAttempts("exam"),
   });
   const items = [
     ...(verbQuery.data?.items ?? []),
@@ -164,94 +164,127 @@ export function AdminResultsPage() {
   );
 
   return (
-    <AppShell title="Resultados" nav={adminNav}>
-      <div className="mb-4 flex justify-end">
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={isExporting}
-          onClick={async () => {
-            setIsExporting(true);
-            setExportError("");
-            try {
-              await adminApi.downloadAttemptsCsv();
-            } catch (error) {
-              setExportError(
-                error instanceof Error
-                  ? error.message
-                  : "No se pudo exportar el reporte.",
-              );
-            } finally {
-              setIsExporting(false);
-            }
-          }}
+    <AppShell title="Reporte general" nav={adminNav} wide>
+      <div className="space-y-5">
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-primary/10 bg-white shadow-sm">
+          <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Reporte general</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Vista global de intentos. Para el detalle por módulo, entra a
+              Exámenes o Práctica; para un estudiante, usa su reporte general.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 p-6">
+            <Link to="/admin/exams/verb" className="btn-admin-secondary w-auto px-4">
+              Reportes Verb Exam
+            </Link>
+            <Link
+              to="/admin/exams/past-simple"
+              className="btn-admin-secondary w-auto px-4"
+            >
+              Reportes Past Simple Exam
+            </Link>
+            <Link
+              to="/admin/practice/past-simple"
+              className="btn-admin-secondary w-auto px-4"
+            >
+              Reportes Practice
+            </Link>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={isExporting}
+              onClick={async () => {
+                setIsExporting(true);
+                setExportError("");
+                try {
+                  await adminApi.downloadAttemptsCsv();
+                } catch (error) {
+                  setExportError(
+                    error instanceof Error
+                      ? error.message
+                      : "No se pudo exportar el reporte.",
+                  );
+                } finally {
+                  setIsExporting(false);
+                }
+              }}
+            >
+              {isExporting ? "Exportando…" : "Exportar CSV"}
+            </button>
+          </div>
+        </section>
+
+        {exportError && <p className="text-sm text-danger">{exportError}</p>}
+        <QueryState
+          isLoading={verbQuery.isLoading || pastQuery.isLoading}
+          isError={verbQuery.isError || pastQuery.isError}
+          error={verbQuery.error ?? pastQuery.error}
+          isEmpty={!items.length}
+          emptyMessage="No hay resultados todavía."
         >
-          {isExporting ? "Exportando…" : "Exportar CSV"}
-        </button>
-      </div>
-      {exportError && <p className="mb-4 text-sm text-danger">{exportError}</p>}
-      <QueryState
-        isLoading={verbQuery.isLoading || pastQuery.isLoading}
-        isError={verbQuery.isError || pastQuery.isError}
-        error={verbQuery.error ?? pastQuery.error}
-        isEmpty={!items.length}
-        emptyMessage="No hay resultados todavía."
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2">Estudiante</th>
-                <th className="py-2">Examen</th>
-                <th className="py-2">Estado</th>
-                <th className="py-2">Nota</th>
-                <th className="py-2">Aprobado</th>
-                <th className="py-2">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((row) => (
-                <tr key={row.id} className="border-b">
-                  <td className="py-2">
-                    <Link
-                      to={`/admin/students/${row.student_id}/report`}
-                      className="text-brand-primary underline"
-                    >
-                      {row.student_name}
-                    </Link>
-                    <span className="block text-xs text-gray-500">{row.student_username}</span>
-                  </td>
-                  <td className="py-2">
-                    {row.exam_name}
-                    {row.attempt_number ? ` · #${row.attempt_number}` : ""}
-                  </td>
-                  <td className="py-2">
-                    {ATTEMPT_STATUS_LABELS[row.status] ?? row.status}
-                  </td>
-                  <td className="py-2">
-                    {row.percentage != null ? `${row.percentage.toFixed(1)}%` : "—"}
-                  </td>
-                  <td className="py-2">
-                    {row.status === "SUBMITTED" ? (row.passed ? "Sí" : "No") : "—"}
-                  </td>
-                  <td className="py-2">
-                    <Link
-                      to={
-                        row.exam_type === "past_simple_exam"
-                          ? `/admin/past-simple/reports/${row.id}`
-                          : `/admin/reports/${row.id}`
-                      }
-                      className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
-                    >
-                      Ver evaluación
-                    </Link>
-                  </td>
+          <div className="admin-table-wrap">
+            <table className="admin-table min-w-[760px]">
+              <thead>
+                <tr>
+                  <th>Estudiante</th>
+                  <th>Examen</th>
+                  <th>Estado</th>
+                  <th>Nota</th>
+                  <th>Aprobado</th>
+                  <th>Acción</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </QueryState>
+              </thead>
+              <tbody>
+                {items.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      <Link
+                        to={`/admin/students/${row.student_id}/report`}
+                        className="font-semibold text-brand-primary underline"
+                      >
+                        {row.student_name}
+                      </Link>
+                      <span className="block text-xs text-gray-500">
+                        {row.student_username}
+                      </span>
+                    </td>
+                    <td>
+                      {row.exam_name}
+                      {row.attempt_number ? ` · #${row.attempt_number}` : ""}
+                    </td>
+                    <td>{ATTEMPT_STATUS_LABELS[row.status] ?? row.status}</td>
+                    <td>
+                      {row.percentage != null
+                        ? `${row.percentage.toFixed(1)}%`
+                        : "—"}
+                    </td>
+                    <td>
+                      {row.status === "SUBMITTED"
+                        ? row.passed
+                          ? "Sí"
+                          : "No"
+                        : "—"}
+                    </td>
+                    <td>
+                      <Link
+                        to={
+                          row.exam_type === "past_simple_exam"
+                            ? `/admin/exams/past-simple/reports/${row.id}`
+                            : `/admin/exams/verb/reports/${row.id}`
+                        }
+                        className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
+                      >
+                        Ver reporte
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </QueryState>
+      </div>
     </AppShell>
   );
 }
