@@ -58,6 +58,13 @@ class User(Base):
     past_simple_attempts: Mapped[list["PastSimpleAttempt"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    group_memberships: Mapped[list["GroupMembership"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    taught_groups: Mapped[list["StudyGroup"]] = relationship(
+        back_populates="teacher",
+        foreign_keys="StudyGroup.teacher_id",
+    )
 
 
 class RefreshSession(Base):
@@ -373,3 +380,109 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class StudyGroup(Base):
+    """Clase/grupo de la academia (tabla `groups`)."""
+
+    __tablename__ = "groups"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    teacher_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    teacher: Mapped["User | None"] = relationship(
+        back_populates="taught_groups",
+        foreign_keys=[teacher_id],
+    )
+    memberships: Mapped[list["GroupMembership"]] = relationship(
+        back_populates="group",
+        cascade="all, delete-orphan",
+    )
+    resource_links: Mapped[list["ResourceGroup"]] = relationship(
+        back_populates="group",
+        cascade="all, delete-orphan",
+    )
+
+
+class GroupMembership(Base):
+    __tablename__ = "group_memberships"
+    __table_args__ = (
+        UniqueConstraint("group_id", "user_id", name="uq_group_membership"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    group_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("groups.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    group: Mapped["StudyGroup"] = relationship(back_populates="memberships")
+    user: Mapped["User"] = relationship(back_populates="group_memberships")
+
+
+class Resource(Base):
+    __tablename__ = "resources"
+    __table_args__ = (
+        CheckConstraint(
+            "resource_type IN ('pdf', 'link', 'video')",
+            name="ck_resource_type",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resource_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    group_links: Mapped[list["ResourceGroup"]] = relationship(
+        back_populates="resource",
+        cascade="all, delete-orphan",
+    )
+
+
+class ResourceGroup(Base):
+    __tablename__ = "resource_groups"
+    __table_args__ = (
+        UniqueConstraint("resource_id", "group_id", name="uq_resource_group"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    resource_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("resources.id", ondelete="CASCADE"), nullable=False
+    )
+    group_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("groups.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    resource: Mapped["Resource"] = relationship(back_populates="group_links")
+    group: Mapped["StudyGroup"] = relationship(back_populates="resource_links")

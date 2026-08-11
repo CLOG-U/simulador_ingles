@@ -58,3 +58,9 @@ class PromptType(StrEnum):
     FROM_SPANISH = "FROM_SPANISH"
     FROM_BASE = "FROM_BASE"
     FROM_PAST = "FROM_PAST"
+
+
+class ResourceType(StrEnum):
+    PDF = "pdf"
+    LINK = "link"
+    VIDEO = "video"

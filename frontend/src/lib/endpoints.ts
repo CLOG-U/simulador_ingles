@@ -1,6 +1,7 @@
 import type {
   AdminAttemptListItem,
   AdminAttemptReport,
+  AdminDashboardData,
   AdminStudentReport,
   AdminUser,
   Attempt,
@@ -9,14 +10,18 @@ import type {
   ExamAccess,
   ExamConfig,
   ExamType,
+  GroupMetrics,
+  LearningResource,
   PastSimpleAttempt,
   PastSimpleConfig,
   PastSimpleQuestion,
   PastSimpleQuestionAdmin,
   PastSimpleResult,
+  StudyGroup,
   UserMe,
   VerbItem,
 } from "./types";
+
 import { apiFetch, apiFetchBlob, ApiError } from "./api";
 import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from "./tokenStorage";
 
@@ -153,20 +158,82 @@ export const pastSimpleApi = {
 };
 
 export const adminApi = {
-  dashboard: () =>
-    apiFetch<{
-      active_students: number;
-      finished_attempts: number;
-      average_percentage: number | null;
-      passed_count: number;
-      past_simple_finished_attempts: number;
-      past_simple_average_percentage: number | null;
-      past_simple_passed_count: number;
-    }>("/admin/dashboard"),
-  listUsers: (params?: { search?: string; page?: number }) => {
+  dashboard: () => apiFetch<AdminDashboardData>("/admin/dashboard"),
+  listGroups: () => apiFetch<{ items: StudyGroup[] }>("/admin/groups"),
+  getGroup: (groupId: string) => apiFetch<StudyGroup>(`/admin/groups/${groupId}`),
+  createGroup: (data: {
+    name: string;
+    description?: string;
+    teacher_id?: string | null;
+    is_active?: boolean;
+  }) =>
+    apiFetch<StudyGroup>("/admin/groups", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateGroup: (
+    groupId: string,
+    data: {
+      name?: string;
+      description?: string | null;
+      teacher_id?: string | null;
+      is_active?: boolean;
+    },
+  ) =>
+    apiFetch<StudyGroup>(`/admin/groups/${groupId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  deleteGroup: (groupId: string) =>
+    apiFetch<{ status: string }>(`/admin/groups/${groupId}`, { method: "DELETE" }),
+  addGroupMember: (groupId: string, userId: string) =>
+    apiFetch<StudyGroup>(`/admin/groups/${groupId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    }),
+  removeGroupMember: (groupId: string, userId: string) =>
+    apiFetch<StudyGroup>(`/admin/groups/${groupId}/members/${userId}`, {
+      method: "DELETE",
+    }),
+  groupMetrics: (groupId: string) =>
+    apiFetch<GroupMetrics>(`/admin/groups/${groupId}/metrics`),
+  listResources: () => apiFetch<{ items: LearningResource[] }>("/admin/resources"),
+  createResource: (data: {
+    title: string;
+    description?: string;
+    resource_type: string;
+    url: string;
+    is_active?: boolean;
+    group_ids?: string[];
+  }) =>
+    apiFetch<LearningResource>("/admin/resources", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateResource: (
+    resourceId: string,
+    data: {
+      title?: string;
+      description?: string | null;
+      resource_type?: string;
+      url?: string;
+      is_active?: boolean;
+      group_ids?: string[];
+    },
+  ) =>
+    apiFetch<LearningResource>(`/admin/resources/${resourceId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  deleteResource: (resourceId: string) =>
+    apiFetch<{ status: string }>(`/admin/resources/${resourceId}`, {
+      method: "DELETE",
+    }),
+  listUsers: (params?: { search?: string; page?: number; role?: string }) => {
     const q = new URLSearchParams();
     if (params?.search) q.set("search", params.search);
     if (params?.page) q.set("page", String(params.page));
+    if (params?.role) q.set("role", params.role);
     return apiFetch<{ items: AdminUser[]; total: number }>(`/admin/users?${q}`);
   },
   createUser: (data: {
@@ -325,4 +392,9 @@ export const adminApi = {
     URL.revokeObjectURL(url);
   },
   auditLogs: () => apiFetch<{ items: Record<string, unknown>[] }>("/admin/audit-logs"),
+};
+
+export const studentApi = {
+  listResources: () =>
+    apiFetch<{ items: LearningResource[] }>("/student/resources"),
 };

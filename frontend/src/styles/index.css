@@ -168,12 +168,61 @@
   .nav-link-active {
     @apply bg-brand-yellow font-semibold text-brand-primary-dark hover:bg-brand-yellow;
   }
+
+  .landing-root {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(135deg, #001a8f 0%, #002aeb 42%, #0a3cc7 70%, #081b8f 100%);
+  }
+
+  .landing-atmosphere {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 70% 55% at 15% 20%, rgba(76, 165, 224, 0.45), transparent 60%),
+      radial-gradient(ellipse 55% 45% at 88% 75%, rgba(255, 230, 0, 0.18), transparent 55%),
+      url("/pea-logo.png");
+    background-repeat: no-repeat, no-repeat, no-repeat;
+    background-position: center, center, 110% 60%;
+    background-size: auto, auto, min(52vw, 420px);
+    opacity: 0.35;
+    filter: saturate(1.05);
+  }
+
+  .landing-fade-in {
+    animation: landingRise 700ms ease-out both;
+  }
+
+  .landing-fade-in-delay-1 {
+    animation: landingRise 700ms ease-out 120ms both;
+  }
+
+  .landing-fade-in-delay-2 {
+    animation: landingRise 700ms ease-out 240ms both;
+  }
+
+  .landing-fade-in-delay-3 {
+    animation: landingRise 700ms ease-out 360ms both;
+  }
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landingRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
   }
   to {
     opacity: 1;
