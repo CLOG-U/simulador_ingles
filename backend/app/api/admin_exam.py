@@ -204,6 +204,11 @@ async def dashboard(
             )
         )
     ).scalar_one()
+    from app.services import billing_metrics, group_service
+
+    monthly_active = await billing_metrics.monthly_active_students(db, months=12)
+    group_summaries = await group_service.list_group_summaries_for_dashboard(db)
+    current_mau = monthly_active[-1]["count"] if monthly_active else 0
     return {
         "active_students": active_students,
         "finished_attempts": finished,
@@ -212,6 +217,9 @@ async def dashboard(
         "past_simple_finished_attempts": past_finished,
         "past_simple_average_percentage": float(past_avg) if past_avg else None,
         "past_simple_passed_count": past_passed,
+        "monthly_active_students": monthly_active,
+        "monthly_active_students_current": current_mau,
+        "groups": group_summaries,
     }
 
 

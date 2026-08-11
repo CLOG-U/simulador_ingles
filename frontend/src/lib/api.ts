@@ -42,7 +42,8 @@ function messageFromErrorBody(body: ErrorBody): string {
 }
 
 function isPublicPath() {
-  return window.location.pathname === "/login";
+  const path = window.location.pathname;
+  return path === "/login" || path === "/";
 }
 
 export function isAuthPublicPath() {

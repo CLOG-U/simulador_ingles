@@ -49,6 +49,11 @@ import {
   StudentExamsPage,
   StudentPracticePage,
 } from "../features/student/StudentDashboard";
+import { StudentResourcesPage } from "../features/student/StudentResourcesPage";
+import { AdminGroupsPage } from "../features/admin/AdminGroupsPage";
+import { AdminGroupDetailPage } from "../features/admin/AdminGroupDetailPage";
+import { AdminResourcesPage } from "../features/admin/AdminResourcesPage";
+import { LandingPage } from "../features/marketing/LandingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +76,7 @@ export function App() {
               <Route path="/student" element={<StudentDashboard />} />
               <Route path="/student/exams" element={<StudentExamsPage />} />
               <Route path="/student/practice" element={<StudentPracticePage />} />
+              <Route path="/student/resources" element={<StudentResourcesPage />} />
               <Route path="/student/instructions" element={<ExamInstructionsPage />} />
               <Route path="/student/exam/start" element={<ExamStartRedirect />} />
               <Route path="/student/exam/:attemptId" element={<ExamPage />} />
@@ -135,6 +141,9 @@ export function App() {
 
             <Route element={<ProtectedRoute roles={["SUPERADMIN", "ADMIN"]} />}>
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/groups" element={<AdminGroupsPage />} />
+              <Route path="/admin/groups/:groupId" element={<AdminGroupDetailPage />} />
+              <Route path="/admin/resources" element={<AdminResourcesPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/exams" element={<AdminExamsHubPage />} />
               <Route path="/admin/exams/verb" element={<AdminVerbExamPage />} />
@@ -201,8 +210,8 @@ export function App() {
               <Route path="/admin/audit" element={<AdminAuditPage />} />
             </Route>
 
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

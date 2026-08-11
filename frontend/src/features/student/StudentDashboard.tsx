@@ -126,7 +126,7 @@ function ModuleCard({
   );
 }
 
-/** Student home: choose between Exámenes and Práctica. */
+/** Student home: choose between Exámenes, Práctica and Recursos. */
 export function StudentDashboard() {
   const { user } = useAuth();
 
@@ -135,20 +135,28 @@ export function StudentDashboard() {
       <div className="space-y-6">
         <section>
           <h2 className="text-lg font-semibold">Hola, {user?.full_name}</h2>
-          <p className="mt-1 text-gray-600">Elige un módulo para continuar.</p>
+          <p className="mt-1 text-gray-600">
+            Flujo sugerido: 1. Practicar → 2. Rendir → 3. Ver resultado.
+          </p>
         </section>
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-3">
+          <ModuleCard
+            title="Práctica"
+            description="Paso 1: entrena con feedback. No cuenta como intento de examen."
+            to="/student/practice"
+            cta="Ir a Práctica"
+          />
           <ModuleCard
             title="Exámenes"
-            description="Evaluaciones oficiales: Verb Exam y Past Simple Exam."
+            description="Paso 2: evaluaciones oficiales. Paso 3: revisa tu resultado al terminar."
             to="/student/exams"
             cta="Ir a Exámenes"
           />
           <ModuleCard
-            title="Práctica"
-            description="Sesiones de práctica con feedback. No cuentan como intento de examen."
-            to="/student/practice"
-            cta="Ir a Práctica"
+            title="Recursos"
+            description="Materiales de tu clase: PDFs, videos y enlaces del profesor."
+            to="/student/resources"
+            cta="Ver Recursos"
           />
         </div>
       </div>
@@ -181,7 +189,7 @@ export function StudentExamsPage() {
         <section>
           <h2 className="text-lg font-semibold">Exámenes</h2>
           <p className="mt-1 text-gray-600">
-            Selecciona un examen oficial. Los intentos quedan registrados.
+            Paso 2: rinde el examen oficial. Al enviar verás el resultado (paso 3).
           </p>
         </section>
         <div className="grid gap-5 md:grid-cols-2">
@@ -244,7 +252,7 @@ export function StudentPracticePage() {
         <section>
           <h2 className="text-lg font-semibold">Práctica</h2>
           <p className="mt-1 text-gray-600">
-            Entrena con feedback inmediato. No cuenta como intento de examen.
+            Paso 1: practica con feedback inmediato. No cuenta como intento de examen.
           </p>
         </section>
         <div className="grid gap-5 md:grid-cols-2">

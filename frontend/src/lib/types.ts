@@ -276,3 +276,79 @@ export interface PastSimpleQuestionAdmin {
   points: number;
   active: boolean;
 }
+
+export type ResourceType = "pdf" | "link" | "video";
+
+export interface StudyGroupMember {
+  user_id: string;
+  username: string;
+  full_name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface StudyGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  teacher_id: string | null;
+  teacher_name: string | null;
+  is_active: boolean;
+  member_count: number;
+  created_at: string;
+  updated_at: string;
+  members?: StudyGroupMember[];
+}
+
+export interface GroupMetrics {
+  group_id: string;
+  group_name: string;
+  member_count: number;
+  active_member_count: number;
+  verb_finished: number;
+  verb_average_percentage: number | null;
+  past_simple_finished: number;
+  past_simple_average_percentage: number | null;
+  alerts: string[];
+}
+
+export interface GroupDashboardSummary {
+  group_id: string;
+  group_name: string;
+  member_count: number;
+  verb_average_percentage: number | null;
+  past_simple_average_percentage: number | null;
+  alert_count: number;
+}
+
+export interface MonthlyActiveStudents {
+  year_month: string;
+  count: number;
+}
+
+export interface LearningResource {
+  id: string;
+  title: string;
+  description: string | null;
+  resource_type: ResourceType;
+  url: string;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  group_ids: string[];
+  group_names: string[];
+}
+
+export interface AdminDashboardData {
+  active_students: number;
+  finished_attempts: number;
+  average_percentage: number | null;
+  passed_count: number;
+  past_simple_finished_attempts: number;
+  past_simple_average_percentage: number | null;
+  past_simple_passed_count: number;
+  monthly_active_students?: MonthlyActiveStudents[];
+  monthly_active_students_current?: number;
+  groups?: GroupDashboardSummary[];
+}

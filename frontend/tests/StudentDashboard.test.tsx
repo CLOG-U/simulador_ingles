@@ -105,19 +105,24 @@ describe("Student modules", () => {
     });
   });
 
-  it("shows Exámenes and Práctica modules on the student home", async () => {
+  it("shows Práctica, Exámenes and Recursos on the student home", async () => {
     renderAt("/student");
     expect(
-      await screen.findByRole("heading", { name: "Exámenes" }),
+      await screen.findByRole("heading", { name: "Práctica" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Práctica" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Exámenes" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Recursos" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ir a Práctica" })).toHaveAttribute(
+      "href",
+      "/student/practice",
+    );
     expect(screen.getByRole("link", { name: "Ir a Exámenes" })).toHaveAttribute(
       "href",
       "/student/exams",
     );
-    expect(screen.getByRole("link", { name: "Ir a Práctica" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Ver Recursos" })).toHaveAttribute(
       "href",
-      "/student/practice",
+      "/student/resources",
     );
   });
 
