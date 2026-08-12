@@ -229,10 +229,10 @@ export function AdminStudentReportPage() {
         {data && (
           <div className="space-y-5">
             <Link
-              to="/admin/users"
+              to="/admin/results"
               className="inline-flex min-h-11 items-center rounded-xl border border-brand-primary/20 bg-white px-4 text-sm font-semibold text-brand-primary transition-colors hover:bg-brand-primary/5"
             >
-              ← Volver a usuarios
+              ← Volver a reporte general
             </Link>
 
             <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-primary/10 bg-white shadow-sm">

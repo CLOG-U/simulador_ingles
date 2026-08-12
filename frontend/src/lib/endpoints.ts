@@ -163,10 +163,17 @@ export const adminApi = {
       past_simple_average_percentage: number | null;
       past_simple_passed_count: number;
     }>("/admin/dashboard"),
-  listUsers: (params?: { search?: string; page?: number }) => {
+  listUsers: (params?: {
+    search?: string;
+    page?: number;
+    page_size?: number;
+    role?: string;
+  }) => {
     const q = new URLSearchParams();
     if (params?.search) q.set("search", params.search);
     if (params?.page) q.set("page", String(params.page));
+    if (params?.page_size) q.set("page_size", String(params.page_size));
+    if (params?.role) q.set("role", params.role);
     return apiFetch<{ items: AdminUser[]; total: number }>(`/admin/users?${q}`);
   },
   createUser: (data: {

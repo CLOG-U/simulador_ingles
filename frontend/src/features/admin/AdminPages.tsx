@@ -5,13 +5,6 @@ import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
 import { adminApi } from "../../lib/endpoints";
 
-const ATTEMPT_STATUS_LABELS: Record<string, string> = {
-  IN_PROGRESS: "En curso",
-  SUBMITTED: "Entregado",
-  CANCELLED: "Cancelado",
-  EXPIRED: "Expirado",
-};
-
 export function AdminVerbsPage() {
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
@@ -145,23 +138,26 @@ export function AdminConfigPage() {
 }
 
 export function AdminResultsPage() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState("");
-  const verbQuery = useQuery({
-    queryKey: ["admin-attempts"],
-    queryFn: adminApi.listAttempts,
+  const pageSize = 20;
+
+  const studentsQuery = useQuery({
+    queryKey: ["admin-results-students", search, page],
+    queryFn: () =>
+      adminApi.listUsers({
+        role: "STUDENT",
+        search: search.trim() || undefined,
+        page,
+        page_size: pageSize,
+      }),
   });
-  const pastQuery = useQuery({
-    queryKey: ["admin-past-simple-attempts", "exam"],
-    queryFn: () => adminApi.listPastSimpleAttempts("exam"),
-  });
-  const items = [
-    ...(verbQuery.data?.items ?? []),
-    ...(pastQuery.data?.items ?? []),
-  ].sort(
-    (a, b) =>
-      new Date(b.started_at).getTime() - new Date(a.started_at).getTime(),
-  );
+
+  const total = studentsQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const students = studentsQuery.data?.items ?? [];
 
   return (
     <AppShell title="Reporte general" nav={adminNav} wide>
@@ -170,8 +166,8 @@ export function AdminResultsPage() {
           <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
             <h2 className="font-semibold">Reporte general</h2>
             <p className="mt-1 text-sm text-brand-white/90">
-              Vista global de intentos. Para el detalle por módulo, entra a
-              Exámenes o Práctica; para un estudiante, usa su reporte general.
+              Entra a cada estudiante para ver su reporte general y, desde ahí,
+              los reportes por examen o práctica.
             </p>
           </div>
           <div className="flex flex-wrap gap-3 p-6">
@@ -216,74 +212,130 @@ export function AdminResultsPage() {
         </section>
 
         {exportError && <p className="text-sm text-danger">{exportError}</p>}
-        <QueryState
-          isLoading={verbQuery.isLoading || pastQuery.isLoading}
-          isError={verbQuery.isError || pastQuery.isError}
-          error={verbQuery.error ?? pastQuery.error}
-          isEmpty={!items.length}
-          emptyMessage="No hay resultados todavía."
-        >
-          <div className="admin-table-wrap">
-            <table className="admin-table min-w-[760px]">
-              <thead>
-                <tr>
-                  <th>Estudiante</th>
-                  <th>Examen</th>
-                  <th>Estado</th>
-                  <th>Nota</th>
-                  <th>Aprobado</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <Link
-                        to={`/admin/students/${row.student_id}/report`}
-                        className="font-semibold text-brand-primary underline"
-                      >
-                        {row.student_name}
-                      </Link>
-                      <span className="block text-xs text-gray-500">
-                        {row.student_username}
-                      </span>
-                    </td>
-                    <td>
-                      {row.exam_name}
-                      {row.attempt_number ? ` · #${row.attempt_number}` : ""}
-                    </td>
-                    <td>{ATTEMPT_STATUS_LABELS[row.status] ?? row.status}</td>
-                    <td>
-                      {row.percentage != null
-                        ? `${row.percentage.toFixed(1)}%`
-                        : "—"}
-                    </td>
-                    <td>
-                      {row.status === "SUBMITTED"
-                        ? row.passed
-                          ? "Sí"
-                          : "No"
-                        : "—"}
-                    </td>
-                    <td>
-                      <Link
-                        to={
-                          row.exam_type === "past_simple_exam"
-                            ? `/admin/exams/past-simple/reports/${row.id}`
-                            : `/admin/exams/verb/reports/${row.id}`
-                        }
-                        className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
-                      >
-                        Ver reporte
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+        <section className="card space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-brand-primary">
+                Estudiantes
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                {total} estudiante{total === 1 ? "" : "s"}
+              </p>
+            </div>
+            <label className="block min-w-[16rem] flex-1 text-sm sm:max-w-sm">
+              <span className="mb-1 block font-medium">Buscar</span>
+              <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Nombre o usuario…"
+                className="w-full rounded-xl border border-gray-300 px-3 py-2"
+              />
+            </label>
           </div>
-        </QueryState>
+
+          <QueryState
+            isLoading={studentsQuery.isLoading}
+            isError={studentsQuery.isError}
+            error={studentsQuery.error}
+            isEmpty={!students.length}
+            emptyMessage="No hay estudiantes para mostrar."
+          >
+            <div className="admin-table-wrap">
+              <table className="admin-table min-w-[720px]">
+                <thead>
+                  <tr>
+                    <th>Estudiante</th>
+                    <th>Estado</th>
+                    <th>Verb Exam</th>
+                    <th>Past Simple</th>
+                    <th>Práctica</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((student) => {
+                    const verbAccess = student.exam_access?.find(
+                      (item) => item.exam_type === "verb_exam",
+                    );
+                    const pastAccess = student.exam_access?.find(
+                      (item) => item.exam_type === "past_simple_exam",
+                    );
+                    return (
+                      <tr key={student.id}>
+                        <td>
+                          <span className="font-semibold text-brand-primary">
+                            {student.full_name}
+                          </span>
+                          <span className="block text-xs text-gray-500">
+                            {student.username}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              student.is_active
+                                ? "bg-green-100 text-green-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {student.is_active ? "Activo" : "Inactivo"}
+                          </span>
+                        </td>
+                        <td>
+                          {student.attempts_used ??
+                            verbAccess?.submitted_attempts ??
+                            0}
+                          /{student.attempts_max ?? verbAccess?.allowed_attempts ?? "—"}
+                          {student.has_open_attempt ? " · en curso" : ""}
+                        </td>
+                        <td>{pastAccess?.submitted_attempts ?? 0}</td>
+                        <td>{pastAccess?.practice_submitted_attempts ?? 0}</td>
+                        <td>
+                          <Link
+                            to={`/admin/students/${student.id}/report`}
+                            className="btn-admin-primary inline-flex w-auto min-w-[10rem] px-4"
+                          >
+                            Ver reporte general
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </QueryState>
+
+          {totalPages > 1 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <p className="text-gray-600">
+                Página {page} de {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn-admin-secondary"
+                  disabled={page <= 1 || studentsQuery.isFetching}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  className="btn-admin-secondary"
+                  disabled={page >= totalPages || studentsQuery.isFetching}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </section>
       </div>
     </AppShell>
   );
