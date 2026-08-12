@@ -279,65 +279,75 @@ export function AdminVerbExamPage() {
           </div>
         </section>
 
-        <section className="card">
-          <h2 className="mb-1 text-xl font-semibold">Banco de verbos</h2>
-          <p className="mb-4 text-sm text-gray-600">
-            Información de las preguntas del examen. Puedes activar o desactivar
-            verbos del banco.
-          </p>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar verbo…"
-            className="admin-search mb-4"
-          />
-          <QueryState
-            isLoading={verbsQuery.isLoading}
-            isError={verbsQuery.isError}
-            error={verbsQuery.error}
-            isEmpty={!verbsQuery.data?.items.length}
-            emptyMessage="No hay verbos en el banco."
-          >
-            <div className="admin-table-wrap">
-              <table className="admin-table min-w-[640px]">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Base</th>
-                    <th>Pasado</th>
-                    <th>Español</th>
-                    <th>Activo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {verbsQuery.data?.items.map((v) => (
-                    <tr key={v.id}>
-                      <td>{v.source_order}</td>
-                      <td className="font-medium">{v.base_display}</td>
-                      <td>{v.past_display}</td>
-                      <td>{v.spanish_prompt}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className={`min-h-10 rounded-lg px-3 text-xs font-semibold ${
-                            v.is_active
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-200 text-gray-700"
-                          }`}
-                          onClick={() =>
-                            toggleVerb.mutate({ id: v.id, is_active: !v.is_active })
-                          }
-                        >
-                          {v.is_active ? "Activo" : "Inactivo"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <details className="admin-collapsible">
+          <summary>
+            <div>
+              <h2 className="text-xl font-semibold">Banco de verbos</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                {verbsQuery.data?.total != null
+                  ? `${verbsQuery.data.total} verbo(s) en el banco. Despliega para consultar o activar/desactivar.`
+                  : "Despliega para consultar o activar/desactivar verbos del banco."}
+              </p>
             </div>
-          </QueryState>
-        </section>
+            <span className="admin-collapsible-chevron" aria-hidden>
+              ▾
+            </span>
+          </summary>
+          <div className="admin-collapsible-body">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar verbo…"
+              className="admin-search"
+            />
+            <QueryState
+              isLoading={verbsQuery.isLoading}
+              isError={verbsQuery.isError}
+              error={verbsQuery.error}
+              isEmpty={!verbsQuery.data?.items.length}
+              emptyMessage="No hay verbos en el banco."
+            >
+              <div className="admin-table-wrap">
+                <table className="admin-table min-w-[640px]">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Base</th>
+                      <th>Pasado</th>
+                      <th>Español</th>
+                      <th>Activo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {verbsQuery.data?.items.map((v) => (
+                      <tr key={v.id}>
+                        <td>{v.source_order}</td>
+                        <td className="font-medium">{v.base_display}</td>
+                        <td>{v.past_display}</td>
+                        <td>{v.spanish_prompt}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className={`min-h-10 rounded-lg px-3 text-xs font-semibold ${
+                              v.is_active
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-200 text-gray-700"
+                            }`}
+                            onClick={() =>
+                              toggleVerb.mutate({ id: v.id, is_active: !v.is_active })
+                            }
+                          >
+                            {v.is_active ? "Activo" : "Inactivo"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </QueryState>
+          </div>
+        </details>
 
         <ModuleReportsSection
           title="Reportes de Verb Exam"
@@ -636,57 +646,69 @@ function PastSimpleQuestionsSection({
   error: unknown;
   onToggle: (id: string, active: boolean) => void;
 }) {
+  const count = questions?.length ?? 0;
+
   return (
-    <section className="card">
-      <h2 className="mb-1 text-xl font-semibold">Banco de preguntas</h2>
-      <p className="mb-4 text-sm text-gray-600">
-        Información de las preguntas. Puedes activar o desactivar ítems del
-        banco.
-      </p>
-      <QueryState
-        isLoading={isLoading}
-        isError={isError}
-        error={error}
-        isEmpty={!questions?.length}
-        emptyMessage="No hay preguntas cargadas."
-      >
-        <div className="admin-table-wrap">
-          <table className="admin-table min-w-[760px]">
-            <thead>
-              <tr>
-                <th>Tema</th>
-                <th>Tipo</th>
-                <th>Pregunta</th>
-                <th>Respuesta</th>
-                <th>Activa</th>
-              </tr>
-            </thead>
-            <tbody>
-              {questions?.map((question) => (
-                <tr key={question.id}>
-                  <td>{TOPIC_LABELS[question.topic] ?? question.topic}</td>
-                  <td>{question.question_type}</td>
-                  <td className="max-w-sm">{question.question}</td>
-                  <td className="max-w-xs">{question.correct_answer}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className={`min-h-10 rounded-lg px-3 text-xs font-semibold ${
-                        question.active
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-200 text-gray-700"
-                      }`}
-                      onClick={() => onToggle(question.id, !question.active)}
-                    >
-                      {question.active ? "Activa" : "Inactiva"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <details className="admin-collapsible">
+      <summary>
+        <div>
+          <h2 className="text-xl font-semibold">Banco de preguntas</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            {count
+              ? `${count} pregunta(s). Despliega para consultar o activar/desactivar ítems.`
+              : "Despliega para consultar o activar/desactivar ítems del banco."}
+          </p>
         </div>
-      </QueryState>
-    </section>
+        <span className="admin-collapsible-chevron" aria-hidden>
+          ▾
+        </span>
+      </summary>
+      <div className="admin-collapsible-body">
+        <QueryState
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+          isEmpty={!questions?.length}
+          emptyMessage="No hay preguntas cargadas."
+        >
+          <div className="admin-table-wrap">
+            <table className="admin-table min-w-[760px]">
+              <thead>
+                <tr>
+                  <th>Tema</th>
+                  <th>Tipo</th>
+                  <th>Pregunta</th>
+                  <th>Respuesta</th>
+                  <th>Activa</th>
+                </tr>
+              </thead>
+              <tbody>
+                {questions?.map((question) => (
+                  <tr key={question.id}>
+                    <td>{TOPIC_LABELS[question.topic] ?? question.topic}</td>
+                    <td>{question.question_type}</td>
+                    <td className="max-w-sm">{question.question}</td>
+                    <td className="max-w-xs">{question.correct_answer}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className={`min-h-10 rounded-lg px-3 text-xs font-semibold ${
+                          question.active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-200 text-gray-700"
+                        }`}
+                        onClick={() => onToggle(question.id, !question.active)}
+                      >
+                        {question.active ? "Activa" : "Inactiva"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </QueryState>
+      </div>
+    </details>
   );
 }
