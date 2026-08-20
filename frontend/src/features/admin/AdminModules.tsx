@@ -118,7 +118,7 @@ export function AdminExamsHubPage() {
           />
           <ModuleCard
             title="Verb Base Form"
-            description="Escribir solo la forma base a partir del español o del pasado."
+            description="Escribir solo la forma base y su significado en español (sin pasado)."
             meta={
               verbBaseConfig.data
                 ? `${verbBaseConfig.data.is_enabled ? "Habilitado" : "Deshabilitado"} · Nota mín. ${verbBaseConfig.data.passing_percentage}% · ${

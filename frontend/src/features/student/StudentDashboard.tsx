@@ -223,7 +223,7 @@ export function StudentExamsPage() {
           />
           <ExamCard
             title="Verb Base Form"
-            description="Escribe solo la forma base del verbo a partir del español o del pasado."
+            description="Escribe solo la forma base del verbo y su significado en español (sin pasado)."
             config={verbBaseConfigQuery.data}
             status={verbBaseStatusQuery.data}
             isLoading={

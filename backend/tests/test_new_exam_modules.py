@@ -17,7 +17,8 @@ def test_verb_base_prompt_types_balanced():
     types = build_base_prompt_types(20)
     assert len(types) == 20
     assert types.count("FROM_SPANISH") == 10
-    assert types.count("FROM_PAST") == 10
+    assert types.count("FROM_BASE") == 10
+    assert "FROM_PAST" not in types
 
 
 def test_present_simple_seed_covers_all_topics():

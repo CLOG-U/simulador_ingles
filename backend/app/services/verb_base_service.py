@@ -1,4 +1,4 @@
-"""Examen Verb Base Form: muestra español o pasado y pide solo la forma base."""
+"""Examen Verb Base Form: solo español ↔ forma base en inglés (sin pasado)."""
 
 import secrets
 import uuid
@@ -23,12 +23,12 @@ from app.models import (
     VerbBaseConfig,
 )
 from app.services import exam_access_service
-from app.services.normalization import normalize_text
+from app.services.normalization import normalize_spanish, normalize_text
 
 
 PROMPT_LABELS = {
     BaseFormPromptType.FROM_SPANISH.value: "Spanish",
-    BaseFormPromptType.FROM_PAST.value: "past form in English",
+    BaseFormPromptType.FROM_BASE.value: "base form in English",
 }
 
 
@@ -58,22 +58,27 @@ async def get_visible_config(session: AsyncSession) -> dict:
 
 
 def build_base_prompt_types(count: int = 20) -> list[str]:
+    """Mitad español→base y mitad base→español."""
     if count < 2:
         raise ValueError("Se necesitan al menos 2 preguntas.")
     half = count // 2
     types = [BaseFormPromptType.FROM_SPANISH.value] * half + [
-        BaseFormPromptType.FROM_PAST.value
+        BaseFormPromptType.FROM_BASE.value
     ] * (count - half)
     secrets.SystemRandom().shuffle(types)
     return types
 
 
-async def _valid_base_answers(answers: list[VerbAnswer]) -> list[str]:
-    return [
-        a.normalized_value
-        for a in answers
-        if a.field == VerbAnswerField.BASE
-    ]
+def _valid_answers_for_field(
+    answers: list[VerbAnswer], field: VerbAnswerField
+) -> list[str]:
+    return [a.normalized_value for a in answers if a.field == field]
+
+
+def _required_field_for_prompt(prompt_type: str) -> str:
+    if prompt_type == BaseFormPromptType.FROM_BASE.value:
+        return "SPANISH"
+    return "BASE"
 
 
 async def get_open_attempt(
@@ -173,6 +178,13 @@ async def create_or_get_attempt(session: AsyncSession, user: User) -> VerbBaseAt
     await session.flush()
 
     for position, (verb, prompt_type) in enumerate(pairs, start=1):
+        required_field = _required_field_for_prompt(prompt_type)
+        valid_answers = _valid_answers_for_field(
+            list(verb.answers),
+            VerbAnswerField.SPANISH
+            if required_field == "SPANISH"
+            else VerbAnswerField.BASE,
+        )
         session.add(
             VerbBaseAttemptQuestion(
                 id=uuid.uuid4(),
@@ -182,7 +194,8 @@ async def create_or_get_attempt(session: AsyncSession, user: User) -> VerbBaseAt
                 snapshot_base=verb.base_display,
                 snapshot_past=verb.past_display,
                 snapshot_spanish_prompt=verb.spanish_prompt,
-                snapshot_valid_base_answers=await _valid_base_answers(list(verb.answers)),
+                # Guarda las respuestas válidas del campo pedido (base o español).
+                snapshot_valid_base_answers=valid_answers,
                 prompt_type=prompt_type,
             )
         )
@@ -213,26 +226,41 @@ async def get_attempt_for_user(
 def serialize_question(
     question: VerbBaseAttemptQuestion, *, include_grades: bool
 ) -> dict:
-    if question.prompt_type == BaseFormPromptType.FROM_SPANISH.value:
+    required_field = _required_field_for_prompt(question.prompt_type)
+    if question.prompt_type == BaseFormPromptType.FROM_BASE.value:
+        shown_field = "BASE"
+        shown_value = question.snapshot_base
+        required_label = "meaning in Spanish"
+        expected_value = question.snapshot_spanish_prompt
+    elif question.prompt_type == BaseFormPromptType.FROM_SPANISH.value:
         shown_field = "SPANISH"
         shown_value = question.snapshot_spanish_prompt
+        required_label = "base form in English"
+        expected_value = question.snapshot_base
     else:
+        # Intentos antiguos que aún muestran pasado → base.
         shown_field = "PAST"
         shown_value = question.snapshot_past
+        required_label = "base form in English"
+        expected_value = question.snapshot_base
+        required_field = "BASE"
 
     data = {
         "id": str(question.id),
         "position": question.position,
         "prompt_type": question.prompt_type,
-        "prompt_label": f"We give you: {PROMPT_LABELS.get(question.prompt_type, question.prompt_type)}",
+        "prompt_label": (
+            f"We give you: "
+            f"{PROMPT_LABELS.get(question.prompt_type, question.prompt_type)}"
+        ),
         "shown_field": shown_field,
         "shown_value": shown_value,
-        "required_fields": [{"field": "BASE", "label": "base form in English"}],
+        "required_fields": [{"field": required_field, "label": required_label}],
         "answers": {"base": question.answer_base_raw},
     }
     if include_grades:
         data["grades"] = {"base": question.is_base_correct}
-        data["expected"] = {"base": question.snapshot_base}
+        data["expected"] = {"base": expected_value}
         data["fully_correct"] = question.is_base_correct is True
     return data
 
@@ -260,9 +288,11 @@ def grade_question(question: VerbBaseAttemptQuestion) -> bool | None:
         question.is_base_correct = None
         question.graded_at = datetime.now(UTC)
         return None
-    normalized = normalize_text(raw)
+    asks_spanish = _required_field_for_prompt(question.prompt_type) == "SPANISH"
+    normalizer = normalize_spanish if asks_spanish else normalize_text
+    normalized = normalizer(raw)
     question.is_base_correct = normalized in {
-        normalize_text(v) for v in question.snapshot_valid_base_answers
+        normalizer(v) for v in question.snapshot_valid_base_answers
     }
     question.graded_at = datetime.now(UTC)
     return question.is_base_correct

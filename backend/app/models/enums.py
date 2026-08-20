@@ -82,7 +82,7 @@ class PromptType(StrEnum):
 
 
 class BaseFormPromptType(StrEnum):
-    """Tipos de pista del examen Verb Base Form: mostrar español o pasado; pedir solo BASE."""
+    """Tipos de pista del Verb Base Form: español ↔ forma base (sin pasado)."""
 
     FROM_SPANISH = "FROM_SPANISH"
-    FROM_PAST = "FROM_PAST"
+    FROM_BASE = "FROM_BASE"

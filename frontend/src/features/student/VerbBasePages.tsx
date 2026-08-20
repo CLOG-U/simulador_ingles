@@ -20,22 +20,19 @@ export function VerbBaseInstructionsPage() {
       <section className="card space-y-4">
         <h2 className="text-lg font-semibold">Verb Base Form</h2>
         <p>
-          You will see the Spanish meaning or the past form, and you will write
-          only the base form of the verb in English.
+          You will practice only the base form of the verb and its Spanish
+          meaning. The past form is not used in this exam.
         </p>
         <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
           <li>
             <strong>From Spanish:</strong> we give you the meaning → write the
-            base form.
+            base form (e.g. <em>ir</em> → <em>go</em>).
           </li>
           <li>
-            <strong>From past:</strong> we give you the past form → write the
-            base form.
+            <strong>From base form:</strong> we give you the English base form →
+            write the Spanish meaning (e.g. <em>go</em> → <em>ir</em>).
           </li>
         </ul>
-        <p className="text-sm text-gray-600">
-          Example: <em>went</em> → <em>go</em>
-        </p>
         <div className="flex flex-wrap gap-3">
           <Link
             to="/student/exams/verb_base_exam/start"
@@ -286,8 +283,8 @@ export function VerbBaseExamPage() {
             ? "Offline"
             : "";
 
-  const baseField =
-    question.required_fields.find((f) => f.field === "BASE") ?? {
+  const answerField =
+    question.required_fields[0] ?? {
       field: "BASE",
       label: "base form in English",
     };
@@ -306,11 +303,11 @@ export function VerbBaseExamPage() {
         <p className="text-2xl font-bold text-brand-primary">{question.shown_value}</p>
 
         <div>
-          <label htmlFor={`${question.id}-base`} className="mb-1 block text-sm font-medium">
-            {baseField.label}
+          <label htmlFor={`${question.id}-answer`} className="mb-1 block text-sm font-medium">
+            {answerField.label}
           </label>
           <input
-            id={`${question.id}-base`}
+            id={`${question.id}-answer`}
             className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-sky"
             value={answer}
             autoComplete="off"
@@ -456,8 +453,9 @@ export function VerbBaseResultPage() {
                       q.grades.base ? "mt-2 text-success" : "mt-2 text-danger"
                     }
                   >
-                    base form: your answer «{q.answers.base ?? "—"}» — expected
-                    «{q.expected.base}» {q.grades.base ? "✓" : "✗"}
+                    {q.required_fields[0]?.label ?? "answer"}: your answer «
+                    {q.answers.base ?? "—"}» — expected «{q.expected.base}»{" "}
+                    {q.grades.base ? "✓" : "✗"}
                   </p>
                 )}
               </article>
