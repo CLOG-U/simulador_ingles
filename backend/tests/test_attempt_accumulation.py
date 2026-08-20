@@ -9,14 +9,16 @@ from app.services import exam_access_service
 pytestmark = pytest.mark.integration
 
 
-async def _make_student(db_session, username: str) -> User:
+async def _make_user(
+    db_session, username: str, *, role: UserRole = UserRole.STUDENT
+) -> User:
     user = User(
         id=uuid.uuid4(),
         username=username,
         username_normalized=username.casefold(),
-        full_name="Student Test",
+        full_name=f"{role.value} Test",
         password_hash=hash_password("Password123!"),
-        role=UserRole.STUDENT,
+        role=role,
         is_active=True,
         must_change_password=False,
     )
@@ -27,8 +29,11 @@ async def _make_student(db_session, username: str) -> User:
 
 @pytest.mark.asyncio
 async def test_authorize_new_attempt_accumulates_cupo(db_session):
-    student = await _make_student(db_session, f"accum_{uuid.uuid4().hex[:8]}")
-    actor_id = uuid.uuid4()
+    student = await _make_user(db_session, f"accum_{uuid.uuid4().hex[:8]}")
+    actor = await _make_user(
+        db_session, f"actor_{uuid.uuid4().hex[:8]}", role=UserRole.ADMIN
+    )
+    actor_id = actor.id
 
     access = await exam_access_service.get_or_create_access(
         db_session,
