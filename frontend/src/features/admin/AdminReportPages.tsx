@@ -330,7 +330,7 @@ export function AdminStudentReportPage() {
                   Usuario: {data.student.username}
                 </p>
               </div>
-              <div className="grid gap-3 px-6 py-4 text-sm sm:grid-cols-3">
+              <div className="grid gap-3 px-6 py-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 <p>
                   <span className="font-semibold text-brand-primary">Verb Exam:</span>{" "}
                   {data.student.attempts_used ?? 0} de{" "}
@@ -339,9 +339,21 @@ export function AdminStudentReportPage() {
                 </p>
                 <p>
                   <span className="font-semibold text-brand-primary">
+                    Verb Base Form:
+                  </span>{" "}
+                  {data.verb_base_attempts?.length ?? 0} intento(s)
+                </p>
+                <p>
+                  <span className="font-semibold text-brand-primary">
                     Past Simple Exam:
                   </span>{" "}
                   {data.past_simple_attempts.length} intento(s)
+                </p>
+                <p>
+                  <span className="font-semibold text-brand-primary">
+                    Present Simple Exam:
+                  </span>{" "}
+                  {data.present_simple_attempts?.length ?? 0} intento(s)
                 </p>
                 <p>
                   <span className="font-semibold text-brand-primary">Práctica:</span>{" "}

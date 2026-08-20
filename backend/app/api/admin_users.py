@@ -7,7 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import require_admin
 from app.core.database import get_db
 from app.core.errors import AppError
-from app.models import Attempt, AttemptStatus, ExamType, PastSimpleAttempt, User, UserRole
+from app.models import (
+    Attempt,
+    AttemptStatus,
+    ExamType,
+    PastSimpleAttempt,
+    PresentSimpleAttempt,
+    User,
+    UserRole,
+    VerbBaseAttempt,
+)
 from app.schemas.user import (
     AdminResetPasswordRequest,
     AdminUserCreate,
@@ -56,10 +65,52 @@ async def list_users(
             past_practice_counts[user_id] = count
         else:
             past_exam_counts[user_id] = count
+
+    verb_base_counts: dict = {}
+    if student_ids:
+        verb_base_counts_result = await db.execute(
+            select(VerbBaseAttempt.user_id, func.count())
+            .where(
+                VerbBaseAttempt.user_id.in_(student_ids),
+                VerbBaseAttempt.status == AttemptStatus.SUBMITTED,
+            )
+            .group_by(VerbBaseAttempt.user_id)
+        )
+        verb_base_counts = {
+            user_id: count for user_id, count in verb_base_counts_result.all()
+        }
+
+    present_exam_counts: dict = {}
+    if student_ids:
+        present_counts_result = await db.execute(
+            select(PresentSimpleAttempt.user_id, func.count())
+            .where(
+                PresentSimpleAttempt.user_id.in_(student_ids),
+                PresentSimpleAttempt.mode == "exam",
+                PresentSimpleAttempt.status == AttemptStatus.SUBMITTED,
+            )
+            .group_by(PresentSimpleAttempt.user_id)
+        )
+        present_exam_counts = {
+            user_id: count for user_id, count in present_counts_result.all()
+        }
+
+    def _submitted_for_exam(user_id, exam_type: str, verb_used: int) -> int:
+        if exam_type == ExamType.VERB_EXAM.value:
+            return verb_used
+        if exam_type == ExamType.VERB_BASE_EXAM.value:
+            return verb_base_counts.get(user_id, 0)
+        if exam_type == ExamType.PRESENT_SIMPLE_EXAM.value:
+            return present_exam_counts.get(user_id, 0)
+        if exam_type == ExamType.PAST_SIMPLE_EXAM.value:
+            return past_exam_counts.get(user_id, 0)
+        return 0
+
     items: list[AdminUserResponse] = []
     for user in users:
         base = AdminUserResponse.model_validate(user)
         if user.role == UserRole.STUDENT and user.id in attempt_stats:
+            verb_used = attempt_stats[user.id]["attempts_used"]
             base = base.model_copy(
                 update={
                     **attempt_stats[user.id],
@@ -69,19 +120,14 @@ async def list_users(
                             "is_enabled": access.is_enabled,
                             "practice_enabled": access.practice_enabled,
                             "allowed_attempts": access.allowed_attempts,
-                            "submitted_attempts": (
-                                attempt_stats[user.id]["attempts_used"]
-                                if access.exam_type == ExamType.VERB_EXAM.value
-                                else past_exam_counts.get(user.id, 0)
+                            "submitted_attempts": _submitted_for_exam(
+                                user.id, access.exam_type, verb_used
                             ),
                             "remaining_attempts": max(
                                 0,
                                 access.allowed_attempts
-                                - (
-                                    attempt_stats[user.id]["attempts_used"]
-                                    if access.exam_type
-                                    == ExamType.VERB_EXAM.value
-                                    else past_exam_counts.get(user.id, 0)
+                                - _submitted_for_exam(
+                                    user.id, access.exam_type, verb_used
                                 ),
                             ),
                             "practice_submitted_attempts": (
@@ -159,13 +205,36 @@ async def student_report(
         .order_by(PastSimpleAttempt.started_at.desc())
     )
     practice_attempts = practice_result.scalars().all()
+
+    verb_base_result = await db.execute(
+        select(VerbBaseAttempt)
+        .where(VerbBaseAttempt.user_id == user_id)
+        .order_by(VerbBaseAttempt.started_at.desc())
+    )
+    verb_base_attempts = verb_base_result.scalars().all()
+
+    present_result = await db.execute(
+        select(PresentSimpleAttempt)
+        .where(
+            PresentSimpleAttempt.user_id == user_id,
+            PresentSimpleAttempt.mode == "exam",
+        )
+        .order_by(PresentSimpleAttempt.started_at.desc())
+    )
+    present_attempts = present_result.scalars().all()
+
     stats = await exam_service.get_student_attempt_stats(db, [user_id])
     attempt_summary = stats.get(user_id, {})
 
-    def _serialize_past_simple(attempt: PastSimpleAttempt, *, exam_name: str) -> dict:
+    def _serialize_past_simple(
+        attempt: PastSimpleAttempt | PresentSimpleAttempt,
+        *,
+        exam_name: str,
+        exam_type: str,
+    ) -> dict:
         return {
             "id": str(attempt.id),
-            "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+            "exam_type": exam_type,
             "exam_name": exam_name,
             "mode": attempt.mode,
             "attempt_number": attempt.attempt_number,
@@ -189,6 +258,25 @@ async def student_report(
             "total_questions": attempt.total_questions,
         }
 
+    def _serialize_verb_base(attempt: VerbBaseAttempt) -> dict:
+        return {
+            "id": str(attempt.id),
+            "exam_type": ExamType.VERB_BASE_EXAM.value,
+            "exam_name": "Verb Base Form",
+            "status": attempt.status.value,
+            "started_at": attempt.started_at.isoformat(),
+            "submitted_at": (
+                attempt.submitted_at.isoformat() if attempt.submitted_at else None
+            ),
+            "percentage": (
+                float(attempt.percentage) if attempt.percentage is not None else None
+            ),
+            "passed": attempt.passed,
+            "correct_fields": attempt.correct_answers,
+            "total_fields": attempt.total_questions,
+            "fully_correct_questions": attempt.correct_answers,
+        }
+
     return {
         "student": AdminUserResponse.model_validate(user).model_copy(update=attempt_summary),
         "attempts": [
@@ -207,12 +295,31 @@ async def student_report(
             }
             for a in attempts
         ],
+        "verb_base_attempts": [
+            _serialize_verb_base(attempt) for attempt in verb_base_attempts
+        ],
         "past_simple_attempts": [
-            _serialize_past_simple(attempt, exam_name="Past Simple Exam")
+            _serialize_past_simple(
+                attempt,
+                exam_name="Past Simple Exam",
+                exam_type=ExamType.PAST_SIMPLE_EXAM.value,
+            )
             for attempt in past_attempts
         ],
+        "present_simple_attempts": [
+            _serialize_past_simple(
+                attempt,
+                exam_name="Present Simple Exam",
+                exam_type=ExamType.PRESENT_SIMPLE_EXAM.value,
+            )
+            for attempt in present_attempts
+        ],
         "past_simple_practice_attempts": [
-            _serialize_past_simple(attempt, exam_name="Past Simple Practice")
+            _serialize_past_simple(
+                attempt,
+                exam_name="Past Simple Practice",
+                exam_type=ExamType.PAST_SIMPLE_EXAM.value,
+            )
             for attempt in practice_attempts
         ],
         "practice_sessions_completed": sum(
