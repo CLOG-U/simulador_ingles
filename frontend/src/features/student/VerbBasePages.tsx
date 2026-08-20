@@ -401,7 +401,7 @@ export function VerbBaseExamPage() {
                 onClick={async () => {
                   await flushAllSaves();
                   await submitMutation.mutateAsync();
-                  window.location.href = `/student/exams/verb_base_exam/results/${attemptId}`;
+                  window.location.href = `/student/exams/verb_base_exam/results/${attemptId}/review`;
                 }}
               >
                 Submit

@@ -388,7 +388,7 @@ export function ExamPage() {
                 onClick={async () => {
                   await flushAllSaves();
                   await submitMutation.mutateAsync();
-                  window.location.href = `/student/exams/verb_exam/results/${attemptId}`;
+                  window.location.href = `/student/exams/verb_exam/results/${attemptId}/review`;
                 }}
               >
                 Entregar

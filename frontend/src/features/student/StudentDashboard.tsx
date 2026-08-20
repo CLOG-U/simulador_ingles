@@ -219,7 +219,7 @@ export function StudentExamsPage() {
             }}
             instructionsPath="/student/exams/verb_exam/instructions"
             examPath={(id) => `/student/exams/verb_exam/attempts/${id}`}
-            resultPath={(id) => `/student/exams/verb_exam/results/${id}`}
+            resultPath={(id) => `/student/exams/verb_exam/results/${id}/review`}
           />
           <ExamCard
             title="Verb Base Form"
@@ -236,7 +236,9 @@ export function StudentExamsPage() {
             }}
             instructionsPath="/student/exams/verb_base_exam/instructions"
             examPath={(id) => `/student/exams/verb_base_exam/attempts/${id}`}
-            resultPath={(id) => `/student/exams/verb_base_exam/results/${id}`}
+            resultPath={(id) =>
+              `/student/exams/verb_base_exam/results/${id}/review`
+            }
           />
           <ExamCard
             title="Past Simple Exam"
@@ -251,7 +253,9 @@ export function StudentExamsPage() {
             }}
             instructionsPath="/student/exams/past_simple_exam/instructions"
             examPath={(id) => `/student/exams/past_simple_exam/attempts/${id}`}
-            resultPath={(id) => `/student/exams/past_simple_exam/results/${id}`}
+            resultPath={(id) =>
+              `/student/exams/past_simple_exam/results/${id}/review`
+            }
           />
           <ExamCard
             title="Present Simple Exam"
@@ -271,7 +275,7 @@ export function StudentExamsPage() {
               `/student/exams/present_simple_exam/attempts/${id}`
             }
             resultPath={(id) =>
-              `/student/exams/present_simple_exam/results/${id}`
+              `/student/exams/present_simple_exam/results/${id}/review`
             }
           />
         </div>

@@ -225,7 +225,7 @@ export function PastSimpleExamPage() {
 
   useEffect(() => {
     if (attempt?.status === "SUBMITTED") {
-      navigate(`/student/exams/past_simple_exam/results/${attempt.id}`, {
+      navigate(`/student/exams/past_simple_exam/results/${attempt.id}/review`, {
         replace: true,
       });
     }
@@ -249,7 +249,7 @@ export function PastSimpleExamPage() {
         void Promise.allSettled(Object.values(saveQueuesRef.current))
           .then(() => pastSimpleApi.submit(attempt.id))
           .finally(() => {
-            window.location.href = `/student/exams/past_simple_exam/results/${attempt.id}`;
+            window.location.href = `/student/exams/past_simple_exam/results/${attempt.id}/review`;
           });
       }
     };
@@ -497,7 +497,7 @@ export function PastSimpleExamPage() {
                     for (const item of questions) await flushSave(item.id);
                     await Promise.all(Object.values(saveQueuesRef.current));
                     await pastSimpleApi.submit(attemptId);
-                    window.location.href = `/student/exams/past_simple_exam/results/${attemptId}`;
+                    window.location.href = `/student/exams/past_simple_exam/results/${attemptId}/review`;
                   } catch {
                     setShowSubmit(false);
                     setSaveLabel("Not saved");
