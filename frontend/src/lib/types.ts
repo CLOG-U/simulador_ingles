@@ -95,6 +95,8 @@ export interface VerbBaseResult extends Attempt {
   unanswered_answers: number | null;
   total_questions: number;
   percentage: number | null;
+  score_out_of_ten?: number | null;
+  duration_seconds?: number | null;
   passed: boolean | null;
   review_policy: string;
   student_id?: string;
@@ -222,6 +224,9 @@ export interface AdminAttemptReport extends AttemptResult {
   incorrect_answers?: number | null;
   unanswered_answers?: number | null;
   total_questions?: number;
+  score_out_of_ten?: number | null;
+  duration_seconds?: number | null;
+  attempt_number?: number;
 }
 
 export interface PastSimpleQuestion {

@@ -4,6 +4,15 @@ import { Link, useParams } from "react-router-dom";
 import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
 import { adminApi } from "../../lib/endpoints";
+import {
+  AttemptReportFooter,
+  AttemptReportHeader,
+  GradeOverrideButtons,
+  QuestionReviewCard,
+  QuestionReviewSection,
+  ReportStatusBadge,
+  TopicPerformanceCard,
+} from "./AdminAttemptReportLayout";
 
 const TOPIC_LABELS: Record<string, string> = {
   affirmative: "Affirmative",
@@ -14,14 +23,6 @@ const TOPIC_LABELS: Record<string, string> = {
   order_words: "Order",
   sentences: "Sentences",
 };
-
-function formatDate(value: string | null) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString("es-EC", {
-    dateStyle: "short",
-    timeStyle: "short",
-  });
-}
 
 export function AdminPresentSimplePage() {
   const queryClient = useQueryClient();
@@ -87,7 +88,7 @@ export function AdminPresentSimplePage() {
             <h2 className="text-xl font-semibold">Configuración</h2>
             <p className="text-sm text-gray-600">
               Banco: {config?.question_bank_size ?? "—"} preguntas · Cada sesión
-              de examen o práctica toma 14 (2 por tema). Examen y práctica se
+              de examen o práctica toma 20. Examen y práctica se
               activan por separado.
             </p>
           </div>
@@ -255,198 +256,128 @@ export function AdminPresentSimpleAttemptReportPage() {
       >
         {data && (
           <div className="space-y-5">
-            <section className="card space-y-3">
-              <h2 className="text-xl font-semibold">
-                {data.student_name} ({data.student_username})
-              </h2>
-              <p className="text-sm text-gray-600">
-                {data.exam_name ??
-                  (data.mode === "practice"
-                    ? "Present Simple Practice"
-                    : "Present Simple Exam")}{" "}
-                · {data.mode === "practice" ? "Sesión" : "Intento"}{" "}
-                {data.attempt_number}
-              </p>
-              <p className="text-sm text-gray-600">
-                Inicio: {formatDate(data.started_at)} · Entrega:{" "}
-                {formatDate(data.submitted_at)}
-              </p>
-              <p className="text-sm text-gray-600">
-                Tiempo utilizado:{" "}
-                {data.duration_seconds != null
-                  ? `${Math.floor(data.duration_seconds / 60)} min ${data.duration_seconds % 60} s`
-                  : "—"}
-              </p>
-              <p className="text-3xl font-bold text-brand-primary">
-                {data.percentage != null
-                  ? `${data.percentage.toFixed(1)}% · ${(data.score_out_of_ten ?? 0).toFixed(1)} / 10`
-                  : "Evaluación en curso"}
-              </p>
-              <p className="font-semibold">
-                {data.passed == null
-                  ? "Pendiente de entrega"
-                  : data.passed
-                    ? "Aprobado"
-                    : "No aprobado"}
-              </p>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <p>Correctas: {data.correct_answers ?? "—"}</p>
-                <p>Incorrectas: {data.incorrect_answers ?? "—"}</p>
-                <p>Sin responder: {data.unanswered_answers ?? "—"}</p>
-              </div>
-            </section>
+            <AttemptReportHeader
+              studentName={data.student_name}
+              studentUsername={data.student_username}
+              studentId={data.student_id}
+              examName={
+                data.exam_name ??
+                (data.mode === "practice"
+                  ? "Present Simple Practice"
+                  : "Present Simple Exam")
+              }
+              attemptLabel={`${data.mode === "practice" ? "Sesión" : "Intento"} ${data.attempt_number}`}
+              startedAt={data.started_at}
+              submittedAt={data.submitted_at}
+              durationSeconds={data.duration_seconds}
+              status={data.status}
+              percentage={data.percentage}
+              scoreOutOfTen={data.score_out_of_ten}
+              passed={data.passed}
+              correct={data.correct_answers}
+              incorrect={data.incorrect_answers}
+              unanswered={data.unanswered_answers}
+            />
 
-            <section className="card">
-              <h2 className="mb-3 text-lg font-semibold">Rendimiento por tema</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[600px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-2">Tema</th>
-                      <th>Correctas</th>
-                      <th>Incorrectas</th>
-                      <th>Sin responder</th>
-                      <th>Porcentaje</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.topic_performance.map((topic) => (
-                      <tr key={topic.topic} className="border-b">
-                        <td className="py-2">{topic.topic_label}</td>
-                        <td>{topic.correct}</td>
-                        <td>{topic.incorrect}</td>
-                        <td>{topic.unanswered}</td>
-                        <td>{topic.percentage.toFixed(1)}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg bg-green-50 p-3">
-                  <h3 className="font-semibold text-green-800">Temas dominados</h3>
-                  <p className="mt-1 text-sm">
-                    {data.observation.strong_topics.join(", ") || "Ninguno todavía"}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-amber-50 p-3">
-                  <h3 className="font-semibold text-amber-900">Temas por reforzar</h3>
-                  <p className="mt-1 text-sm">
-                    {data.observation.topics_to_review.join(", ") || "Ninguno"}
-                  </p>
-                </div>
-              </div>
-            </section>
+            <TopicPerformanceCard
+              rows={data.topic_performance}
+              strongTopics={data.observation.strong_topics}
+              topicsToReview={data.observation.topics_to_review}
+            />
 
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold">Detalle de respuestas</h2>
-              <p className="text-sm text-gray-600">
-                Puedes marcar una pregunta como correcta o incorrecta; el
-                porcentaje se recalcula al instante.
-              </p>
+            <QuestionReviewSection>
               {data.questions.map((question) => (
-                <article key={question.id} className="card text-sm">
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <h3 className="font-semibold">
-                      {question.position}. {question.question}
-                    </h3>
-                    <span className="font-semibold capitalize">
-                      {question.status ?? "pendiente"}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-gray-600">
-                    Tema: {TOPIC_LABELS[question.topic] ?? question.topic}
-                  </p>
-                  {question.options && (
-                    <p className="mt-2 text-gray-600">
-                      Opciones: {question.options.join(" · ")}
-                    </p>
-                  )}
-                  <p className="mt-2">
-                    Respuesta del estudiante:{" "}
-                    <strong>{question.answer || "Sin responder"}</strong>
-                  </p>
-                  <p>
-                    Respuesta correcta:{" "}
-                    <strong className="text-success">
-                      {question.correct_answer ?? "Disponible al entregar"}
-                    </strong>
-                  </p>
-                  {question.explanation && (
-                    <p className="mt-2 rounded-lg bg-gray-50 p-3">
-                      {question.explanation}
-                    </p>
-                  )}
-                  {data.status === "SUBMITTED" && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        className="min-h-9 rounded-lg border border-green-300 px-3 text-xs font-semibold text-green-800"
-                        disabled={
-                          overrideMutation.isPending ||
-                          question.is_correct === true
-                        }
-                        onClick={() =>
+                <QuestionReviewCard
+                  key={question.id}
+                  title={`${question.position}. ${question.question}`}
+                  badge={
+                    <ReportStatusBadge
+                      correct={question.is_correct}
+                      label={question.status}
+                    />
+                  }
+                  meta={
+                    <>
+                      <p className="text-gray-600">
+                        Tema: {TOPIC_LABELS[question.topic] ?? question.topic}
+                      </p>
+                      {question.options && (
+                        <p className="text-gray-600">
+                          Opciones: {question.options.join(" · ")}
+                        </p>
+                      )}
+                    </>
+                  }
+                  studentAnswer={question.answer || "Sin responder"}
+                  expectedAnswer={
+                    question.correct_answer ?? "Disponible al entregar"
+                  }
+                  explanation={
+                    question.explanation ? (
+                      <p className="rounded-lg bg-gray-50 p-3">
+                        {question.explanation}
+                      </p>
+                    ) : null
+                  }
+                  tone={
+                    question.is_correct === true
+                      ? "correct"
+                      : question.is_correct === false
+                        ? "incorrect"
+                        : "neutral"
+                  }
+                  actions={
+                    data.status === "SUBMITTED" ? (
+                      <GradeOverrideButtons
+                        current={question.is_correct}
+                        disabled={overrideMutation.isPending}
+                        onSet={(correct) =>
                           overrideMutation.mutate({
                             questionId: question.id,
-                            correct: true,
+                            correct,
                           })
                         }
-                      >
-                        Marcar correcta
-                      </button>
-                      <button
-                        type="button"
-                        className="min-h-9 rounded-lg border border-red-300 px-3 text-xs font-semibold text-red-800"
-                        disabled={
-                          overrideMutation.isPending ||
-                          question.is_correct === false
-                        }
-                        onClick={() =>
-                          overrideMutation.mutate({
-                            questionId: question.id,
-                            correct: false,
-                          })
-                        }
-                      >
-                        Marcar incorrecta
-                      </button>
-                    </div>
-                  )}
-                </article>
+                      />
+                    ) : null
+                  }
+                />
               ))}
-            </section>
+            </QuestionReviewSection>
 
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to={`/admin/students/${data.student_id}/report`}
-                className="btn-primary"
-              >
-                Reporte general
-              </Link>
-              <Link
-                to={
-                  data.mode === "practice"
-                    ? `/admin/students/${data.student_id}/practice/present-simple`
-                    : `/admin/students/${data.student_id}/exams/present-simple`
-                }
-                className="inline-flex rounded-xl border px-4 py-2.5"
-              >
-                {data.mode === "practice"
-                  ? "Reporte Practice"
-                  : "Reporte Present Simple Exam"}
-              </Link>
-              <Link
-                to={
-                  data.mode === "practice"
-                    ? "/admin/practice/present-simple"
-                    : "/admin/exams/present-simple"
-                }
-                className="inline-flex rounded-xl border px-4 py-2.5"
-              >
-                Volver al módulo
-              </Link>
-            </div>
+            <AttemptReportFooter
+              links={
+                <>
+                  <Link
+                    to={`/admin/students/${data.student_id}/report`}
+                    className="btn-primary"
+                  >
+                    Reporte general
+                  </Link>
+                  <Link
+                    to={
+                      data.mode === "practice"
+                        ? `/admin/students/${data.student_id}/practice/present-simple`
+                        : `/admin/students/${data.student_id}/exams/present-simple`
+                    }
+                    className="inline-flex rounded-xl border px-4 py-2.5"
+                  >
+                    {data.mode === "practice"
+                      ? "Reporte Practice"
+                      : "Reporte Present Simple Exam"}
+                  </Link>
+                  <Link
+                    to={
+                      data.mode === "practice"
+                        ? "/admin/practice/present-simple"
+                        : "/admin/exams/present-simple"
+                    }
+                    className="inline-flex rounded-xl border px-4 py-2.5"
+                  >
+                    Volver al módulo
+                  </Link>
+                </>
+              }
+            />
           </div>
         )}
       </QueryState>

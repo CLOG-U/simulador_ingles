@@ -58,7 +58,7 @@ export function PresentSimpleInstructionsPage() {
           results after completing the exam.
         </p>
         <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
-          <li>Total questions: 14</li>
+          <li>Total questions: 20</li>
           <li>Each question has the same value.</li>
           <li>Answers cannot be checked during the exam.</li>
           <li>Submit the exam when you finish.</li>

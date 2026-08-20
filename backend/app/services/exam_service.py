@@ -258,7 +258,25 @@ def serialize_admin_attempt_report(attempt: Attempt, user: User) -> dict:
             "correct_fields": attempt.correct_fields,
             "total_fields": attempt.total_fields,
             "fully_correct_questions": attempt.fully_correct_questions,
+            "correct_answers": attempt.correct_fields,
+            "incorrect_answers": (
+                (attempt.total_fields - (attempt.correct_fields or 0))
+                if attempt.correct_fields is not None
+                else None
+            ),
+            "unanswered_answers": None,
+            "total_questions": attempt.total_fields,
             "percentage": float(attempt.percentage) if attempt.percentage is not None else None,
+            "score_out_of_ten": (
+                float(round(float(attempt.percentage) / 10, 2))
+                if attempt.percentage is not None
+                else None
+            ),
+            "duration_seconds": (
+                int((attempt.submitted_at - attempt.started_at).total_seconds())
+                if attempt.submitted_at
+                else None
+            ),
             "passed": attempt.passed,
             "review_policy": review_policy,
         }

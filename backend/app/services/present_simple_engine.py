@@ -49,21 +49,34 @@ def shuffle_order_words(
 
 def select_balanced_questions(
     questions: list[PresentSimpleQuestion],
+    *,
+    count: int = 20,
 ) -> list[PresentSimpleQuestion]:
+    """Selecciona `count` preguntas repartidas de forma equilibrada por tema."""
+    if count < len(PresentSimpleTopic):
+        raise ValueError("Se necesita al menos una pregunta por tema.")
+
     grouped: dict[str, list[PresentSimpleQuestion]] = defaultdict(list)
     for question in questions:
         if question.active:
             grouped[question.topic].append(question)
 
+    topics = list(PresentSimpleTopic)
+    base = count // len(topics)
+    extra = count % len(topics)
     rng = secrets.SystemRandom()
+    topic_order = topics.copy()
+    rng.shuffle(topic_order)
+
     selected: list[PresentSimpleQuestion] = []
-    for topic in PresentSimpleTopic:
+    for index, topic in enumerate(topic_order):
+        need = base + (1 if index < extra else 0)
         candidates = grouped.get(topic.value, [])
-        if len(candidates) < 2:
+        if len(candidates) < need:
             raise ValueError(
-                f"El tema '{topic.value}' necesita al menos dos preguntas activas."
+                f"El tema '{topic.value}' necesita al menos {need} preguntas activas."
             )
-        selected.extend(rng.sample(candidates, 2))
+        selected.extend(rng.sample(candidates, need))
 
     rng.shuffle(selected)
     return selected

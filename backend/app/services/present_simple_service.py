@@ -132,7 +132,9 @@ async def _create_attempt_with_questions(
         select(PresentSimpleQuestion).where(PresentSimpleQuestion.active.is_(True))
     )
     try:
-        selected = select_balanced_questions(list(result.scalars()))
+        selected = select_balanced_questions(
+            list(result.scalars()), count=question_count
+        )
     except ValueError as exc:
         raise AppError(
             "INSUFFICIENT_QUESTIONS",

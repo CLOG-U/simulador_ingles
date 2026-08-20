@@ -45,18 +45,21 @@ async def seed_present_simple(session: AsyncSession) -> None:
                 setattr(question, key, value)
 
     result = await session.execute(select(PresentSimpleConfig).limit(1))
-    if result.scalar_one_or_none() is None:
+    config = result.scalar_one_or_none()
+    if config is None:
         session.add(
             PresentSimpleConfig(
                 id=uuid.uuid4(),
                 is_enabled=False,
                 practice_enabled=False,
-                question_count=14,
+                question_count=20,
                 passing_percentage=70,
                 duration_minutes=None,
                 review_policy=ReviewPolicy.FULL,
             )
         )
+    else:
+        config.question_count = 20
 
 
 async def run_seed() -> None:

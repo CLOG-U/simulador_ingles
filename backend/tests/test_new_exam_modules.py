@@ -1,8 +1,10 @@
 """Pruebas unitarias de los módulos de examen nuevos (sin BD)."""
 
 from collections import Counter
+from types import SimpleNamespace
 
 from app.models.enums import ExamType, PresentSimpleTopic
+from app.services.present_simple_engine import select_balanced_questions
 from app.services.verb_base_service import build_base_prompt_types
 from seed.present_simple_data import PRESENT_SIMPLE_QUESTIONS
 
@@ -26,3 +28,17 @@ def test_present_simple_seed_covers_all_topics():
     for topic in PresentSimpleTopic:
         assert counts[topic.value] >= 13, topic.value
     assert len(PRESENT_SIMPLE_QUESTIONS) == 100
+
+
+def test_present_simple_selection_returns_20_balanced():
+    bank = [
+        SimpleNamespace(active=True, topic=item.topic, id=index)
+        for index, item in enumerate(PRESENT_SIMPLE_QUESTIONS)
+    ]
+    selected = select_balanced_questions(bank, count=20)
+    assert len(selected) == 20
+    counts = Counter(q.topic for q in selected)
+    assert set(counts) == {topic.value for topic in PresentSimpleTopic}
+    assert min(counts.values()) >= 2
+    assert max(counts.values()) <= 3
+    assert sum(counts.values()) == 20

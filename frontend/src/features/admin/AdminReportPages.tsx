@@ -4,6 +4,11 @@ import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
 import { adminApi } from "../../lib/endpoints";
 import type { AdminAttemptReport, ExamQuestion } from "../../lib/types";
+import {
+  AttemptReportHeader,
+  GradeOverrideButtons,
+  formatReportDate,
+} from "./AdminAttemptReportLayout";
 
 const STATUS_LABELS: Record<string, string> = {
   IN_PROGRESS: "En curso",
@@ -13,11 +18,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function formatDate(iso: string | null | undefined) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("es-EC", {
-    dateStyle: "short",
-    timeStyle: "short",
-  });
+  return formatReportDate(iso);
 }
 
 function answerKey(field: string): "base" | "past" | "spanish" {
@@ -40,45 +41,6 @@ function GradeBadge({ correct }: { correct: boolean }) {
     >
       {correct ? "Correcto" : "Incorrecto"}
     </span>
-  );
-}
-
-function OverrideButtons({
-  current,
-  disabled,
-  onSet,
-}: {
-  current: boolean | null | undefined;
-  disabled?: boolean;
-  onSet: (correct: boolean) => void;
-}) {
-  return (
-    <div className="mt-2 flex flex-wrap gap-2">
-      <button
-        type="button"
-        className={`min-h-9 rounded-lg px-3 text-xs font-semibold ${
-          current === true
-            ? "bg-green-600 text-white"
-            : "border border-green-300 text-green-800"
-        }`}
-        disabled={disabled || current === true}
-        onClick={() => onSet(true)}
-      >
-        Marcar correcta
-      </button>
-      <button
-        type="button"
-        className={`min-h-9 rounded-lg px-3 text-xs font-semibold ${
-          current === false
-            ? "bg-red-600 text-white"
-            : "border border-red-300 text-red-800"
-        }`}
-        disabled={disabled || current === false}
-        onClick={() => onSet(false)}
-      >
-        Marcar incorrecta
-      </button>
-    </div>
   );
 }
 
@@ -185,7 +147,7 @@ function QuestionReview({
                       </p>
                     )}
                     {hasGrades && (
-                      <OverrideButtons
+                      <GradeOverrideButtons
                         current={isCorrect}
                         disabled={overrideMutation.isPending}
                         onSet={(correct) =>
@@ -212,47 +174,27 @@ function AttemptReportContent({ data }: { data: AdminAttemptReport }) {
   const submitted = data.status === "SUBMITTED";
 
   return (
-    <section className="card space-y-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-sm text-gray-600">
-            Estudiante:{" "}
-            <Link
-              to={`/admin/students/${data.student_id}/report`}
-              className="text-brand-primary underline"
-            >
-              {data.student_name} ({data.student_username})
-            </Link>
-          </p>
-          <p className="text-sm text-gray-600">
-            Inicio: {formatDate(data.started_at)} · Entrega: {formatDate(data.submitted_at)}
-          </p>
-          <p className="text-sm text-gray-600">
-            Estado: {STATUS_LABELS[data.status] ?? data.status}
-          </p>
-        </div>
-      </div>
-
-      {submitted ? (
-        <>
-          <h2 className="text-xl font-bold">{data.passed ? "Aprobado" : "No aprobado"}</h2>
-          <p className="text-3xl font-bold text-brand-primary">
-            {data.percentage != null ? `${data.percentage.toFixed(1)}%` : "—"}
-          </p>
-          <p>
-            Campos correctos: {data.correct_fields ?? 0} de {data.total_fields ?? 0}
-          </p>
-          <p>
-            Verbos completamente correctos: {data.fully_correct_questions ?? 0} de{" "}
-            {data.total_fields ? data.total_fields / 2 : "—"}
-          </p>
-        </>
-      ) : (
-        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-          Este intento aún no ha sido entregado. Se muestran las respuestas registradas hasta el
-          momento.
-        </p>
-      )}
+    <div className="space-y-5">
+      <AttemptReportHeader
+        studentName={data.student_name}
+        studentUsername={data.student_username}
+        studentId={data.student_id}
+        examName={data.exam_name ?? "Verb Exam"}
+        attemptLabel={
+          data.attempt_number != null ? `Intento ${data.attempt_number}` : undefined
+        }
+        startedAt={data.started_at}
+        submittedAt={data.submitted_at}
+        durationSeconds={data.duration_seconds}
+        status={data.status}
+        percentage={data.percentage}
+        scoreOutOfTen={data.score_out_of_ten}
+        passed={data.passed}
+        correct={data.correct_answers ?? data.correct_fields}
+        incorrect={data.incorrect_answers}
+        unanswered={data.unanswered_answers}
+        correctLabel="Campos correctos"
+      />
 
       {data.questions && data.questions.length > 0 && (
         <QuestionReview
@@ -261,7 +203,7 @@ function AttemptReportContent({ data }: { data: AdminAttemptReport }) {
           attemptId={data.id}
         />
       )}
-    </section>
+    </div>
   );
 }
 

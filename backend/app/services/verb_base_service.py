@@ -469,6 +469,16 @@ async def serialize_admin_report(
             "unanswered_answers": attempt.unanswered_answers,
             "total_questions": attempt.total_questions,
             "percentage": float(attempt.percentage) if attempt.percentage is not None else None,
+            "score_out_of_ten": (
+                float(round(float(attempt.percentage) / 10, 2))
+                if attempt.percentage is not None
+                else None
+            ),
+            "duration_seconds": (
+                int((attempt.submitted_at - attempt.started_at).total_seconds())
+                if attempt.submitted_at
+                else None
+            ),
             "passed": attempt.passed,
             "review_policy": attempt.config_snapshot.get("review_policy", "FULL"),
         }

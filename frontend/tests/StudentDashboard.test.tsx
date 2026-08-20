@@ -139,7 +139,7 @@ describe("Student modules", () => {
       exam_type: "present_simple_exam",
       is_enabled: true,
       practice_enabled: false,
-      question_count: 14,
+      question_count: 20,
       question_bank_size: 35,
       passing_percentage: 70,
       duration_minutes: null,
