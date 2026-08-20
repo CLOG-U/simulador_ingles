@@ -9,7 +9,9 @@ class UserRole(StrEnum):
 
 class ExamType(StrEnum):
     VERB_EXAM = "verb_exam"
+    VERB_BASE_EXAM = "verb_base_exam"
     PAST_SIMPLE_EXAM = "past_simple_exam"
+    PRESENT_SIMPLE_EXAM = "present_simple_exam"
 
 
 class PastSimpleQuestionType(StrEnum):
@@ -35,6 +37,25 @@ class PastSimpleTopic(StrEnum):
     HOW = "how"
 
 
+class PresentSimpleQuestionType(StrEnum):
+    MULTIPLE_CHOICE = "multiple_choice"
+    FILL_BLANK = "fill_blank"
+    ORDER_WORDS = "order_words"
+    IDENTIFY = "identify"
+    TRANSFORM_SENTENCE = "transform_sentence"
+    SHORT_ANSWER = "short_answer"
+
+
+class PresentSimpleTopic(StrEnum):
+    AFFIRMATIVE = "affirmative"
+    NEGATIVE = "negative"
+    INTERROGATIVE = "interrogative"
+    SHORT_ANSWERS = "short_answers"
+    IDENTIFY = "identify"
+    ORDER_WORDS = "order_words"
+    SENTENCES = "sentences"
+
+
 class VerbAnswerField(StrEnum):
     BASE = "BASE"
     PAST = "PAST"
@@ -57,4 +78,11 @@ class AttemptStatus(StrEnum):
 class PromptType(StrEnum):
     FROM_SPANISH = "FROM_SPANISH"
     FROM_BASE = "FROM_BASE"
+    FROM_PAST = "FROM_PAST"
+
+
+class BaseFormPromptType(StrEnum):
+    """Tipos de pista del examen Verb Base Form: mostrar español o pasado; pedir solo BASE."""
+
+    FROM_SPANISH = "FROM_SPANISH"
     FROM_PAST = "FROM_PAST"

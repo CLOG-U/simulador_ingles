@@ -15,12 +15,21 @@ from app.models import (
     ExamType,
     PastSimpleAttempt,
     PastSimpleQuestion,
+    PresentSimpleAttempt,
     ReviewPolicy,
     User,
     UserRole,
+    VerbBaseAttempt,
 )
 from app.schemas.past_simple import ExamAccessUpdate, PastSimpleConfigUpdate
-from app.services import exam_access_service, exam_service, past_simple_service, user_service
+from app.services import (
+    exam_access_service,
+    exam_service,
+    past_simple_service,
+    present_simple_service,
+    user_service,
+    verb_base_service,
+)
 from app.services.audit_service import log_audit
 
 router = APIRouter(prefix="/admin", tags=["admin-past-simple"])
@@ -250,6 +259,7 @@ async def get_user_exam_access(
             user_id=user_id,
             exam_type=exam_type,
         )
+        practice_submitted = 0
         if exam_type == ExamType.VERB_EXAM:
             submitted = (
                 await db.execute(
@@ -261,7 +271,29 @@ async def get_user_exam_access(
                     )
                 )
             ).scalar_one()
-            practice_submitted = 0
+        elif exam_type == ExamType.VERB_BASE_EXAM:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(VerbBaseAttempt)
+                    .where(
+                        VerbBaseAttempt.user_id == user_id,
+                        VerbBaseAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
+        elif exam_type == ExamType.PRESENT_SIMPLE_EXAM:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(PresentSimpleAttempt)
+                    .where(
+                        PresentSimpleAttempt.user_id == user_id,
+                        PresentSimpleAttempt.mode == present_simple_service.MODE_EXAM,
+                        PresentSimpleAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
         else:
             submitted = (
                 await db.execute(
@@ -360,6 +392,12 @@ async def allow_new_attempt(
             "Verb Exam no tiene modo práctica.",
             status_code=400,
         )
+    if parsed_type in {ExamType.VERB_BASE_EXAM, ExamType.PRESENT_SIMPLE_EXAM} and mode == "practice":
+        raise AppError(
+            "INVALID_MODE",
+            "Este examen no tiene modo práctica en v1.",
+            status_code=400,
+        )
     if parsed_type == ExamType.VERB_EXAM:
         access = await exam_service.allow_new_attempt(db, user_id, actor_id=admin.id)
         submitted = (
@@ -380,17 +418,41 @@ async def allow_new_attempt(
             actor_id=admin.id,
             mode=mode,
         )
-        submitted = (
-            await db.execute(
-                select(func.count())
-                .select_from(PastSimpleAttempt)
-                .where(
-                    PastSimpleAttempt.user_id == user_id,
-                    PastSimpleAttempt.mode == past_simple_service.MODE_EXAM,
-                    PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
+        if parsed_type == ExamType.VERB_BASE_EXAM:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(VerbBaseAttempt)
+                    .where(
+                        VerbBaseAttempt.user_id == user_id,
+                        VerbBaseAttempt.status == AttemptStatus.SUBMITTED,
+                    )
                 )
-            )
-        ).scalar_one()
+            ).scalar_one()
+        elif parsed_type == ExamType.PRESENT_SIMPLE_EXAM:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(PresentSimpleAttempt)
+                    .where(
+                        PresentSimpleAttempt.user_id == user_id,
+                        PresentSimpleAttempt.mode == present_simple_service.MODE_EXAM,
+                        PresentSimpleAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
+        else:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(PastSimpleAttempt)
+                    .where(
+                        PastSimpleAttempt.user_id == user_id,
+                        PastSimpleAttempt.mode == past_simple_service.MODE_EXAM,
+                        PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
     await log_audit(
         db,
         actor_user_id=admin.id,
@@ -440,6 +502,35 @@ async def reset_exam_progress(
             actor_id=admin.id,
         )
         action = "VERB_EXAM_PROGRESS_RESET"
+    elif parsed_type == ExamType.VERB_BASE_EXAM:
+        if mode != "exam":
+            raise AppError(
+                "INVALID_MODE",
+                "Verb Base Form no tiene modo práctica.",
+                status_code=400,
+            )
+        deleted = await verb_base_service.delete_attempts_for_user(db, user_id)
+        access = await exam_access_service.get_or_create_access(
+            db, user_id=user_id, exam_type=parsed_type
+        )
+        access.allowed_attempts = 1
+        access.updated_by = admin.id
+        result = {"mode": "exam", "deleted_attempts": deleted, "allowed_attempts": 1}
+        action = "VERB_BASE_PROGRESS_RESET"
+    elif parsed_type == ExamType.PRESENT_SIMPLE_EXAM:
+        if mode != "exam":
+            raise AppError(
+                "INVALID_MODE",
+                "Present Simple no tiene modo práctica en v1.",
+                status_code=400,
+            )
+        result = await present_simple_service.reset_student_progress(
+            db,
+            user_id=user_id,
+            actor_id=admin.id,
+            mode=mode,
+        )
+        action = "PRESENT_SIMPLE_PROGRESS_RESET"
     else:
         result = await past_simple_service.reset_student_progress(
             db,

@@ -4,11 +4,24 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
-from app.models import ExamAccess, ExamConfig, ExamType, PastSimpleConfig
+from app.models import (
+    ExamAccess,
+    ExamConfig,
+    ExamType,
+    PastSimpleConfig,
+    PresentSimpleConfig,
+    VerbBaseConfig,
+)
 
 
 async def _global_exam_enabled(session: AsyncSession, exam_type: ExamType) -> bool:
-    model = ExamConfig if exam_type == ExamType.VERB_EXAM else PastSimpleConfig
+    model_map = {
+        ExamType.VERB_EXAM: ExamConfig,
+        ExamType.VERB_BASE_EXAM: VerbBaseConfig,
+        ExamType.PAST_SIMPLE_EXAM: PastSimpleConfig,
+        ExamType.PRESENT_SIMPLE_EXAM: PresentSimpleConfig,
+    }
+    model = model_map[exam_type]
     result = await session.execute(select(model).limit(1))
     config = result.scalar_one_or_none()
     return bool(config and config.is_enabled)

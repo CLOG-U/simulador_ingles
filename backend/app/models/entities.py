@@ -58,6 +58,12 @@ class User(Base):
     past_simple_attempts: Mapped[list["PastSimpleAttempt"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    present_simple_attempts: Mapped[list["PresentSimpleAttempt"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    verb_base_attempts: Mapped[list["VerbBaseAttempt"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class RefreshSession(Base):
@@ -146,7 +152,7 @@ class ExamAccess(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "exam_type", name="uq_exam_access_user_type"),
         CheckConstraint(
-            "exam_type IN ('verb_exam', 'past_simple_exam')",
+            "exam_type IN ('verb_exam', 'verb_base_exam', 'past_simple_exam', 'present_simple_exam')",
             name="ck_exam_access_type",
         ),
         CheckConstraint("allowed_attempts >= 1", name="ck_exam_access_attempts"),
@@ -294,6 +300,210 @@ class PastSimpleAttemptQuestion(Base):
     graded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     attempt: Mapped["PastSimpleAttempt"] = relationship(back_populates="questions")
+
+
+class PresentSimpleConfig(Base):
+    __tablename__ = "present_simple_config"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    practice_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    question_count: Mapped[int] = mapped_column(Integer, default=14, nullable=False)
+    passing_percentage: Mapped[int] = mapped_column(Integer, default=70, nullable=False)
+    duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    review_policy: Mapped[ReviewPolicy] = mapped_column(
+        Enum(ReviewPolicy, name="review_policy", create_type=False),
+        default=ReviewPolicy.FULL,
+        nullable=False,
+    )
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class PresentSimpleQuestion(Base):
+    __tablename__ = "present_simple_questions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    stable_key: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    exam_type: Mapped[str] = mapped_column(
+        String(32), default="present_simple_exam", nullable=False
+    )
+    topic: Mapped[str] = mapped_column(String(64), nullable=False)
+    question_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    instruction: Mapped[str] = mapped_column(String(255), nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    options: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    correct_answer: Mapped[str] = mapped_column(Text, nullable=False)
+    accepted_answers: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    points: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class PresentSimpleAttempt(Base):
+    __tablename__ = "present_simple_attempts"
+    __table_args__ = (
+        CheckConstraint("mode IN ('exam', 'practice')", name="ck_present_simple_attempt_mode"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    mode: Mapped[str] = mapped_column(String(16), default="exam", nullable=False)
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    config_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    status: Mapped[AttemptStatus] = mapped_column(
+        Enum(AttemptStatus, name="attempt_status", create_type=False),
+        default=AttemptStatus.IN_PROGRESS,
+        nullable=False,
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    total_questions: Mapped[int] = mapped_column(Integer, default=14, nullable=False)
+    correct_answers: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    incorrect_answers: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    unanswered_answers: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    percentage: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    score_out_of_ten: Mapped[float | None] = mapped_column(Numeric(4, 2), nullable=True)
+    passed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="present_simple_attempts")
+    questions: Mapped[list["PresentSimpleAttemptQuestion"]] = relationship(
+        back_populates="attempt", cascade="all, delete-orphan"
+    )
+
+
+class PresentSimpleAttemptQuestion(Base):
+    __tablename__ = "present_simple_attempt_questions"
+    __table_args__ = (
+        UniqueConstraint("attempt_id", "position", name="uq_present_attempt_question_position"),
+        UniqueConstraint(
+            "attempt_id", "source_question_id", name="uq_present_attempt_source_question"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    attempt_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("present_simple_attempts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    source_question_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("present_simple_questions.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    snapshot_topic: Mapped[str] = mapped_column(String(64), nullable=False)
+    snapshot_question_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    snapshot_instruction: Mapped[str] = mapped_column(String(255), nullable=False)
+    snapshot_question: Mapped[str] = mapped_column(Text, nullable=False)
+    snapshot_options: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    snapshot_correct_answer: Mapped[str] = mapped_column(Text, nullable=False)
+    snapshot_accepted_answers: Mapped[list] = mapped_column(JSONB, nullable=False)
+    snapshot_explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    snapshot_points: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    answer_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_correct: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    graded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    attempt: Mapped["PresentSimpleAttempt"] = relationship(back_populates="questions")
+
+
+class VerbBaseConfig(Base):
+    __tablename__ = "verb_base_config"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    question_count: Mapped[int] = mapped_column(Integer, default=20, nullable=False)
+    passing_percentage: Mapped[int] = mapped_column(Integer, default=70, nullable=False)
+    duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    review_policy: Mapped[ReviewPolicy] = mapped_column(
+        Enum(ReviewPolicy, name="review_policy", create_type=False),
+        default=ReviewPolicy.FULL,
+        nullable=False,
+    )
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class VerbBaseAttempt(Base):
+    __tablename__ = "verb_base_attempts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    config_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    status: Mapped[AttemptStatus] = mapped_column(
+        Enum(AttemptStatus, name="attempt_status", create_type=False),
+        default=AttemptStatus.IN_PROGRESS,
+        nullable=False,
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    total_questions: Mapped[int] = mapped_column(Integer, default=20, nullable=False)
+    correct_answers: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    incorrect_answers: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    unanswered_answers: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    percentage: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    passed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="verb_base_attempts")
+    questions: Mapped[list["VerbBaseAttemptQuestion"]] = relationship(
+        back_populates="attempt", cascade="all, delete-orphan"
+    )
+
+
+class VerbBaseAttemptQuestion(Base):
+    __tablename__ = "verb_base_attempt_questions"
+    __table_args__ = (
+        UniqueConstraint("attempt_id", "position", name="uq_verb_base_attempt_question_position"),
+        UniqueConstraint("attempt_id", "verb_id", name="uq_verb_base_attempt_question_verb"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    attempt_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("verb_base_attempts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    verb_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    snapshot_base: Mapped[str] = mapped_column(String(128), nullable=False)
+    snapshot_past: Mapped[str] = mapped_column(String(128), nullable=False)
+    snapshot_spanish_prompt: Mapped[str] = mapped_column(String(255), nullable=False)
+    snapshot_valid_base_answers: Mapped[list] = mapped_column(JSONB, nullable=False)
+    prompt_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    answer_base_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_base_correct: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    graded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    attempt: Mapped["VerbBaseAttempt"] = relationship(back_populates="questions")
 
 
 class Attempt(Base):
