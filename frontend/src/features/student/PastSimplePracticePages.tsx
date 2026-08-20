@@ -211,7 +211,7 @@ export function PastSimplePracticeSessionPage() {
 
   useEffect(() => {
     if (session?.status === "SUBMITTED") {
-      navigate(`/student/practice/past_simple/results/${session.id}`, {
+      navigate(`/student/practice/past_simple/results/${session.id}/review`, {
         replace: true,
       });
     }
@@ -369,7 +369,7 @@ export function PastSimplePracticeSessionPage() {
               setSubmitting(true);
               try {
                 await pastSimpleApi.submitPractice(sessionId);
-                window.location.href = `/student/practice/past_simple/results/${sessionId}`;
+                window.location.href = `/student/practice/past_simple/results/${sessionId}/review`;
               } catch {
                 setSubmitting(false);
               }
