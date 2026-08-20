@@ -23,5 +23,5 @@ def test_verb_base_prompt_types_balanced():
 def test_present_simple_seed_covers_all_topics():
     counts = Counter(q.topic for q in PRESENT_SIMPLE_QUESTIONS)
     for topic in PresentSimpleTopic:
-        assert counts[topic.value] >= 2, topic.value
-    assert len(PRESENT_SIMPLE_QUESTIONS) >= 28
+        assert counts[topic.value] >= 13, topic.value
+    assert len(PRESENT_SIMPLE_QUESTIONS) == 100

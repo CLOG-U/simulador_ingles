@@ -150,7 +150,7 @@ export function AdminExamsHubPage() {
           />
           <ModuleCard
             title="Present Simple Exam"
-            description="Evaluación oficial de Present Simple con banco de preguntas balanceado."
+            description="Evaluación oficial de Present Simple con banco de 100 preguntas (14 por intento)."
             meta={
               presentConfig.data
                 ? `${presentConfig.data.is_enabled ? "Habilitado" : "Deshabilitado"} · Nota mín. ${presentConfig.data.passing_percentage}% · ${
@@ -775,7 +775,7 @@ export function AdminPresentSimpleExamPage() {
           <div className="space-y-4 p-6">
             <p className="text-sm text-gray-600">
               Banco: {config?.question_bank_size ?? "—"} preguntas · Cada intento
-              toma {config?.question_count ?? 24}. Habilita también a cada
+              toma {config?.question_count ?? 14}. Habilita también a cada
               estudiante en Usuarios.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">

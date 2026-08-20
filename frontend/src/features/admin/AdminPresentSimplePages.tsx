@@ -92,7 +92,7 @@ export function AdminPresentSimplePage() {
             <h2 className="text-xl font-semibold">Configuración</h2>
             <p className="text-sm text-gray-600">
               Banco: {config?.question_bank_size ?? "—"} preguntas · Cada sesión
-              de examen o práctica toma 24 (2 por tema). Examen y práctica se
+              de examen o práctica toma 14 (2 por tema). Examen y práctica se
               activan por separado.
             </p>
           </div>

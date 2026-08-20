@@ -54,6 +54,7 @@ pip install -r requirements.txt
 alembic upgrade head
 python -m scripts.seed_verbs
 python -m scripts.seed_past_simple
+python -m scripts.seed_present_simple
 uvicorn app.main:app --reload
 ```
 
@@ -74,6 +75,7 @@ cd backend && alembic upgrade head
 # Seeds idempotentes
 cd backend && python -m scripts.seed_verbs
 cd backend && python -m scripts.seed_past_simple
+cd backend && python -m scripts.seed_present_simple
 
 # Crear administrador inicial
 cd backend && python -m scripts.create_admin
