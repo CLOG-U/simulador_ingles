@@ -11,7 +11,7 @@ interface AppShellProps {
   wide?: boolean;
 }
 
-export function AppShell({ title: _title, children, nav = [], wide = false }: AppShellProps) {
+export function AppShell({ children, nav = [], wide = false }: AppShellProps) {
   const { user, logout } = useAuth();
   const shellWidth = wide ? "max-w-7xl" : "max-w-5xl";
 

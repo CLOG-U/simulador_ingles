@@ -152,7 +152,9 @@ class ExamAccess(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "exam_type", name="uq_exam_access_user_type"),
         CheckConstraint(
-            "exam_type IN ('verb_exam', 'verb_base_exam', 'past_simple_exam', 'present_simple_exam')",
+            "exam_type IN ("
+            "'verb_exam', 'verb_base_exam', 'past_simple_exam', 'present_simple_exam'"
+            ")",
             name="ck_exam_access_type",
         ),
         CheckConstraint("allowed_attempts >= 1", name="ck_exam_access_attempts"),

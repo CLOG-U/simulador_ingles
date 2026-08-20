@@ -25,7 +25,6 @@ from app.models import (
 from app.services import exam_access_service
 from app.services.normalization import normalize_text, spanish_answer_matches
 
-
 PROMPT_LABELS = {
     BaseFormPromptType.FROM_SPANISH.value: "Spanish",
     BaseFormPromptType.FROM_BASE.value: "base form in English",

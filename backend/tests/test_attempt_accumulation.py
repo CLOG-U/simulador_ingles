@@ -2,10 +2,9 @@ import uuid
 
 import pytest
 
+from app.core.security import hash_password
 from app.models import ExamType, User, UserRole
 from app.services import exam_access_service
-from app.core.security import hash_password
-
 
 pytestmark = pytest.mark.integration
 
