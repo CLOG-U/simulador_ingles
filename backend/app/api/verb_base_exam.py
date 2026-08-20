@@ -110,13 +110,26 @@ async def attempt_result(
     data = verb_base_service.serialize_attempt(
         attempt, include_grades=attempt.status == AttemptStatus.SUBMITTED
     )
+    percentage = float(attempt.percentage) if attempt.percentage is not None else None
     data.update(
         {
+            "student_id": str(student.id),
+            "student_name": student.full_name,
+            "student_username": student.username,
+            "exam_name": "Verb Base Form",
             "correct_answers": attempt.correct_answers,
             "incorrect_answers": attempt.incorrect_answers,
             "unanswered_answers": attempt.unanswered_answers,
             "total_questions": attempt.total_questions,
-            "percentage": float(attempt.percentage) if attempt.percentage is not None else None,
+            "percentage": percentage,
+            "score_out_of_ten": (
+                float(round(percentage / 10, 2)) if percentage is not None else None
+            ),
+            "duration_seconds": (
+                int((attempt.submitted_at - attempt.started_at).total_seconds())
+                if attempt.submitted_at
+                else None
+            ),
             "passed": attempt.passed,
             "review_policy": attempt.config_snapshot.get("review_policy", "FULL"),
         }

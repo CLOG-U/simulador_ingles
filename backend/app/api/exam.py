@@ -105,13 +105,38 @@ async def attempt_result(
     include_grades = policy == "FULL" or (policy == "SCORE_ONLY" and is_staff)
     show_questions = policy in ("FULL", "AFTER_CLOSE") or is_staff
 
+    percentage = float(attempt.percentage) if attempt.percentage is not None else None
+    correct = attempt.correct_fields
+    total = attempt.total_fields
+    incorrect = (total - (correct or 0)) if correct is not None else None
     data = {
         "id": str(attempt.id),
         "status": attempt.status.value,
-        "correct_fields": attempt.correct_fields,
-        "total_fields": attempt.total_fields,
+        "exam_type": "verb_exam",
+        "exam_name": "Verb Exam",
+        "student_id": str(current_user.id),
+        "student_name": current_user.full_name,
+        "student_username": current_user.username,
+        "started_at": attempt.started_at.isoformat(),
+        "submitted_at": (
+            attempt.submitted_at.isoformat() if attempt.submitted_at else None
+        ),
+        "duration_seconds": (
+            int((attempt.submitted_at - attempt.started_at).total_seconds())
+            if attempt.submitted_at
+            else None
+        ),
+        "correct_fields": correct,
+        "total_fields": total,
         "fully_correct_questions": attempt.fully_correct_questions,
-        "percentage": float(attempt.percentage) if attempt.percentage is not None else None,
+        "correct_answers": correct,
+        "incorrect_answers": incorrect,
+        "unanswered_answers": 0 if correct is not None else None,
+        "total_questions": total,
+        "percentage": percentage,
+        "score_out_of_ten": (
+            float(round(percentage / 10, 2)) if percentage is not None else None
+        ),
         "passed": attempt.passed,
         "review_policy": policy,
     }

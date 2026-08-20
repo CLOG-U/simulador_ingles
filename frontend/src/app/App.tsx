@@ -53,12 +53,14 @@ import {
 import {
   ExamPage,
   ExamResultPage,
+  ExamReviewPage,
   ExamStartRedirect,
 } from "../features/student/ExamPages";
 import {
   VerbBaseExamPage,
   VerbBaseInstructionsPage,
   VerbBaseResultPage,
+  VerbBaseReviewPage,
   VerbBaseStartRedirect,
 } from "../features/student/VerbBasePages";
 import {
@@ -109,6 +111,10 @@ export function App() {
                 element={<ExamResultPage />}
               />
               <Route
+                path="/student/exams/verb_exam/results/:attemptId/review"
+                element={<ExamReviewPage />}
+              />
+              <Route
                 path="/student/exams/verb_base_exam/instructions"
                 element={<VerbBaseInstructionsPage />}
               />
@@ -123,6 +129,10 @@ export function App() {
               <Route
                 path="/student/exams/verb_base_exam/results/:attemptId"
                 element={<VerbBaseResultPage />}
+              />
+              <Route
+                path="/student/exams/verb_base_exam/results/:attemptId/review"
+                element={<VerbBaseReviewPage />}
               />
               <Route
                 path="/student/exams/past_simple_exam/instructions"

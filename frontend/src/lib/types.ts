@@ -125,10 +125,24 @@ export interface AttemptStatus {
 export interface AttemptResult {
   id: string;
   status: string;
+  exam_type?: ExamType | "verb_exam";
+  exam_name?: string;
+  student_id?: string;
+  student_name?: string;
+  student_username?: string;
+  attempt_number?: number;
+  started_at?: string;
+  submitted_at?: string | null;
+  duration_seconds?: number | null;
   correct_fields: number | null;
   total_fields: number;
   fully_correct_questions: number | null;
+  correct_answers?: number | null;
+  incorrect_answers?: number | null;
+  unanswered_answers?: number | null;
+  total_questions?: number;
   percentage: number | null;
+  score_out_of_ten?: number | null;
   passed: boolean | null;
   review_policy: string;
   questions?: ExamQuestion[];

@@ -5,6 +5,14 @@ import { AppShell } from "../../components/AppShell";
 import { ApiError } from "../../lib/api";
 import { verbBaseApi } from "../../lib/endpoints";
 import type { Attempt, ExamQuestion } from "../../lib/types";
+import {
+  ExamResultActions,
+  ExamResultShell,
+  ExamResultSummary,
+  ExamReviewActions,
+  ExamReviewCard,
+  statusFromCorrect,
+} from "./ExamResultShared";
 
 type SaveStatus = "idle" | "pending" | "saving" | "saved" | "offline";
 
@@ -416,56 +424,76 @@ export function VerbBaseResultPage() {
 
   if (isLoading || !data) {
     return (
-      <AppShell title="Result">
+      <ExamResultShell title="Verb Base Form Result">
         <p>Loading result…</p>
-      </AppShell>
+      </ExamResultShell>
     );
   }
 
   return (
-    <AppShell title="Result">
-      <section className="card space-y-3">
-        <h2 className="text-xl font-bold">
-          {data.passed ? "Passed!" : "Not passed"}
-        </h2>
-        <p className="text-3xl font-bold text-brand-primary">
-          {data.percentage?.toFixed(1)}%
-        </p>
-        <p>
-          Correct answers: {data.correct_answers ?? 0} of{" "}
-          {data.total_questions}
-        </p>
-        <p>
-          Incorrect: {data.incorrect_answers ?? 0} · Unanswered:{" "}
-          {data.unanswered_answers ?? 0}
-        </p>
-        {data.questions && data.questions.length > 0 && (
-          <div className="space-y-3 pt-4">
-            <h3 className="font-semibold">Review</h3>
-            {data.questions.map((q) => (
-              <article key={q.id} className="rounded-lg border p-3 text-sm">
-                <p className="font-medium">
-                  {q.prompt_label}: {q.shown_value}
-                </p>
-                {q.grades && q.expected && (
-                  <p
-                    className={
-                      q.grades.base ? "mt-2 text-success" : "mt-2 text-danger"
-                    }
-                  >
-                    {q.required_fields[0]?.label ?? "answer"}: your answer «
-                    {q.answers.base ?? "—"}» — expected «{q.expected.base}»{" "}
-                    {q.grades.base ? "✓" : "✗"}
-                  </p>
-                )}
-              </article>
-            ))}
-          </div>
-        )}
-        <Link to="/student/exams" className="btn-primary mt-4 inline-flex">
-          Back to Exams
-        </Link>
-      </section>
-    </AppShell>
+    <ExamResultShell title="Verb Base Form Result">
+      <ExamResultSummary
+        studentName={data.student_name}
+        examName={data.exam_name ?? "Verb Base Form"}
+        attemptNumber={data.attempt_number}
+        submittedAt={data.submitted_at}
+        passed={data.passed}
+        percentage={data.percentage}
+        scoreOutOfTen={data.score_out_of_ten}
+        correct={data.correct_answers}
+        incorrect={data.incorrect_answers}
+        unanswered={data.unanswered_answers}
+      />
+      <ExamResultActions
+        showReview={(data.questions?.length ?? 0) > 0}
+        reviewPath={`/student/exams/verb_base_exam/results/${attemptId}/review`}
+      />
+    </ExamResultShell>
+  );
+}
+
+export function VerbBaseReviewPage() {
+  const { attemptId = "" } = useParams();
+  const { data, isLoading } = useQuery({
+    queryKey: ["verb-base-result", attemptId],
+    queryFn: () => verbBaseApi.result(attemptId),
+    enabled: Boolean(attemptId),
+  });
+
+  if (isLoading || !data) {
+    return (
+      <ExamResultShell title="Review Answers">
+        <p>Loading review…</p>
+      </ExamResultShell>
+    );
+  }
+
+  const questions = data.questions ?? [];
+
+  return (
+    <ExamResultShell title="Review Answers">
+      {questions.length === 0 && (
+        <section className="card">
+          <p>The answer review is not available for this exam.</p>
+        </section>
+      )}
+      {questions.map((question) => {
+        const status = statusFromCorrect(question.grades?.base);
+        return (
+          <ExamReviewCard
+            key={question.id}
+            position={question.position}
+            title={`${question.prompt_label} ${question.shown_value}`}
+            status={status}
+            meta={`Prompt: ${question.shown_field.toLowerCase()}`}
+            studentAnswer={question.answers.base || "Unanswered"}
+            correctAnswer={question.expected?.base ?? "—"}
+          />
+        );
+      })}
+      <ExamReviewActions
+        resultPath={`/student/exams/verb_base_exam/results/${attemptId}`}
+      />
+    </ExamResultShell>
   );
 }

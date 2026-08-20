@@ -9,16 +9,16 @@ import type {
   PresentSimpleQuestion,
   PresentSimpleResult,
 } from "../../lib/types";
+import {
+  ExamResultActions,
+  ExamResultShell,
+  ExamResultSummary,
+  ExamReviewActions,
+  ExamReviewCard,
+  type ReviewStatus,
+} from "./ExamResultShared";
 
 const SAVE_DEBOUNCE_MS = 1000;
-
-function formatDate(value: string | null) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
 
 function RequestError({
   title,
@@ -534,24 +534,18 @@ export function PresentSimpleExamPage() {
 
 function ResultSummary({ result }: { result: PresentSimpleResult }) {
   return (
-    <section className="card space-y-3">
-      <div>
-        <p className="text-sm text-gray-600">{result.student_name}</p>
-        <p className="text-sm text-gray-600">
-          {result.exam_name} · Attempt {result.attempt_number} · {formatDate(result.submitted_at)}
-        </p>
-      </div>
-      <h2 className="text-2xl font-bold">{result.passed ? "Passed" : "Not Passed"}</h2>
-      <p className="text-4xl font-bold text-brand-primary">
-        {(result.percentage ?? 0).toFixed(1)}%
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <p>Score: {(result.score_out_of_ten ?? 0).toFixed(1)} / 10</p>
-        <p>Correct: {result.correct_answers ?? 0}</p>
-        <p>Incorrect: {result.incorrect_answers ?? 0}</p>
-        <p>Unanswered: {result.unanswered_answers ?? 0}</p>
-      </div>
-    </section>
+    <ExamResultSummary
+      studentName={result.student_name}
+      examName={result.exam_name}
+      attemptNumber={result.attempt_number}
+      submittedAt={result.submitted_at}
+      passed={result.passed}
+      percentage={result.percentage}
+      scoreOutOfTen={result.score_out_of_ten}
+      correct={result.correct_answers}
+      incorrect={result.incorrect_answers}
+      unanswered={result.unanswered_answers}
+    />
   );
 }
 
@@ -575,31 +569,20 @@ export function PresentSimpleResultPage() {
 
   if (isLoading || !data) {
     return (
-      <AppShell title="Present Simple Exam Result">
+      <ExamResultShell title="Present Simple Exam Result">
         <p>Loading result…</p>
-      </AppShell>
+      </ExamResultShell>
     );
   }
 
   return (
-    <AppShell title="Present Simple Exam Result">
-      <div className="space-y-4">
-        <ResultSummary result={data} />
-        <div className="flex flex-wrap gap-3">
-          {data.questions?.length > 0 && (
-            <Link
-              to={`/student/exams/present_simple_exam/results/${attemptId}/review`}
-              className="btn-primary"
-            >
-              Review Answers
-            </Link>
-          )}
-          <Link to="/student/exams" className="inline-flex rounded-xl border px-4 py-2.5">
-            Back to Exams
-          </Link>
-        </div>
-      </div>
-    </AppShell>
+    <ExamResultShell title="Present Simple Exam Result">
+      <ResultSummary result={data} />
+      <ExamResultActions
+        showReview={(data.questions?.length ?? 0) > 0}
+        reviewPath={`/student/exams/present_simple_exam/results/${attemptId}/review`}
+      />
+    </ExamResultShell>
   );
 }
 
@@ -623,61 +606,34 @@ export function PresentSimpleReviewPage() {
 
   if (isLoading || !data) {
     return (
-      <AppShell title="Review Answers">
+      <ExamResultShell title="Review Answers">
         <p>Loading review…</p>
-      </AppShell>
+      </ExamResultShell>
     );
   }
 
   return (
-    <AppShell title="Review Answers">
-      <div className="space-y-4">
-        {data.questions.length === 0 && (
-          <section className="card">
-            <p>The answer review is not available for this exam.</p>
-          </section>
-        )}
-        {data.questions.map((question) => (
-          <article
-            key={question.id}
-            className={`card border-l-4 ${
-              question.status === "correct"
-                ? "border-l-green-600"
-                : question.status === "incorrect"
-                  ? "border-l-red-600"
-                  : "border-l-amber-500"
-            }`}
-          >
-            <div className="flex flex-wrap justify-between gap-2">
-              <h2 className="font-semibold">
-                Question {question.position}: {question.question}
-              </h2>
-              <span className="font-semibold capitalize">{question.status}</span>
-            </div>
-            <p className="mt-2 text-sm text-gray-600">Topic: {question.topic}</p>
-            <p className="mt-3">
-              Student answer: <strong>{question.answer || "Unanswered"}</strong>
-            </p>
-            <p>
-              Correct answer: <strong className="text-success">{question.correct_answer}</strong>
-            </p>
-            <p className="mt-2 rounded-lg bg-gray-50 p-3 text-sm">
-              {question.explanation}
-            </p>
-          </article>
-        ))}
-        <div className="flex flex-wrap gap-3">
-          <Link
-            to={`/student/exams/present_simple_exam/results/${attemptId}`}
-            className="btn-primary"
-          >
-            Back to Result
-          </Link>
-          <Link to="/student/exams" className="inline-flex rounded-xl border px-4 py-2.5">
-            Back to Exams
-          </Link>
-        </div>
-      </div>
-    </AppShell>
+    <ExamResultShell title="Review Answers">
+      {data.questions.length === 0 && (
+        <section className="card">
+          <p>The answer review is not available for this exam.</p>
+        </section>
+      )}
+      {data.questions.map((question) => (
+        <ExamReviewCard
+          key={question.id}
+          position={question.position}
+          title={question.question}
+          status={(question.status as ReviewStatus) ?? "unanswered"}
+          meta={`Topic: ${question.topic}`}
+          studentAnswer={question.answer || "Unanswered"}
+          correctAnswer={question.correct_answer}
+          explanation={question.explanation}
+        />
+      ))}
+      <ExamReviewActions
+        resultPath={`/student/exams/present_simple_exam/results/${attemptId}`}
+      />
+    </ExamResultShell>
   );
 }

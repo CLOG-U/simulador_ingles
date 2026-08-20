@@ -5,6 +5,15 @@ import { AppShell } from "../../components/AppShell";
 import { ApiError } from "../../lib/api";
 import { examApi } from "../../lib/endpoints";
 import type { Attempt, ExamQuestion } from "../../lib/types";
+import {
+  ExamResultActions,
+  ExamResultShell,
+  ExamResultSummary,
+  ExamReviewActions,
+  ExamReviewCard,
+  statusFromCorrect,
+  type ReviewStatus,
+} from "./ExamResultShared";
 
 type AnswerSet = { base: string; past: string; spanish: string };
 
@@ -402,54 +411,91 @@ export function ExamResultPage() {
 
   if (isLoading || !data) {
     return (
-      <AppShell title="Resultado">
-        <p>Cargando resultado…</p>
-      </AppShell>
+      <ExamResultShell title="Verb Exam Result">
+        <p>Loading result…</p>
+      </ExamResultShell>
     );
   }
 
   return (
-    <AppShell title="Resultado">
-      <section className="card space-y-3">
-        <h2 className="text-xl font-bold">
-          {data.passed ? "¡Aprobado!" : "No aprobado"}
-        </h2>
-        <p className="text-3xl font-bold text-brand-primary">{data.percentage?.toFixed(1)}%</p>
-        <p>
-          Campos correctos: {data.correct_fields} de {data.total_fields}
-        </p>
-        <p>
-          Verbos completamente correctos: {data.fully_correct_questions} de{" "}
-          {(data.total_fields ?? 40) / 2}
-        </p>
-        {data.questions && data.questions.length > 0 && (
-          <div className="space-y-3 pt-4">
-            <h3 className="font-semibold">Revisión</h3>
-            {data.questions.map((q) => (
-              <article key={q.id} className="rounded-lg border p-3 text-sm">
-                <p className="font-medium">
-                  {q.prompt_label}: {q.shown_value}
-                </p>
-                {q.grades && q.expected && (
-                  <ul className="mt-2 space-y-1">
-                    {(["base", "past", "spanish"] as const).map((k) =>
-                      q.grades?.[k] != null ? (
-                        <li key={k} className={q.grades[k] ? "text-success" : "text-danger"}>
-                          {k}: tu respuesta «{q.answers[k] ?? "—"}» — esperado «
-                          {q.expected?.[k]}» {q.grades[k] ? "✓" : "✗"}
-                        </li>
-                      ) : null,
-                    )}
-                  </ul>
-                )}
-              </article>
-            ))}
-          </div>
-        )}
-        <Link to="/student/exams" className="btn-primary mt-4 inline-flex">
-          Volver a Exámenes
-        </Link>
-      </section>
-    </AppShell>
+    <ExamResultShell title="Verb Exam Result">
+      <ExamResultSummary
+        studentName={data.student_name}
+        examName={data.exam_name ?? "Verb Exam"}
+        attemptNumber={data.attempt_number}
+        submittedAt={data.submitted_at}
+        passed={data.passed}
+        percentage={data.percentage}
+        scoreOutOfTen={data.score_out_of_ten}
+        correct={data.correct_answers ?? data.correct_fields}
+        incorrect={data.incorrect_answers}
+        unanswered={data.unanswered_answers ?? 0}
+        correctLabel="Correct fields"
+      />
+      <ExamResultActions
+        showReview={(data.questions?.length ?? 0) > 0}
+        reviewPath={`/student/exams/verb_exam/results/${attemptId}/review`}
+      />
+    </ExamResultShell>
+  );
+}
+
+export function ExamReviewPage() {
+  const { attemptId = "" } = useParams();
+  const { data, isLoading } = useQuery({
+    queryKey: ["result", attemptId],
+    queryFn: () => examApi.result(attemptId),
+    enabled: Boolean(attemptId),
+  });
+
+  if (isLoading || !data) {
+    return (
+      <ExamResultShell title="Review Answers">
+        <p>Loading review…</p>
+      </ExamResultShell>
+    );
+  }
+
+  const questions = data.questions ?? [];
+
+  return (
+    <ExamResultShell title="Review Answers">
+      {questions.length === 0 && (
+        <section className="card">
+          <p>The answer review is not available for this exam.</p>
+        </section>
+      )}
+      {questions.map((question) => {
+        const fieldStatuses = question.required_fields.map(({ field, label }) => {
+          const key = fieldKey(field);
+          const ok = question.grades?.[key];
+          return {
+            label,
+            student: question.answers[key] || "Unanswered",
+            expected: question.expected?.[key] ?? "—",
+            status: statusFromCorrect(ok),
+          };
+        });
+        const status: ReviewStatus = question.fully_correct
+          ? "correct"
+          : fieldStatuses.every((f) => f.status === "unanswered")
+            ? "unanswered"
+            : "incorrect";
+
+        return (
+          <ExamReviewCard
+            key={question.id}
+            position={question.position}
+            title={`${question.prompt_label} ${question.shown_value}`}
+            status={status}
+            meta={`Shown: ${question.shown_field.toLowerCase()}`}
+            fields={fieldStatuses}
+          />
+        );
+      })}
+      <ExamReviewActions
+        resultPath={`/student/exams/verb_exam/results/${attemptId}`}
+      />
+    </ExamResultShell>
   );
 }
