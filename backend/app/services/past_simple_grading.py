@@ -41,10 +41,21 @@ def grade_question(question: PastSimpleAttemptQuestion) -> bool | None:
 
 def grade_attempt(attempt: PastSimpleAttempt) -> None:
     grades = [grade_question(question) for question in attempt.questions]
+    _apply_grade_totals(attempt, grades)
+
+
+def recompute_attempt_from_grades(attempt: PastSimpleAttempt) -> None:
+    """Recalcula totales respetando marcas actuales (override admin)."""
+    _apply_grade_totals(attempt, [question.is_correct for question in attempt.questions])
+
+
+def _apply_grade_totals(
+    attempt: PastSimpleAttempt, grades: list[bool | None]
+) -> None:
     correct = sum(grade is True for grade in grades)
     unanswered = sum(grade is None for grade in grades)
     incorrect = len(grades) - correct - unanswered
-    total = attempt.total_questions
+    total = attempt.total_questions or len(grades) or 1
     percentage = Decimal(correct) / Decimal(total) * Decimal(100)
 
     attempt.correct_answers = correct

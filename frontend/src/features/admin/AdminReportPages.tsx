@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
@@ -43,18 +43,79 @@ function GradeBadge({ correct }: { correct: boolean }) {
   );
 }
 
+function OverrideButtons({
+  current,
+  disabled,
+  onSet,
+}: {
+  current: boolean | null | undefined;
+  disabled?: boolean;
+  onSet: (correct: boolean) => void;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      <button
+        type="button"
+        className={`min-h-9 rounded-lg px-3 text-xs font-semibold ${
+          current === true
+            ? "bg-green-600 text-white"
+            : "border border-green-300 text-green-800"
+        }`}
+        disabled={disabled || current === true}
+        onClick={() => onSet(true)}
+      >
+        Marcar correcta
+      </button>
+      <button
+        type="button"
+        className={`min-h-9 rounded-lg px-3 text-xs font-semibold ${
+          current === false
+            ? "bg-red-600 text-white"
+            : "border border-red-300 text-red-800"
+        }`}
+        disabled={disabled || current === false}
+        onClick={() => onSet(false)}
+      >
+        Marcar incorrecta
+      </button>
+    </div>
+  );
+}
+
 function QuestionReview({
   questions,
   graded,
+  attemptId,
 }: {
   questions: ExamQuestion[];
   graded: boolean;
+  attemptId: string;
 }) {
+  const queryClient = useQueryClient();
+  const overrideMutation = useMutation({
+    mutationFn: ({
+      questionId,
+      field,
+      correct,
+    }: {
+      questionId: string;
+      field: string;
+      correct: boolean;
+    }) => adminApi.overrideVerbExamGrade(attemptId, questionId, { field, correct }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["admin-attempt-report", attemptId], data);
+    },
+  });
+
   if (questions.length === 0) return null;
 
   return (
     <div className="space-y-3 pt-4">
       <h3 className="font-semibold">Revisión por pregunta</h3>
+      <p className="text-sm text-gray-600">
+        Puedes corregir un campo si la respuesta del estudiante es válida y el
+        sistema no la reconoció. El porcentaje se recalcula al instante.
+      </p>
       {questions.map((q) => {
         const hasGrades = graded && q.grades && q.expected;
         const fullyCorrect =
@@ -123,6 +184,19 @@ function QuestionReview({
                         <strong className="text-green-800">{expectedAnswer}</strong>
                       </p>
                     )}
+                    {hasGrades && (
+                      <OverrideButtons
+                        current={isCorrect}
+                        disabled={overrideMutation.isPending}
+                        onSet={(correct) =>
+                          overrideMutation.mutate({
+                            questionId: q.id,
+                            field,
+                            correct,
+                          })
+                        }
+                      />
+                    )}
                   </li>
                 );
               })}
@@ -181,7 +255,11 @@ function AttemptReportContent({ data }: { data: AdminAttemptReport }) {
       )}
 
       {data.questions && data.questions.length > 0 && (
-        <QuestionReview questions={data.questions} graded={submitted} />
+        <QuestionReview
+          questions={data.questions}
+          graded={submitted}
+          attemptId={data.id}
+        />
       )}
     </section>
   );

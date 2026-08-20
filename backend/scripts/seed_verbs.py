@@ -8,7 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import settings
 from app.models import ExamConfig, ReviewPolicy, Verb, VerbAnswer, VerbAnswerField
-from app.services.normalization import normalize_spanish, normalize_text
+from app.services.normalization import (
+    expand_spanish_alternatives,
+    normalize_spanish,
+    normalize_text,
+)
 from seed.verbs_data import VERBS
 
 
@@ -43,9 +47,18 @@ async def seed_verbs(session: AsyncSession) -> None:
         await _upsert_answer(
             session, verb.id, VerbAnswerField.PAST, item.past_display, normalize_text
         )
-        await _upsert_answer(
-            session, verb.id, VerbAnswerField.SPANISH, item.spanish_prompt, normalize_spanish
-        )
+        # Guarda el prompt completo y cada sinónimo natural (decir, intentar, salir…).
+        spanish_variants = expand_spanish_alternatives(
+            item.spanish_prompt
+        ) | expand_spanish_alternatives(item.spanish_display)
+        for variant in sorted(spanish_variants):
+            await _upsert_answer(
+                session,
+                verb.id,
+                VerbAnswerField.SPANISH,
+                variant,
+                normalize_spanish,
+            )
 
 
 async def _upsert_answer(

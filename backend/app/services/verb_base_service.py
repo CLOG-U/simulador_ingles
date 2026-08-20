@@ -23,7 +23,7 @@ from app.models import (
     VerbBaseConfig,
 )
 from app.services import exam_access_service
-from app.services.normalization import normalize_spanish, normalize_text
+from app.services.normalization import normalize_text, spanish_answer_matches
 
 
 PROMPT_LABELS = {
@@ -289,13 +289,31 @@ def grade_question(question: VerbBaseAttemptQuestion) -> bool | None:
         question.graded_at = datetime.now(UTC)
         return None
     asks_spanish = _required_field_for_prompt(question.prompt_type) == "SPANISH"
-    normalizer = normalize_spanish if asks_spanish else normalize_text
-    normalized = normalizer(raw)
-    question.is_base_correct = normalized in {
-        normalizer(v) for v in question.snapshot_valid_base_answers
-    }
+    valid = list(question.snapshot_valid_base_answers or [])
+    if asks_spanish:
+        question.is_base_correct = spanish_answer_matches(raw, valid)
+    else:
+        normalized = normalize_text(raw)
+        question.is_base_correct = normalized in {normalize_text(v) for v in valid}
     question.graded_at = datetime.now(UTC)
     return question.is_base_correct
+
+
+def recompute_attempt_from_grades(attempt: VerbBaseAttempt) -> None:
+    """Recalcula totales sin re-evaluar las respuestas (respeta overrides)."""
+    grades = [q.is_base_correct for q in attempt.questions]
+    correct = sum(g is True for g in grades)
+    unanswered = sum(g is None for g in grades)
+    incorrect = len(grades) - correct - unanswered
+    total = attempt.total_questions or len(grades) or 1
+    percentage = Decimal(correct) / Decimal(total) * Decimal(100)
+    attempt.correct_answers = correct
+    attempt.incorrect_answers = incorrect
+    attempt.unanswered_answers = unanswered
+    attempt.percentage = float(round(percentage, 2))
+    attempt.passed = float(percentage) >= attempt.config_snapshot.get(
+        "passing_percentage", 70
+    )
 
 
 def grade_attempt(attempt: VerbBaseAttempt) -> None:
@@ -463,3 +481,38 @@ async def delete_attempts_for_user(session: AsyncSession, user_id: uuid.UUID) ->
         delete(VerbBaseAttempt).where(VerbBaseAttempt.user_id == user_id)
     )
     return result.rowcount or 0
+
+
+async def override_question_grade(
+    session: AsyncSession,
+    *,
+    attempt_id: uuid.UUID,
+    question_id: uuid.UUID,
+    correct: bool,
+) -> dict:
+    """Permite al admin marcar una pregunta como correcta/incorrecta y recalcular."""
+    result = await session.execute(
+        select(VerbBaseAttempt)
+        .options(
+            selectinload(VerbBaseAttempt.questions),
+            selectinload(VerbBaseAttempt.user),
+        )
+        .where(VerbBaseAttempt.id == attempt_id)
+    )
+    attempt = result.scalar_one_or_none()
+    if attempt is None:
+        raise AppError("NOT_FOUND", "Intento no encontrado", status_code=404)
+    if attempt.status != AttemptStatus.SUBMITTED:
+        raise AppError(
+            "ATTEMPT_NOT_SUBMITTED",
+            "Solo se puede corregir un intento ya entregado.",
+            status_code=400,
+        )
+    question = next((q for q in attempt.questions if q.id == question_id), None)
+    if question is None:
+        raise AppError("NOT_FOUND", "Pregunta no encontrada", status_code=404)
+    question.is_base_correct = correct
+    question.graded_at = datetime.now(UTC)
+    recompute_attempt_from_grades(attempt)
+    await session.flush()
+    return await serialize_admin_report(session, attempt_id)

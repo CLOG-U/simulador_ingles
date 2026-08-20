@@ -77,3 +77,33 @@ async def attempt_report(
     db: AsyncSession = Depends(get_db),
 ):
     return await verb_base_service.serialize_admin_report(db, attempt_id)
+
+
+class GradeOverrideBody(BaseModel):
+    correct: bool
+
+
+@router.patch("/attempts/{attempt_id}/questions/{question_id}/grade")
+async def override_question_grade(
+    attempt_id: uuid.UUID,
+    question_id: uuid.UUID,
+    body: GradeOverrideBody,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    data = await verb_base_service.override_question_grade(
+        db,
+        attempt_id=attempt_id,
+        question_id=question_id,
+        correct=body.correct,
+    )
+    await log_audit(
+        db,
+        actor_user_id=admin.id,
+        action="VERB_BASE_GRADE_OVERRIDE",
+        target_type="verb_base_attempt_question",
+        target_id=str(question_id),
+        metadata={"attempt_id": str(attempt_id), "correct": body.correct},
+    )
+    await db.commit()
+    return data

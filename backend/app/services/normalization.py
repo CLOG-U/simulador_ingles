@@ -21,6 +21,11 @@ _SPECIAL_CONTRACTIONS = (
 # didn't → did not, wasn't → was not, weren't → were not, etc.
 _NT_CONTRACTION = re.compile(r"\b([a-z]+)n't\b")
 
+# Contenido entre paréntesis (pistas pedagógicas, no respuestas solas).
+_PAREN_CONTENT = re.compile(r"\([^)]*\)")
+# Separadores de sinónimos: coma, barra, "o"/"u" como conjunción.
+_SPANISH_ALT_SPLIT = re.compile(r"\s*(?:,|/|\bo\b|\bu\b)\s*")
+
 
 def normalize_text(value: str) -> str:
     """Normaliza texto para comparación: trim, espacios, minúsculas, Unicode NFC."""
@@ -34,6 +39,52 @@ def normalize_spanish(value: str) -> str:
     return "".join(
         c for c in unicodedata.normalize("NFD", normalized) if unicodedata.category(c) != "Mn"
     )
+
+
+def expand_spanish_alternatives(value: str) -> set[str]:
+    """Extrae variantes naturales de un significado en español.
+
+    Ejemplos:
+    - «Decir o contar (a alguien)» → decir, contar, decir o contar
+    - «Intentar, tratar» → intentar, tratar
+    - «Salir o dejar» → salir, dejar
+    El texto entre paréntesis no se acepta como respuesta aislada.
+    """
+    normalized = normalize_spanish(value)
+    if not normalized:
+        return set()
+
+    alternatives = {normalized}
+    without_parens = " ".join(_PAREN_CONTENT.sub(" ", normalized).split())
+    if without_parens:
+        alternatives.add(without_parens)
+
+    for source in (normalized, without_parens):
+        if not source:
+            continue
+        for part in _SPANISH_ALT_SPLIT.split(source):
+            token = part.strip(" .;")
+            # Evita basura corta; exige al menos 2 caracteres.
+            if len(token) >= 2:
+                alternatives.add(token)
+    return alternatives
+
+
+def spanish_answer_matches(raw: str | None, valid: list[str] | None) -> bool:
+    """Acepta sinónimos o formulaciones equivalentes del significado en español."""
+    if raw is None or not str(raw).strip() or not valid:
+        return False
+    accepted: set[str] = set()
+    for entry in valid:
+        if entry is None or not str(entry).strip():
+            continue
+        accepted |= expand_spanish_alternatives(str(entry))
+    if not accepted:
+        return False
+    student = normalize_spanish(raw)
+    if student in accepted:
+        return True
+    return bool(expand_spanish_alternatives(raw) & accepted)
 
 
 _ENGLISH_PUNCTUATION = str.maketrans(

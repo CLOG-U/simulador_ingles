@@ -26,7 +26,7 @@ from app.services.exam_engine import (
     sample_verb_ids,
     shown_field_for_prompt,
 )
-from app.services.grading_service import grade_attempt
+from app.services.grading_service import grade_attempt, recompute_attempt_from_grades
 
 
 async def get_exam_config(session: AsyncSession) -> ExamConfig:
@@ -450,3 +450,60 @@ async def reset_student_progress(
         "allowed_attempts": access.allowed_attempts,
         "is_enabled": access.is_enabled,
     }
+
+
+async def override_question_field_grade(
+    session: AsyncSession,
+    *,
+    attempt_id: uuid.UUID,
+    question_id: uuid.UUID,
+    field: str,
+    correct: bool,
+) -> dict:
+    """Override admin de un campo (BASE/PAST/SPANISH) y recálculo del porcentaje."""
+    field = field.upper()
+    if field not in {"BASE", "PAST", "SPANISH"}:
+        raise AppError(
+            "INVALID_FIELD",
+            "Campo inválido. Usa BASE, PAST o SPANISH.",
+            status_code=400,
+        )
+
+    result = await session.execute(
+        select(Attempt, User)
+        .join(User, User.id == Attempt.user_id)
+        .options(selectinload(Attempt.questions))
+        .where(Attempt.id == attempt_id)
+    )
+    row = result.one_or_none()
+    if row is None:
+        raise AppError("NOT_FOUND", "Intento no encontrado", status_code=404)
+    attempt, user = row
+    if attempt.status != AttemptStatus.SUBMITTED:
+        raise AppError(
+            "ATTEMPT_NOT_SUBMITTED",
+            "Solo se puede corregir un intento ya entregado.",
+            status_code=400,
+        )
+    question = next((q for q in attempt.questions if q.id == question_id), None)
+    if question is None:
+        raise AppError("NOT_FOUND", "Pregunta no encontrada", status_code=404)
+
+    required = fields_for_prompt(question.prompt_type)
+    if field not in required:
+        raise AppError(
+            "FIELD_NOT_REQUIRED",
+            f"El campo {field} no forma parte de esta pregunta.",
+            status_code=400,
+        )
+
+    if field == "BASE":
+        question.is_base_correct = correct
+    elif field == "PAST":
+        question.is_past_correct = correct
+    else:
+        question.is_spanish_correct = correct
+    question.graded_at = datetime.now(UTC)
+    recompute_attempt_from_grades(attempt)
+    await session.flush()
+    return serialize_admin_attempt_report(attempt, user)

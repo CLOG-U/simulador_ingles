@@ -223,10 +223,24 @@ export function AdminPastSimplePage() {
 
 export function AdminPastSimpleAttemptReportPage() {
   const { attemptId = "" } = useParams();
+  const queryClient = useQueryClient();
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-past-simple-report", attemptId],
     queryFn: () => adminApi.pastSimpleAttemptReport(attemptId),
     enabled: Boolean(attemptId),
+  });
+
+  const overrideMutation = useMutation({
+    mutationFn: ({
+      questionId,
+      correct,
+    }: {
+      questionId: string;
+      correct: boolean;
+    }) => adminApi.overridePastSimpleGrade(attemptId, questionId, correct),
+    onSuccess: (next) => {
+      queryClient.setQueryData(["admin-past-simple-report", attemptId], next);
+    },
   });
 
   return (
@@ -331,6 +345,10 @@ export function AdminPastSimpleAttemptReportPage() {
 
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Detalle de respuestas</h2>
+              <p className="text-sm text-gray-600">
+                Puedes marcar una pregunta como correcta o incorrecta; el
+                porcentaje se recalcula al instante.
+              </p>
               {data.questions.map((question) => (
                 <article key={question.id} className="card text-sm">
                   <div className="flex flex-wrap justify-between gap-2">
@@ -363,6 +381,42 @@ export function AdminPastSimpleAttemptReportPage() {
                     <p className="mt-2 rounded-lg bg-gray-50 p-3">
                       {question.explanation}
                     </p>
+                  )}
+                  {data.status === "SUBMITTED" && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-lg border border-green-300 px-3 text-xs font-semibold text-green-800"
+                        disabled={
+                          overrideMutation.isPending ||
+                          question.is_correct === true
+                        }
+                        onClick={() =>
+                          overrideMutation.mutate({
+                            questionId: question.id,
+                            correct: true,
+                          })
+                        }
+                      >
+                        Marcar correcta
+                      </button>
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-lg border border-red-300 px-3 text-xs font-semibold text-red-800"
+                        disabled={
+                          overrideMutation.isPending ||
+                          question.is_correct === false
+                        }
+                        onClick={() =>
+                          overrideMutation.mutate({
+                            questionId: question.id,
+                            correct: false,
+                          })
+                        }
+                      >
+                        Marcar incorrecta
+                      </button>
+                    </div>
                   )}
                 </article>
               ))}

@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -269,6 +270,42 @@ async def get_attempt_admin(
         raise AppError("NOT_FOUND", "Intento no encontrado", status_code=404)
     attempt, user = row
     return exam_service.serialize_admin_attempt_report(attempt, user)
+
+
+class VerbGradeOverrideBody(BaseModel):
+    field: str
+    correct: bool
+
+
+@router.patch("/attempts/{attempt_id}/questions/{question_id}/grade")
+async def override_verb_exam_grade(
+    attempt_id: uuid.UUID,
+    question_id: uuid.UUID,
+    body: VerbGradeOverrideBody,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    data = await exam_service.override_question_field_grade(
+        db,
+        attempt_id=attempt_id,
+        question_id=question_id,
+        field=body.field,
+        correct=body.correct,
+    )
+    await log_audit(
+        db,
+        actor_user_id=admin.id,
+        action="VERB_EXAM_GRADE_OVERRIDE",
+        target_type="attempt_question",
+        target_id=str(question_id),
+        metadata={
+            "attempt_id": str(attempt_id),
+            "field": body.field.upper(),
+            "correct": body.correct,
+        },
+    )
+    await db.commit()
+    return data
 
 
 @router.post("/users/{user_id}/allow-new-attempt")

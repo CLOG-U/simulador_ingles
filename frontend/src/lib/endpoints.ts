@@ -344,6 +344,15 @@ export const adminApi = {
     apiFetch<AdminStudentReport>(`/admin/users/${userId}/report`),
   attemptReport: (attemptId: string) =>
     apiFetch<AdminAttemptReport>(`/admin/attempts/${attemptId}`),
+  overrideVerbExamGrade: (
+    attemptId: string,
+    questionId: string,
+    data: { field: string; correct: boolean },
+  ) =>
+    apiFetch<AdminAttemptReport>(
+      `/admin/attempts/${attemptId}/questions/${questionId}/grade`,
+      { method: "PATCH", body: JSON.stringify(data) },
+    ),
   getPastSimpleConfig: () =>
     apiFetch<PastSimpleConfig>("/admin/past-simple/config"),
   updatePastSimpleConfig: (
@@ -378,6 +387,15 @@ export const adminApi = {
     ),
   pastSimpleAttemptReport: (attemptId: string) =>
     apiFetch<PastSimpleResult>(`/admin/past-simple/attempts/${attemptId}`),
+  overridePastSimpleGrade: (
+    attemptId: string,
+    questionId: string,
+    correct: boolean,
+  ) =>
+    apiFetch<PastSimpleResult>(
+      `/admin/past-simple/attempts/${attemptId}/questions/${questionId}/grade`,
+      { method: "PATCH", body: JSON.stringify({ correct }) },
+    ),
   getVerbBaseConfig: () =>
     apiFetch<ExamConfig & { title?: string; review_policy: string }>(
       "/admin/verb-base/config",
@@ -397,6 +415,15 @@ export const adminApi = {
     ),
   verbBaseAttemptReport: (attemptId: string) =>
     apiFetch<VerbBaseResult>(`/admin/verb-base/attempts/${attemptId}`),
+  overrideVerbBaseGrade: (
+    attemptId: string,
+    questionId: string,
+    correct: boolean,
+  ) =>
+    apiFetch<VerbBaseResult>(
+      `/admin/verb-base/attempts/${attemptId}/questions/${questionId}/grade`,
+      { method: "PATCH", body: JSON.stringify({ correct }) },
+    ),
   getPresentSimpleConfig: () =>
     apiFetch<PresentSimpleConfig>("/admin/present-simple/config"),
   updatePresentSimpleConfig: (
@@ -434,6 +461,15 @@ export const adminApi = {
   presentSimpleAttemptReport: (attemptId: string) =>
     apiFetch<PresentSimpleResult>(
       `/admin/present-simple/attempts/${attemptId}`,
+    ),
+  overridePresentSimpleGrade: (
+    attemptId: string,
+    questionId: string,
+    correct: boolean,
+  ) =>
+    apiFetch<PresentSimpleResult>(
+      `/admin/present-simple/attempts/${attemptId}/questions/${questionId}/grade`,
+      { method: "PATCH", body: JSON.stringify({ correct }) },
     ),
   downloadAttemptsCsv: async () => {
     const url = URL.createObjectURL(

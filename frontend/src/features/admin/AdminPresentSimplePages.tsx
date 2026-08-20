@@ -6,18 +6,13 @@ import { QueryState } from "../../components/QueryState";
 import { adminApi } from "../../lib/endpoints";
 
 const TOPIC_LABELS: Record<string, string> = {
-  interrogative_structure: "Interrogative structure",
-  use_of_did: "Use of did",
-  regular_irregular_verbs: "Regular and irregular verbs",
+  affirmative: "Affirmative",
+  negative: "Negative",
+  interrogative: "Interrogative",
   short_answers: "Short answers",
-  was_were: "Was and were",
-  question_words: "Question Words",
-  what: "What",
-  where: "Where",
-  when: "When",
-  why: "Why",
-  who: "Who",
-  how: "How",
+  identify: "Identify",
+  order_words: "Order",
+  sentences: "Sentences",
 };
 
 function formatDate(value: string | null) {
@@ -223,10 +218,24 @@ export function AdminPresentSimplePage() {
 
 export function AdminPresentSimpleAttemptReportPage() {
   const { attemptId = "" } = useParams();
+  const queryClient = useQueryClient();
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-present-simple-report", attemptId],
     queryFn: () => adminApi.presentSimpleAttemptReport(attemptId),
     enabled: Boolean(attemptId),
+  });
+
+  const overrideMutation = useMutation({
+    mutationFn: ({
+      questionId,
+      correct,
+    }: {
+      questionId: string;
+      correct: boolean;
+    }) => adminApi.overridePresentSimpleGrade(attemptId, questionId, correct),
+    onSuccess: (next) => {
+      queryClient.setQueryData(["admin-present-simple-report", attemptId], next);
+    },
   });
 
   return (
@@ -331,6 +340,10 @@ export function AdminPresentSimpleAttemptReportPage() {
 
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Detalle de respuestas</h2>
+              <p className="text-sm text-gray-600">
+                Puedes marcar una pregunta como correcta o incorrecta; el
+                porcentaje se recalcula al instante.
+              </p>
               {data.questions.map((question) => (
                 <article key={question.id} className="card text-sm">
                   <div className="flex flex-wrap justify-between gap-2">
@@ -363,6 +376,42 @@ export function AdminPresentSimpleAttemptReportPage() {
                     <p className="mt-2 rounded-lg bg-gray-50 p-3">
                       {question.explanation}
                     </p>
+                  )}
+                  {data.status === "SUBMITTED" && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-lg border border-green-300 px-3 text-xs font-semibold text-green-800"
+                        disabled={
+                          overrideMutation.isPending ||
+                          question.is_correct === true
+                        }
+                        onClick={() =>
+                          overrideMutation.mutate({
+                            questionId: question.id,
+                            correct: true,
+                          })
+                        }
+                      >
+                        Marcar correcta
+                      </button>
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-lg border border-red-300 px-3 text-xs font-semibold text-red-800"
+                        disabled={
+                          overrideMutation.isPending ||
+                          question.is_correct === false
+                        }
+                        onClick={() =>
+                          overrideMutation.mutate({
+                            questionId: question.id,
+                            correct: false,
+                          })
+                        }
+                      >
+                        Marcar incorrecta
+                      </button>
+                    </div>
                   )}
                 </article>
               ))}

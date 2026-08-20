@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
@@ -14,10 +14,24 @@ function formatDate(value: string | null) {
 
 export function AdminVerbBaseAttemptReportPage() {
   const { attemptId = "" } = useParams();
+  const queryClient = useQueryClient();
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-verb-base-report", attemptId],
     queryFn: () => adminApi.verbBaseAttemptReport(attemptId),
     enabled: Boolean(attemptId),
+  });
+
+  const overrideMutation = useMutation({
+    mutationFn: ({
+      questionId,
+      correct,
+    }: {
+      questionId: string;
+      correct: boolean;
+    }) => adminApi.overrideVerbBaseGrade(attemptId, questionId, correct),
+    onSuccess: (next) => {
+      queryClient.setQueryData(["admin-verb-base-report", attemptId], next);
+    },
   });
 
   return (
@@ -65,6 +79,10 @@ export function AdminVerbBaseAttemptReportPage() {
 
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Detalle de respuestas</h2>
+              <p className="text-sm text-gray-600">
+                Si una respuesta equivalente quedó mal calificada, márcala como
+                correcta o incorrecta; el porcentaje se actualiza al momento.
+              </p>
               {data.questions.map((question) => (
                 <article key={question.id} className="card text-sm">
                   <div className="flex flex-wrap justify-between gap-2">
@@ -93,6 +111,42 @@ export function AdminVerbBaseAttemptReportPage() {
                         {question.expected.base}
                       </strong>
                     </p>
+                  )}
+                  {data.status === "SUBMITTED" && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-lg border border-green-300 px-3 text-xs font-semibold text-green-800"
+                        disabled={
+                          overrideMutation.isPending ||
+                          question.grades?.base === true
+                        }
+                        onClick={() =>
+                          overrideMutation.mutate({
+                            questionId: question.id,
+                            correct: true,
+                          })
+                        }
+                      >
+                        Marcar correcta
+                      </button>
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-lg border border-red-300 px-3 text-xs font-semibold text-red-800"
+                        disabled={
+                          overrideMutation.isPending ||
+                          question.grades?.base === false
+                        }
+                        onClick={() =>
+                          overrideMutation.mutate({
+                            questionId: question.id,
+                            correct: false,
+                          })
+                        }
+                      >
+                        Marcar incorrecta
+                      </button>
+                    </div>
                   )}
                 </article>
               ))}

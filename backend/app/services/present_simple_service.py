@@ -26,6 +26,7 @@ from app.services.present_simple_grading import (
     automatic_observation,
     grade_attempt,
     grade_question,
+    recompute_attempt_from_grades,
     topic_performance,
 )
 
@@ -668,3 +669,37 @@ async def reset_student_progress(
         "is_enabled": access.is_enabled,
         "practice_enabled": access.practice_enabled,
     }
+
+
+async def override_question_grade(
+    session: AsyncSession,
+    *,
+    attempt_id: uuid.UUID,
+    question_id: uuid.UUID,
+    correct: bool,
+) -> dict:
+    result = await session.execute(
+        select(PresentSimpleAttempt)
+        .options(
+            selectinload(PresentSimpleAttempt.questions),
+            selectinload(PresentSimpleAttempt.user),
+        )
+        .where(PresentSimpleAttempt.id == attempt_id)
+    )
+    attempt = result.scalar_one_or_none()
+    if attempt is None:
+        raise AppError("NOT_FOUND", "Intento no encontrado", status_code=404)
+    if attempt.status != AttemptStatus.SUBMITTED:
+        raise AppError(
+            "ATTEMPT_NOT_SUBMITTED",
+            "Solo se puede corregir un intento ya entregado.",
+            status_code=400,
+        )
+    question = next((q for q in attempt.questions if q.id == question_id), None)
+    if question is None:
+        raise AppError("NOT_FOUND", "Pregunta no encontrada", status_code=404)
+    question.is_correct = correct
+    question.graded_at = datetime.now(UTC)
+    recompute_attempt_from_grades(attempt)
+    await session.flush()
+    return serialize_result(attempt, student=attempt.user, include_review=True)

@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -240,6 +241,36 @@ async def get_attempt(
         student=attempt.user,
         include_review=True,
     )
+
+
+class GradeOverrideBody(BaseModel):
+    correct: bool
+
+
+@router.patch("/past-simple/attempts/{attempt_id}/questions/{question_id}/grade")
+async def override_past_simple_grade(
+    attempt_id: uuid.UUID,
+    question_id: uuid.UUID,
+    body: GradeOverrideBody,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    data = await past_simple_service.override_question_grade(
+        db,
+        attempt_id=attempt_id,
+        question_id=question_id,
+        correct=body.correct,
+    )
+    await log_audit(
+        db,
+        actor_user_id=admin.id,
+        action="PAST_SIMPLE_GRADE_OVERRIDE",
+        target_type="past_simple_attempt_question",
+        target_id=str(question_id),
+        metadata={"attempt_id": str(attempt_id), "correct": body.correct},
+    )
+    await db.commit()
+    return data
 
 
 @router.get("/users/{user_id}/exam-access")

@@ -49,6 +49,23 @@ def test_spanish_accent_insensitive():
     assert all_ok is True
 
 
+def test_spanish_natural_synonym_accepted():
+    q = _question(
+        prompt_type=PromptType.FROM_BASE,
+        snapshot_valid_answers={
+            "BASE": ["tell"],
+            "PAST": ["told"],
+            "SPANISH": ["decir o contar (a alguien)"],
+        },
+        snapshot_spanish_prompt="Decir o contar (a alguien)",
+        answer_spanish_raw="decir",
+        answer_past_raw="told",
+    )
+    all_ok, _ = grade_question(q)
+    assert q.is_spanish_correct is True
+    assert all_ok is True
+
+
 def test_do_not_confused_with_make():
     q = _question(
         snapshot_valid_answers={
