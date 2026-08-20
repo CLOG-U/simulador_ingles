@@ -1196,7 +1196,10 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_sentences_01",
         topic="sentences",
         question_type="transform_sentence",
-        instruction="Rewrite the sentence in the Present Simple affirmative with the correct verb form.",
+        instruction=(
+            "Rewrite the sentence in the Present Simple affirmative "
+            "with the correct verb form."
+        ),
         question="(My cousins / visit) us on weekends.",
         options=None,
         correct_answer="My cousins visit us on weekends.",
@@ -1234,7 +1237,10 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_sentences_04",
         topic="sentences",
         question_type="fill_blank",
-        instruction="Complete the sentence with the correct Present Simple form of the verb in parentheses.",
+        instruction=(
+            "Complete the sentence with the correct Present Simple form "
+            "of the verb in parentheses."
+        ),
         question="Carla ___ her room every Saturday. (clean)",
         options=None,
         correct_answer="cleans",

@@ -423,7 +423,10 @@ async def allow_new_attempt(
             "Verb Exam no tiene modo práctica.",
             status_code=400,
         )
-    if parsed_type in {ExamType.VERB_BASE_EXAM, ExamType.PRESENT_SIMPLE_EXAM} and mode == "practice":
+    if (
+        parsed_type in {ExamType.VERB_BASE_EXAM, ExamType.PRESENT_SIMPLE_EXAM}
+        and mode == "practice"
+    ):
         raise AppError(
             "INVALID_MODE",
             "Este examen no tiene modo práctica en v1.",

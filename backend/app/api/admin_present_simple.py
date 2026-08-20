@@ -11,17 +11,15 @@ from app.api.deps import require_admin
 from app.core.database import get_db
 from app.core.errors import AppError
 from app.models import (
-    Attempt,
     AttemptStatus,
     ExamType,
     PresentSimpleAttempt,
     PresentSimpleQuestion,
     ReviewPolicy,
     User,
-    UserRole,
 )
-from app.schemas.present_simple import ExamAccessUpdate, PresentSimpleConfigUpdate
-from app.services import exam_access_service, exam_service, present_simple_service, user_service
+from app.schemas.present_simple import PresentSimpleConfigUpdate
+from app.services import present_simple_service
 from app.services.audit_service import log_audit
 
 router = APIRouter(prefix="/admin", tags=["admin-present-simple"])
