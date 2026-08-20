@@ -7,7 +7,12 @@ import {
   StudentExamsPage,
   StudentPracticePage,
 } from "../src/features/student/StudentDashboard";
-import { examApi, pastSimpleApi } from "../src/lib/endpoints";
+import {
+  examApi,
+  pastSimpleApi,
+  presentSimpleApi,
+  verbBaseApi,
+} from "../src/lib/endpoints";
 
 vi.mock("../src/features/auth/AuthProvider", () => ({
   useAuth: () => ({
@@ -25,10 +30,18 @@ vi.mock("../src/lib/endpoints", () => ({
     config: vi.fn(),
     attemptStatus: vi.fn(),
   },
+  verbBaseApi: {
+    config: vi.fn(),
+    attemptStatus: vi.fn(),
+  },
   pastSimpleApi: {
     config: vi.fn(),
     attemptStatus: vi.fn(),
     practiceStatus: vi.fn(),
+  },
+  presentSimpleApi: {
+    config: vi.fn(),
+    attemptStatus: vi.fn(),
   },
 }));
 
@@ -70,6 +83,25 @@ describe("Student modules", () => {
       can_start_new: true,
       last_submitted: null,
     });
+    vi.mocked(verbBaseApi.config).mockResolvedValue({
+      exam_type: "verb_base_exam",
+      is_enabled: true,
+      question_count: 20,
+      passing_percentage: 70,
+      duration_minutes: null,
+      max_attempts: 1,
+      review_policy: "FULL",
+    });
+    vi.mocked(verbBaseApi.attemptStatus).mockResolvedValue({
+      exam_type: "verb_base_exam",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: 1,
+      can_start_new: true,
+      last_submitted: null,
+    });
     vi.mocked(pastSimpleApi.config).mockResolvedValue({
       exam_type: "past_simple_exam",
       is_enabled: false,
@@ -103,6 +135,27 @@ describe("Student modules", () => {
       question_bank_size: 100,
       last_submitted: null,
     });
+    vi.mocked(presentSimpleApi.config).mockResolvedValue({
+      exam_type: "present_simple_exam",
+      is_enabled: true,
+      practice_enabled: false,
+      question_count: 14,
+      question_bank_size: 35,
+      passing_percentage: 70,
+      duration_minutes: null,
+      review_policy: "FULL",
+      title: "Present Simple Exam",
+    });
+    vi.mocked(presentSimpleApi.attemptStatus).mockResolvedValue({
+      exam_type: "present_simple_exam",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: 1,
+      can_start_new: true,
+      last_submitted: null,
+    });
   });
 
   it("shows Exámenes and Práctica modules on the student home", async () => {
@@ -121,11 +174,17 @@ describe("Student modules", () => {
     );
   });
 
-  it("lists Verb and Past Simple exams in the Exámenes module", async () => {
+  it("lists Verb, Verb Base, Past Simple and Present Simple exams", async () => {
     renderAt("/student/exams");
     expect(await screen.findByRole("heading", { name: "Verb Exam" })).toBeInTheDocument();
     expect(
+      screen.getByRole("heading", { name: "Verb Base Form" }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("heading", { name: "Past Simple Exam" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Present Simple Exam" }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Start Practice")).not.toBeInTheDocument();
   });

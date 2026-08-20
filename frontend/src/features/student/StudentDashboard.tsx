@@ -1,7 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { AppShell, studentNav } from "../../components/AppShell";
-import { examApi, pastSimpleApi } from "../../lib/endpoints";
+import {
+  examApi,
+  pastSimpleApi,
+  presentSimpleApi,
+  verbBaseApi,
+} from "../../lib/endpoints";
 import type { AttemptStatus } from "../../lib/types";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -140,7 +145,7 @@ export function StudentDashboard() {
         <div className="grid gap-5 md:grid-cols-2">
           <ModuleCard
             title="Exámenes"
-            description="Evaluaciones oficiales: Verb Exam y Past Simple Exam."
+            description="Evaluaciones oficiales: Verb Exam, Verb Base Form, Past Simple y Present Simple."
             to="/student/exams"
             cta="Ir a Exámenes"
           />
@@ -156,7 +161,7 @@ export function StudentDashboard() {
   );
 }
 
-/** Exámenes module: Verb Exam + Past Simple Exam. */
+/** Exámenes module: Verb Exam + Verb Base + Past/Present Simple. */
 export function StudentExamsPage() {
   const verbConfigQuery = useQuery({
     queryKey: ["exam-config", "verb_exam"],
@@ -166,6 +171,14 @@ export function StudentExamsPage() {
     queryKey: ["attempt-status", "verb_exam"],
     queryFn: examApi.attemptStatus,
   });
+  const verbBaseConfigQuery = useQuery({
+    queryKey: ["exam-config", "verb_base_exam"],
+    queryFn: verbBaseApi.config,
+  });
+  const verbBaseStatusQuery = useQuery({
+    queryKey: ["attempt-status", "verb_base_exam"],
+    queryFn: verbBaseApi.attemptStatus,
+  });
   const pastConfigQuery = useQuery({
     queryKey: ["exam-config", "past_simple_exam"],
     queryFn: pastSimpleApi.config,
@@ -173,6 +186,14 @@ export function StudentExamsPage() {
   const pastStatusQuery = useQuery({
     queryKey: ["attempt-status", "past_simple_exam"],
     queryFn: pastSimpleApi.attemptStatus,
+  });
+  const presentConfigQuery = useQuery({
+    queryKey: ["exam-config", "present_simple_exam"],
+    queryFn: presentSimpleApi.config,
+  });
+  const presentStatusQuery = useQuery({
+    queryKey: ["attempt-status", "present_simple_exam"],
+    queryFn: presentSimpleApi.attemptStatus,
   });
 
   return (
@@ -187,7 +208,7 @@ export function StudentExamsPage() {
         <div className="grid gap-5 md:grid-cols-2">
           <ExamCard
             title="Verb Exam"
-            description="Complete the base form, past form and Spanish meaning of English verbs."
+            description="Completa la forma base, el pasado y el significado en español de verbos en inglés."
             config={verbConfigQuery.data}
             status={verbStatusQuery.data}
             isLoading={verbConfigQuery.isLoading || verbStatusQuery.isLoading}
@@ -201,8 +222,25 @@ export function StudentExamsPage() {
             resultPath={(id) => `/student/exams/verb_exam/results/${id}`}
           />
           <ExamCard
+            title="Verb Base Form"
+            description="Escribe solo la forma base del verbo a partir del español o del pasado."
+            config={verbBaseConfigQuery.data}
+            status={verbBaseStatusQuery.data}
+            isLoading={
+              verbBaseConfigQuery.isLoading || verbBaseStatusQuery.isLoading
+            }
+            isError={verbBaseConfigQuery.isError || verbBaseStatusQuery.isError}
+            onRetry={() => {
+              void verbBaseConfigQuery.refetch();
+              void verbBaseStatusQuery.refetch();
+            }}
+            instructionsPath="/student/exams/verb_base_exam/instructions"
+            examPath={(id) => `/student/exams/verb_base_exam/attempts/${id}`}
+            resultPath={(id) => `/student/exams/verb_base_exam/results/${id}`}
+          />
+          <ExamCard
             title="Past Simple Exam"
-            description="Test your knowledge of questions, short answers, verbs and question words in the Past Simple."
+            description="Evalúa preguntas, respuestas cortas, verbos y palabras interrogativas en Past Simple."
             config={pastConfigQuery.data}
             status={pastStatusQuery.data}
             isLoading={pastConfigQuery.isLoading || pastStatusQuery.isLoading}
@@ -214,6 +252,27 @@ export function StudentExamsPage() {
             instructionsPath="/student/exams/past_simple_exam/instructions"
             examPath={(id) => `/student/exams/past_simple_exam/attempts/${id}`}
             resultPath={(id) => `/student/exams/past_simple_exam/results/${id}`}
+          />
+          <ExamCard
+            title="Present Simple Exam"
+            description="Evalúa afirmativas, negativas, interrogativas, orden e identificación en Present Simple."
+            config={presentConfigQuery.data}
+            status={presentStatusQuery.data}
+            isLoading={
+              presentConfigQuery.isLoading || presentStatusQuery.isLoading
+            }
+            isError={presentConfigQuery.isError || presentStatusQuery.isError}
+            onRetry={() => {
+              void presentConfigQuery.refetch();
+              void presentStatusQuery.refetch();
+            }}
+            instructionsPath="/student/exams/present_simple_exam/instructions"
+            examPath={(id) =>
+              `/student/exams/present_simple_exam/attempts/${id}`
+            }
+            resultPath={(id) =>
+              `/student/exams/present_simple_exam/results/${id}`
+            }
           />
         </div>
       </div>

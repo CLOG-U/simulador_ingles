@@ -294,9 +294,13 @@ export function AdminUsersPage() {
       const moduleLabel =
         result.exam_type === "verb_exam"
           ? "Verb Exam"
-          : result.mode === "practice"
-            ? "Past Simple práctica"
-            : "Past Simple examen";
+          : result.exam_type === "verb_base_exam"
+            ? "Verb Base Form"
+            : result.exam_type === "present_simple_exam"
+              ? "Present Simple examen"
+              : result.mode === "practice"
+                ? "Past Simple práctica"
+                : "Past Simple examen";
       setActionNotice(
         `${moduleLabel} reiniciado (${result.deleted_attempts} intento(s) eliminados).`,
       );
@@ -671,8 +675,14 @@ export function AdminUsersPage() {
                         const verbAccess = u.exam_access?.find(
                           (item) => item.exam_type === "verb_exam",
                         );
+                        const verbBaseAccess = u.exam_access?.find(
+                          (item) => item.exam_type === "verb_base_exam",
+                        );
                         const pastAccess = u.exam_access?.find(
                           (item) => item.exam_type === "past_simple_exam",
+                        );
+                        const presentAccess = u.exam_access?.find(
+                          (item) => item.exam_type === "present_simple_exam",
                         );
                         return (
                           <div className="flex flex-wrap gap-2">
@@ -698,6 +708,27 @@ export function AdminUsersPage() {
                                   pendiente(s)
                                 </p>
                               </AttemptInfo>
+                              <AttemptInfo title="Verb Base Form">
+                                <p>
+                                  {verbBaseAccess?.is_enabled
+                                    ? "Habilitado"
+                                    : "Bloqueado"}
+                                </p>
+                                <p>
+                                  Cupo: {verbBaseAccess?.allowed_attempts ?? 1}{" "}
+                                  intento(s)
+                                </p>
+                                <p>
+                                  {verbBaseAccess?.submitted_attempts ?? 0}{" "}
+                                  completado(s)
+                                </p>
+                                <p>
+                                  {verbBaseAccess?.remaining_attempts ??
+                                    verbBaseAccess?.allowed_attempts ??
+                                    1}{" "}
+                                  pendiente(s)
+                                </p>
+                              </AttemptInfo>
                               <AttemptInfo title="Past Simple Examen">
                                 <p>
                                   {pastAccess?.is_enabled
@@ -715,6 +746,27 @@ export function AdminUsersPage() {
                                 <p>
                                   {pastAccess?.remaining_attempts ??
                                     pastAccess?.allowed_attempts ??
+                                    1}{" "}
+                                  pendiente(s)
+                                </p>
+                              </AttemptInfo>
+                              <AttemptInfo title="Present Simple Examen">
+                                <p>
+                                  {presentAccess?.is_enabled
+                                    ? "Habilitado"
+                                    : "Bloqueado"}
+                                </p>
+                                <p>
+                                  Cupo: {presentAccess?.allowed_attempts ?? 1}{" "}
+                                  intento(s)
+                                </p>
+                                <p>
+                                  {presentAccess?.submitted_attempts ?? 0}{" "}
+                                  completado(s)
+                                </p>
+                                <p>
+                                  {presentAccess?.remaining_attempts ??
+                                    presentAccess?.allowed_attempts ??
                                     1}{" "}
                                   pendiente(s)
                                 </p>
@@ -802,8 +854,14 @@ export function AdminUsersPage() {
                           const verbAccess = u.exam_access?.find(
                             (item) => item.exam_type === "verb_exam",
                           );
+                          const verbBaseAccess = u.exam_access?.find(
+                            (item) => item.exam_type === "verb_base_exam",
+                          );
                           const pastAccess = u.exam_access?.find(
                             (item) => item.exam_type === "past_simple_exam",
+                          );
+                          const presentAccess = u.exam_access?.find(
+                            (item) => item.exam_type === "present_simple_exam",
                           );
                           const busyAccess = (
                             examType: ExamType,
@@ -895,6 +953,72 @@ export function AdminUsersPage() {
                                   </button>
                                 </ActionGroup>
 
+                                <ActionGroup title="Verb Base Form">
+                                  <button
+                                    type="button"
+                                    className={
+                                      verbBaseAccess?.is_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "verb_base_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "verb_base_exam",
+                                        isEnabled: !verbBaseAccess?.is_enabled,
+                                      })
+                                    }
+                                  >
+                                    {verbBaseAccess?.is_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-primary"
+                                    title="Suma 1 al cupo total de intentos (se acumula)"
+                                    disabled={busyAllow(
+                                      "verb_base_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      allowAttemptMutation.mutate({
+                                        userId: u.id,
+                                        examType: "verb_base_exam",
+                                        mode: "exam",
+                                      })
+                                    }
+                                  >
+                                    Sumar intento
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "verb_base_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear Verb Base Form de ${u.username}?\n\nSe eliminarán sus intentos y quedará 1 disponible.`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "verb_base_exam",
+                                          mode: "exam",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+
                                 <ActionGroup title="Past Simple Examen">
                                   <button
                                     type="button"
@@ -952,6 +1076,72 @@ export function AdminUsersPage() {
                                         resetModuleMutation.mutate({
                                           userId: u.id,
                                           examType: "past_simple_exam",
+                                          mode: "exam",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+
+                                <ActionGroup title="Present Simple Examen">
+                                  <button
+                                    type="button"
+                                    className={
+                                      presentAccess?.is_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "present_simple_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "present_simple_exam",
+                                        isEnabled: !presentAccess?.is_enabled,
+                                      })
+                                    }
+                                  >
+                                    {presentAccess?.is_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-primary"
+                                    title="Suma 1 al cupo total de intentos (se acumula)"
+                                    disabled={busyAllow(
+                                      "present_simple_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      allowAttemptMutation.mutate({
+                                        userId: u.id,
+                                        examType: "present_simple_exam",
+                                        mode: "exam",
+                                      })
+                                    }
+                                  >
+                                    Sumar intento
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "present_simple_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear el EXAMEN Present Simple de ${u.username}?\n\nSe eliminarán sus intentos y quedará 1 disponible.`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "present_simple_exam",
                                           mode: "exam",
                                         });
                                       }

@@ -19,6 +19,12 @@ const TOPIC_LABELS: Record<string, string> = {
   why: "Why",
   who: "Who",
   how: "How",
+  affirmative: "Affirmative",
+  negative: "Negative",
+  interrogative: "Interrogative",
+  identify: "Identify",
+  order_words: "Order words",
+  sentences: "Sentences",
 };
 
 function ModuleCard({
@@ -70,9 +76,17 @@ export function AdminExamsHubPage() {
     queryKey: ["admin-config"],
     queryFn: adminApi.getExamConfig,
   });
+  const verbBaseConfig = useQuery({
+    queryKey: ["admin-verb-base-config"],
+    queryFn: adminApi.getVerbBaseConfig,
+  });
   const pastConfig = useQuery({
     queryKey: ["admin-past-simple-config"],
     queryFn: adminApi.getPastSimpleConfig,
+  });
+  const presentConfig = useQuery({
+    queryKey: ["admin-present-simple-config"],
+    queryFn: adminApi.getPresentSimpleConfig,
   });
 
   return (
@@ -103,6 +117,22 @@ export function AdminExamsHubPage() {
             tone="exam"
           />
           <ModuleCard
+            title="Verb Base Form"
+            description="Escribir solo la forma base a partir del español o del pasado."
+            meta={
+              verbBaseConfig.data
+                ? `${verbBaseConfig.data.is_enabled ? "Habilitado" : "Deshabilitado"} · Nota mín. ${verbBaseConfig.data.passing_percentage}% · ${
+                    verbBaseConfig.data.duration_minutes
+                      ? `${verbBaseConfig.data.duration_minutes} min`
+                      : "Sin temporizador"
+                  }`
+                : "Cargando…"
+            }
+            to="/admin/exams/verb-base"
+            cta="Abrir Verb Base Form"
+            tone="exam"
+          />
+          <ModuleCard
             title="Past Simple Exam"
             description="Evaluación oficial de Past Simple con banco de 100 preguntas (24 por intento)."
             meta={
@@ -116,6 +146,22 @@ export function AdminExamsHubPage() {
             }
             to="/admin/exams/past-simple"
             cta="Abrir Past Simple Exam"
+            tone="exam"
+          />
+          <ModuleCard
+            title="Present Simple Exam"
+            description="Evaluación oficial de Present Simple con banco de preguntas balanceado."
+            meta={
+              presentConfig.data
+                ? `${presentConfig.data.is_enabled ? "Habilitado" : "Deshabilitado"} · Nota mín. ${presentConfig.data.passing_percentage}% · ${
+                    presentConfig.data.duration_minutes
+                      ? `${presentConfig.data.duration_minutes} min`
+                      : "Sin temporizador"
+                  }`
+                : "Cargando…"
+            }
+            to="/admin/exams/present-simple"
+            cta="Abrir Present Simple Exam"
             tone="exam"
           />
         </div>
@@ -364,6 +410,133 @@ export function AdminVerbExamPage() {
   );
 }
 
+/** Verb Base Form: configuración + reportes. */
+export function AdminVerbBaseExamPage() {
+  const queryClient = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["admin-verb-base-config"],
+    queryFn: adminApi.getVerbBaseConfig,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-attempts", "verb_base_exam"],
+    queryFn: adminApi.listVerbBaseAttempts,
+  });
+  const [passing, setPassing] = useState<number | "">("");
+  const [duration, setDuration] = useState<number | "">("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!config) return;
+    setPassing(config.passing_percentage);
+    setDuration(config.duration_minutes ?? "");
+  }, [config]);
+
+  const saveSettings = async () => {
+    await adminApi.updateVerbBaseConfig({
+      passing_percentage:
+        passing === "" ? config?.passing_percentage : Number(passing),
+      duration_minutes: duration === "" ? null : Number(duration),
+    });
+    setNotice("Configuración de Verb Base Form guardada.");
+    void queryClient.invalidateQueries({ queryKey: ["admin-verb-base-config"] });
+  };
+
+  const toggleExam = async () => {
+    if (!config) return;
+    await adminApi.updateVerbBaseConfig({ is_enabled: !config.is_enabled });
+    setNotice(
+      !config.is_enabled
+        ? "Verb Base Form habilitado globalmente."
+        : "Verb Base Form deshabilitado.",
+    );
+    void queryClient.invalidateQueries({ queryKey: ["admin-verb-base-config"] });
+  };
+
+  return (
+    <AppShell title="Verb Base Form" nav={adminNav} wide>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BackLink to="/admin/exams" label="← Exámenes" />
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              config?.is_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            disabled={!config}
+            onClick={() => void toggleExam()}
+          >
+            {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
+          </button>
+        </div>
+
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-primary/10 bg-white shadow-sm">
+          <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Configuración del examen</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Nota mínima y temporizador de Verb Base Form.
+            </p>
+          </div>
+          <div className="space-y-4 p-6">
+            <p className="text-sm text-gray-600">
+              Preguntas por intento: {config?.question_count ?? 20} (fijo). Usa el
+              banco de verbos activo. También debes habilitar a cada estudiante en
+              Usuarios.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium">
+                Nota mínima (%)
+                <input
+                  type="number"
+                  value={passing}
+                  onChange={(e) => setPassing(Number(e.target.value))}
+                  className="admin-search mt-1"
+                />
+              </label>
+              <label className="block text-sm font-medium">
+                Temporizador (minutos, vacío = desactivado)
+                <input
+                  type="number"
+                  value={duration}
+                  onChange={(e) =>
+                    setDuration(e.target.value ? Number(e.target.value) : "")
+                  }
+                  className="admin-search mt-1"
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={!config}
+              onClick={() => void saveSettings()}
+            >
+              Guardar configuración
+            </button>
+            {notice && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">
+                {notice}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <ModuleReportsSection
+          title="Reportes de Verb Base Form"
+          description="Intentos de este examen. Entra al reporte específico de cada evaluación."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/exams/verb-base/reports/${id}`}
+          emptyMessage="Aún no hay intentos de Verb Base Form."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
 /** Past Simple Exam: configuración del examen + banco. */
 export function AdminPastSimpleExamPage() {
   const queryClient = useQueryClient();
@@ -506,6 +679,160 @@ export function AdminPastSimpleExamPage() {
           items={reportsQuery.data?.items ?? []}
           detailPath={(id) => `/admin/exams/past-simple/reports/${id}`}
           emptyMessage="Aún no hay intentos de Past Simple Exam."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+/** Present Simple Exam: configuración + banco + reportes. */
+export function AdminPresentSimpleExamPage() {
+  const queryClient = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["admin-present-simple-config"],
+    queryFn: adminApi.getPresentSimpleConfig,
+  });
+  const questionsQuery = useQuery({
+    queryKey: ["admin-present-simple-questions"],
+    queryFn: adminApi.listPresentSimpleQuestions,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-present-simple-attempts", "exam"],
+    queryFn: () => adminApi.listPresentSimpleAttempts("exam"),
+  });
+  const [passing, setPassing] = useState<number | "">("");
+  const [duration, setDuration] = useState<number | "">("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!config) return;
+    setPassing(config.passing_percentage);
+    setDuration(config.duration_minutes ?? "");
+  }, [config]);
+
+  const toggleQuestion = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      adminApi.togglePresentSimpleQuestion(id, active),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-present-simple-questions"],
+      }),
+  });
+
+  const saveSettings = async () => {
+    await adminApi.updatePresentSimpleConfig({
+      passing_percentage:
+        passing === "" ? config?.passing_percentage : Number(passing),
+      duration_minutes: duration === "" ? null : Number(duration),
+    });
+    setNotice("Configuración de Present Simple Exam guardada.");
+    void queryClient.invalidateQueries({
+      queryKey: ["admin-present-simple-config"],
+    });
+  };
+
+  const toggleExam = async () => {
+    if (!config) return;
+    await adminApi.updatePresentSimpleConfig({
+      is_enabled: !config.is_enabled,
+    });
+    setNotice(
+      !config.is_enabled
+        ? "Present Simple Exam habilitado globalmente."
+        : "Present Simple Exam deshabilitado.",
+    );
+    void queryClient.invalidateQueries({
+      queryKey: ["admin-present-simple-config"],
+    });
+  };
+
+  return (
+    <AppShell title="Present Simple Exam" nav={adminNav} wide>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BackLink to="/admin/exams" label="← Exámenes" />
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              config?.is_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            disabled={!config}
+            onClick={() => void toggleExam()}
+          >
+            {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
+          </button>
+        </div>
+
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-primary/10 bg-white shadow-sm">
+          <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Configuración del examen</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Nota mínima y temporizador del examen oficial Present Simple.
+            </p>
+          </div>
+          <div className="space-y-4 p-6">
+            <p className="text-sm text-gray-600">
+              Banco: {config?.question_bank_size ?? "—"} preguntas · Cada intento
+              toma {config?.question_count ?? 24}. Habilita también a cada
+              estudiante en Usuarios.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium">
+                Nota mínima (%)
+                <input
+                  type="number"
+                  value={passing}
+                  onChange={(e) => setPassing(Number(e.target.value))}
+                  className="admin-search mt-1"
+                />
+              </label>
+              <label className="block text-sm font-medium">
+                Temporizador (minutos, vacío = sin límite)
+                <input
+                  type="number"
+                  value={duration}
+                  onChange={(e) =>
+                    setDuration(e.target.value ? Number(e.target.value) : "")
+                  }
+                  className="admin-search mt-1"
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={!config}
+              onClick={() => void saveSettings()}
+            >
+              Guardar configuración
+            </button>
+            {notice && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">
+                {notice}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <PastSimpleQuestionsSection
+          questions={questionsQuery.data?.items}
+          isLoading={questionsQuery.isLoading}
+          isError={questionsQuery.isError}
+          error={questionsQuery.error}
+          onToggle={(id, active) => toggleQuestion.mutate({ id, active })}
+        />
+
+        <ModuleReportsSection
+          title="Reportes de Present Simple Exam"
+          description="Intentos del examen oficial. Entra al reporte específico de cada evaluación."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/exams/present-simple/reports/${id}`}
+          emptyMessage="Aún no hay intentos de Present Simple Exam."
         />
       </div>
     </AppShell>

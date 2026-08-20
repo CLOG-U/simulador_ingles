@@ -24,6 +24,13 @@ function answerKey(field: string): "base" | "past" | "spanish" {
   return field.toLowerCase() as "base" | "past" | "spanish";
 }
 
+function studentAnswer(
+  answers: ExamQuestion["answers"],
+  key: "base" | "past" | "spanish",
+) {
+  return (answers[key] ?? "").trim() || "—";
+}
+
 function GradeBadge({ correct }: { correct: boolean }) {
   return (
     <span
@@ -87,7 +94,7 @@ function QuestionReview({
             <ul className="mt-3 space-y-2">
               {q.required_fields.map(({ field, label }) => {
                 const key = answerKey(field);
-                const studentAnswer = q.answers[key]?.trim() || "—";
+                const studentAnswerText = studentAnswer(q.answers, key);
                 const expectedAnswer = q.expected?.[key] ?? "—";
                 const isCorrect = q.grades?.[key];
 
@@ -108,7 +115,7 @@ function QuestionReview({
                     </div>
                     <p className="mt-1">
                       <span className="text-gray-600">Respuesta del estudiante:</span>{" "}
-                      <strong>{studentAnswer}</strong>
+                      <strong>{studentAnswerText}</strong>
                     </p>
                     {hasGrades && (
                       <p className="mt-1">
@@ -282,9 +289,19 @@ export function AdminStudentReportPage() {
                   to={`/admin/students/${userId}/exams/verb`}
                 />
                 <ModuleReportCard
+                  title="Verb Base Form"
+                  summary={`${data.verb_base_attempts?.length ?? 0} intento(s) registrados`}
+                  to={`/admin/students/${userId}/exams/verb-base`}
+                />
+                <ModuleReportCard
                   title="Past Simple Exam"
                   summary={`${data.past_simple_attempts.length} intento(s) registrados`}
                   to={`/admin/students/${userId}/exams/past-simple`}
+                />
+                <ModuleReportCard
+                  title="Present Simple Exam"
+                  summary={`${data.present_simple_attempts?.length ?? 0} intento(s) registrados`}
+                  to={`/admin/students/${userId}/exams/present-simple`}
                 />
                 <ModuleReportCard
                   title="Past Simple Practice"
@@ -301,7 +318,12 @@ export function AdminStudentReportPage() {
   );
 }
 
-type StudentModuleKey = "verb" | "past-simple-exam" | "past-simple-practice";
+type StudentModuleKey =
+  | "verb"
+  | "verb-base"
+  | "past-simple-exam"
+  | "present-simple-exam"
+  | "past-simple-practice";
 
 /** Reporte específico de un módulo para un estudiante. */
 export function AdminStudentModuleReportPage({
@@ -318,12 +340,16 @@ export function AdminStudentModuleReportPage({
 
   const titles: Record<StudentModuleKey, string> = {
     verb: "Reporte Verb Exam",
+    "verb-base": "Reporte Verb Base Form",
     "past-simple-exam": "Reporte Past Simple Exam",
+    "present-simple-exam": "Reporte Present Simple Exam",
     "past-simple-practice": "Reporte Past Simple Practice",
   };
   const backModule: Record<StudentModuleKey, string> = {
     verb: "/admin/exams/verb",
+    "verb-base": "/admin/exams/verb-base",
     "past-simple-exam": "/admin/exams/past-simple",
+    "present-simple-exam": "/admin/exams/present-simple",
     "past-simple-practice": "/admin/practice/past-simple",
   };
 
@@ -406,6 +432,57 @@ export function AdminStudentModuleReportPage({
               </section>
             )}
 
+            {module === "verb-base" && (
+              <section className="card">
+                <h3 className="mb-3 font-semibold">
+                  Historial de Verb Base Form
+                </h3>
+                {(data.verb_base_attempts?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-gray-600">
+                    Sin intentos todavía. Consulta también el listado del módulo.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[640px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="py-2">Inicio</th>
+                          <th className="py-2">Entrega</th>
+                          <th className="py-2">Estado</th>
+                          <th className="py-2">Nota</th>
+                          <th className="py-2">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.verb_base_attempts?.map((a) => (
+                          <tr key={a.id} className="border-b">
+                            <td className="py-2">{formatDate(a.started_at)}</td>
+                            <td className="py-2">{formatDate(a.submitted_at)}</td>
+                            <td className="py-2">
+                              {STATUS_LABELS[a.status] ?? a.status}
+                            </td>
+                            <td className="py-2">
+                              {a.percentage != null
+                                ? `${a.percentage.toFixed(1)}%`
+                                : "—"}
+                            </td>
+                            <td className="py-2">
+                              <Link
+                                to={`/admin/exams/verb-base/reports/${a.id}`}
+                                className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
+                              >
+                                Ver reporte
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
             {module === "past-simple-exam" && (
               <section className="card">
                 <h3 className="mb-3 font-semibold">
@@ -447,6 +524,63 @@ export function AdminStudentModuleReportPage({
                             <td className="py-2">
                               <Link
                                 to={`/admin/exams/past-simple/reports/${attempt.id}`}
+                                className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
+                              >
+                                Ver reporte
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {module === "present-simple-exam" && (
+              <section className="card">
+                <h3 className="mb-3 font-semibold">
+                  Historial de Present Simple Exam
+                </h3>
+                {(data.present_simple_attempts?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-gray-600">
+                    Sin intentos todavía. Consulta también el listado del módulo.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[700px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="py-2">Intento</th>
+                          <th className="py-2">Inicio</th>
+                          <th className="py-2">Entrega</th>
+                          <th className="py-2">Estado</th>
+                          <th className="py-2">Nota</th>
+                          <th className="py-2">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.present_simple_attempts?.map((attempt) => (
+                          <tr key={attempt.id} className="border-b">
+                            <td className="py-2">#{attempt.attempt_number}</td>
+                            <td className="py-2">
+                              {formatDate(attempt.started_at)}
+                            </td>
+                            <td className="py-2">
+                              {formatDate(attempt.submitted_at)}
+                            </td>
+                            <td className="py-2">
+                              {STATUS_LABELS[attempt.status] ?? attempt.status}
+                            </td>
+                            <td className="py-2">
+                              {attempt.percentage != null
+                                ? `${attempt.percentage.toFixed(1)}%`
+                                : "—"}
+                            </td>
+                            <td className="py-2">
+                              <Link
+                                to={`/admin/exams/present-simple/reports/${attempt.id}`}
                                 className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
                               >
                                 Ver reporte

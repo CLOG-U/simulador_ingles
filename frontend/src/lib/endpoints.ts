@@ -14,7 +14,11 @@ import type {
   PastSimpleQuestion,
   PastSimpleQuestionAdmin,
   PastSimpleResult,
+  PresentSimpleConfig,
+  PresentSimpleQuestionAdmin,
+  PresentSimpleResult,
   UserMe,
+  VerbBaseResult,
   VerbItem,
 } from "./types";
 import { apiFetch, apiFetchBlob, ApiError } from "./api";
@@ -149,6 +153,59 @@ export const pastSimpleApi = {
   practiceResult: (attemptId: string) =>
     apiFetch<PastSimpleResult>(
       `/past-simple/practice/sessions/${attemptId}/result`,
+    ),
+};
+
+export const verbBaseApi = {
+  config: () => apiFetch<ExamConfig>("/verb-base/config"),
+  attemptStatus: () => apiFetch<AttemptStatus>("/verb-base/attempts/status"),
+  startAttempt: () =>
+    apiFetch<Attempt>("/verb-base/attempts", { method: "POST" }),
+  currentAttempt: () =>
+    apiFetch<Attempt | null>("/verb-base/attempts/current"),
+  getAttempt: (id: string) => apiFetch<Attempt>(`/verb-base/attempts/${id}`),
+  saveAnswer: (attemptId: string, questionId: string, answer: string | null) =>
+    apiFetch<{ status: string }>(
+      `/verb-base/attempts/${attemptId}/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submit: (attemptId: string) =>
+    apiFetch<Attempt>(`/verb-base/attempts/${attemptId}/submit`, {
+      method: "POST",
+    }),
+  result: (attemptId: string) =>
+    apiFetch<VerbBaseResult>(`/verb-base/attempts/${attemptId}/result`),
+};
+
+export const presentSimpleApi = {
+  config: () =>
+    apiFetch<PresentSimpleConfig>("/present-simple/config"),
+  attemptStatus: () =>
+    apiFetch<AttemptStatus>("/present-simple/attempts/status"),
+  startAttempt: () =>
+    apiFetch<PastSimpleAttempt>("/present-simple/attempts", { method: "POST" }),
+  currentAttempt: () =>
+    apiFetch<PastSimpleAttempt | null>("/present-simple/attempts/current"),
+  getAttempt: (id: string) =>
+    apiFetch<PastSimpleAttempt>(`/present-simple/attempts/${id}`),
+  saveAnswer: (attemptId: string, questionId: string, answer: string | null) =>
+    apiFetch<{ status: string }>(
+      `/present-simple/attempts/${attemptId}/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submit: (attemptId: string) =>
+    apiFetch<PastSimpleAttempt>(`/present-simple/attempts/${attemptId}/submit`, {
+      method: "POST",
+    }),
+  result: (attemptId: string) =>
+    apiFetch<PresentSimpleResult>(
+      `/present-simple/attempts/${attemptId}/result`,
     ),
 };
 
@@ -321,6 +378,63 @@ export const adminApi = {
     ),
   pastSimpleAttemptReport: (attemptId: string) =>
     apiFetch<PastSimpleResult>(`/admin/past-simple/attempts/${attemptId}`),
+  getVerbBaseConfig: () =>
+    apiFetch<ExamConfig & { title?: string; review_policy: string }>(
+      "/admin/verb-base/config",
+    ),
+  updateVerbBaseConfig: (
+    data: Partial<
+      Pick<ExamConfig, "is_enabled" | "passing_percentage" | "duration_minutes">
+    > & { review_policy?: string },
+  ) =>
+    apiFetch<ExamConfig>("/admin/verb-base/config", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  listVerbBaseAttempts: () =>
+    apiFetch<{ items: AdminAttemptListItem[]; total: number }>(
+      "/admin/verb-base/attempts",
+    ),
+  verbBaseAttemptReport: (attemptId: string) =>
+    apiFetch<VerbBaseResult>(`/admin/verb-base/attempts/${attemptId}`),
+  getPresentSimpleConfig: () =>
+    apiFetch<PresentSimpleConfig>("/admin/present-simple/config"),
+  updatePresentSimpleConfig: (
+    data: Partial<
+      Pick<
+        PresentSimpleConfig,
+        | "is_enabled"
+        | "practice_enabled"
+        | "passing_percentage"
+        | "duration_minutes"
+        | "review_policy"
+      >
+    >,
+  ) =>
+    apiFetch<PresentSimpleConfig>("/admin/present-simple/config", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  listPresentSimpleQuestions: () =>
+    apiFetch<{ items: PresentSimpleQuestionAdmin[] }>(
+      "/admin/present-simple/questions",
+    ),
+  togglePresentSimpleQuestion: (questionId: string, active: boolean) =>
+    apiFetch<{ id: string; active: boolean }>(
+      `/admin/present-simple/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ active }),
+      },
+    ),
+  listPresentSimpleAttempts: (mode: "exam" | "practice" = "exam") =>
+    apiFetch<{ items: AdminAttemptListItem[]; total: number }>(
+      `/admin/present-simple/attempts?mode=${mode}`,
+    ),
+  presentSimpleAttemptReport: (attemptId: string) =>
+    apiFetch<PresentSimpleResult>(
+      `/admin/present-simple/attempts/${attemptId}`,
+    ),
   downloadAttemptsCsv: async () => {
     const url = URL.createObjectURL(
       await apiFetchBlob("/admin/attempts/export.csv"),
