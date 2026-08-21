@@ -247,6 +247,15 @@ async def student_report(
         .order_by(PresentSimpleAttempt.started_at.desc())
     )
     present_attempts = present_result.scalars().all()
+    present_practice_result = await db.execute(
+        select(PresentSimpleAttempt)
+        .where(
+            PresentSimpleAttempt.user_id == user_id,
+            PresentSimpleAttempt.mode == "practice",
+        )
+        .order_by(PresentSimpleAttempt.started_at.desc())
+    )
+    present_practice_attempts = present_practice_result.scalars().all()
 
     present_perfect_result = await db.execute(
         select(PresentPerfectAttempt)
@@ -358,6 +367,14 @@ async def student_report(
             )
             for attempt in present_attempts
         ],
+        "present_simple_practice_attempts": [
+            _serialize_past_simple(
+                attempt,
+                exam_name="Present Simple Practice",
+                exam_type=ExamType.PRESENT_SIMPLE_EXAM.value,
+            )
+            for attempt in present_practice_attempts
+        ],
         "present_perfect_attempts": [
             _serialize_past_simple(
                 attempt,
@@ -385,6 +402,11 @@ async def student_report(
         "practice_sessions_completed": sum(
             1
             for attempt in practice_attempts
+            if attempt.status == AttemptStatus.SUBMITTED
+        )
+        + sum(
+            1
+            for attempt in present_practice_attempts
             if attempt.status == AttemptStatus.SUBMITTED
         )
         + sum(

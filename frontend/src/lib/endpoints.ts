@@ -210,6 +210,35 @@ export const presentSimpleApi = {
     apiFetch<PresentSimpleResult>(
       `/present-simple/attempts/${attemptId}/result`,
     ),
+  practiceStatus: () =>
+    apiFetch<AttemptStatus>("/present-simple/practice/status"),
+  startPractice: () =>
+    apiFetch<PastSimpleAttempt>("/present-simple/practice/sessions", {
+      method: "POST",
+    }),
+  getPractice: (id: string) =>
+    apiFetch<PastSimpleAttempt>(`/present-simple/practice/sessions/${id}`),
+  checkPracticeAnswer: (
+    attemptId: string,
+    questionId: string,
+    answer: string | null,
+  ) =>
+    apiFetch<PastSimpleQuestion>(
+      `/present-simple/practice/sessions/${attemptId}/questions/${questionId}/check`,
+      {
+        method: "POST",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submitPractice: (attemptId: string) =>
+    apiFetch<PresentSimpleResult>(
+      `/present-simple/practice/sessions/${attemptId}/submit`,
+      { method: "POST" },
+    ),
+  practiceResult: (attemptId: string) =>
+    apiFetch<PresentSimpleResult>(
+      `/present-simple/practice/sessions/${attemptId}/result`,
+    ),
 };
 
 export const presentPerfectApi = {

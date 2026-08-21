@@ -43,6 +43,7 @@ vi.mock("../src/lib/endpoints", () => ({
   presentSimpleApi: {
     config: vi.fn(),
     attemptStatus: vi.fn(),
+    practiceStatus: vi.fn(),
   },
   presentPerfectApi: {
     config: vi.fn(),
@@ -144,7 +145,7 @@ describe("Student modules", () => {
     vi.mocked(presentSimpleApi.config).mockResolvedValue({
       exam_type: "present_simple_exam",
       is_enabled: true,
-      practice_enabled: false,
+      practice_enabled: true,
       question_count: 20,
       question_bank_size: 100,
       passing_percentage: 70,
@@ -160,6 +161,18 @@ describe("Student modules", () => {
       submitted_count: 0,
       max_attempts: 1,
       can_start_new: true,
+      last_submitted: null,
+    });
+    vi.mocked(presentSimpleApi.practiceStatus).mockResolvedValue({
+      exam_type: "present_simple_exam",
+      mode: "practice",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: null,
+      can_start_new: true,
+      question_bank_size: 100,
       last_submitted: null,
     });
     vi.mocked(presentPerfectApi.config).mockResolvedValue({
@@ -231,17 +244,20 @@ describe("Student modules", () => {
     expect(screen.queryByText("Start Practice")).not.toBeInTheDocument();
   });
 
-  it("lists Past Simple and Present Perfect practice in the Práctica module", async () => {
+  it("lists Past Simple, Present Simple and Present Perfect practice in the Práctica module", async () => {
     renderAt("/student/practice");
     expect(
       await screen.findByRole("heading", { name: "Past Simple Practice" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Present Simple Practice" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Present Perfect Practice" }),
     ).toBeInTheDocument();
     expect(
       await screen.findAllByRole("link", { name: "Start Practice" }),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(screen.queryByRole("heading", { name: "Verb Exam" })).not.toBeInTheDocument();
   });
 });

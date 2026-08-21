@@ -24,6 +24,7 @@ _CONFIG_MODEL = {
 
 _PRACTICE_EXAMS = {
     ExamType.PAST_SIMPLE_EXAM,
+    ExamType.PRESENT_SIMPLE_EXAM,
     ExamType.PRESENT_PERFECT_EXAM,
 }
 
@@ -139,7 +140,7 @@ async def set_student_access(
         if exam_type not in _PRACTICE_EXAMS:
             raise AppError(
                 "INVALID_EXAM_TYPE",
-                "La práctica solo aplica a Past Simple y Present Perfect.",
+                "La práctica solo aplica a Past Simple, Present Simple y Present Perfect.",
                 status_code=400,
             )
         access.practice_enabled = practice_enabled

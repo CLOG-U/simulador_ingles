@@ -327,6 +327,18 @@ async def get_user_exam_access(
                     )
                 )
             ).scalar_one()
+            practice_submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(PresentSimpleAttempt)
+                    .where(
+                        PresentSimpleAttempt.user_id == user_id,
+                        PresentSimpleAttempt.mode
+                        == present_simple_service.MODE_PRACTICE,
+                        PresentSimpleAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
         elif exam_type == ExamType.PRESENT_PERFECT_EXAM:
             submitted = (
                 await db.execute(
@@ -451,10 +463,7 @@ async def allow_new_attempt(
             "Verb Exam no tiene modo práctica.",
             status_code=400,
         )
-    if (
-        parsed_type in {ExamType.VERB_BASE_EXAM, ExamType.PRESENT_SIMPLE_EXAM}
-        and mode == "practice"
-    ):
+    if parsed_type == ExamType.VERB_BASE_EXAM and mode == "practice":
         raise AppError(
             "INVALID_MODE",
             "Este examen no tiene modo práctica en v1.",
@@ -592,12 +601,6 @@ async def reset_exam_progress(
         result = {"mode": "exam", "deleted_attempts": deleted, "allowed_attempts": 1}
         action = "VERB_BASE_PROGRESS_RESET"
     elif parsed_type == ExamType.PRESENT_SIMPLE_EXAM:
-        if mode != "exam":
-            raise AppError(
-                "INVALID_MODE",
-                "Present Simple no tiene modo práctica en v1.",
-                status_code=400,
-            )
         result = await present_simple_service.reset_student_progress(
             db,
             user_id=user_id,

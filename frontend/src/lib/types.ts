@@ -225,6 +225,7 @@ export interface AdminStudentReport {
   past_simple_practice_attempts?: PastSimpleAttemptSummary[];
   verb_base_attempts?: AdminAttemptSummary[];
   present_simple_attempts?: PastSimpleAttemptSummary[];
+  present_simple_practice_attempts?: PastSimpleAttemptSummary[];
   present_perfect_attempts?: PastSimpleAttemptSummary[];
   present_perfect_practice_attempts?: PastSimpleAttemptSummary[];
   practice_sessions_completed?: number;

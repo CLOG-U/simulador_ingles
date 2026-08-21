@@ -28,6 +28,7 @@ import {
   AdminPresentPerfectExamPage,
   AdminPresentPerfectPracticePage,
   AdminPresentSimpleExamPage,
+  AdminPresentSimplePracticePage,
   AdminVerbBaseExamPage,
   AdminVerbExamPage,
 } from "../features/admin/AdminModules";
@@ -60,6 +61,13 @@ import {
   PastSimplePracticeSessionPage,
   PastSimplePracticeStartRedirect,
 } from "../features/student/PastSimplePracticePages";
+import {
+  PresentSimplePracticeInstructionsPage,
+  PresentSimplePracticeResultPage,
+  PresentSimplePracticeReviewPage,
+  PresentSimplePracticeSessionPage,
+  PresentSimplePracticeStartRedirect,
+} from "../features/student/PresentSimplePracticePages";
 import {
   PresentPerfectPracticeInstructionsPage,
   PresentPerfectPracticeResultPage,
@@ -232,6 +240,26 @@ export function App() {
                 element={<PastSimplePracticeReviewPage />}
               />
               <Route
+                path="/student/practice/present_simple"
+                element={<PresentSimplePracticeInstructionsPage />}
+              />
+              <Route
+                path="/student/practice/present_simple/start"
+                element={<PresentSimplePracticeStartRedirect />}
+              />
+              <Route
+                path="/student/practice/present_simple/sessions/:sessionId"
+                element={<PresentSimplePracticeSessionPage />}
+              />
+              <Route
+                path="/student/practice/present_simple/results/:sessionId"
+                element={<PresentSimplePracticeResultPage />}
+              />
+              <Route
+                path="/student/practice/present_simple/results/:sessionId/review"
+                element={<PresentSimplePracticeReviewPage />}
+              />
+              <Route
                 path="/student/practice/present_perfect"
                 element={<PresentPerfectPracticeInstructionsPage />}
               />
@@ -280,6 +308,10 @@ export function App() {
                 element={<AdminPastSimplePracticePage />}
               />
               <Route
+                path="/admin/practice/present-simple"
+                element={<AdminPresentSimplePracticePage />}
+              />
+              <Route
                 path="/admin/practice/present-perfect"
                 element={<AdminPresentPerfectPracticePage />}
               />
@@ -321,6 +353,12 @@ export function App() {
                 }
               />
               <Route
+                path="/admin/students/:userId/practice/present-simple"
+                element={
+                  <AdminStudentModuleReportPage module="present-simple-practice" />
+                }
+              />
+              <Route
                 path="/admin/students/:userId/practice/present-perfect"
                 element={
                   <AdminStudentModuleReportPage module="present-perfect-practice" />
@@ -349,6 +387,10 @@ export function App() {
               <Route
                 path="/admin/practice/present-perfect/reports/:attemptId"
                 element={<AdminPresentPerfectAttemptReportPage />}
+              />
+              <Route
+                path="/admin/practice/present-simple/reports/:attemptId"
+                element={<AdminPresentSimpleAttemptReportPage />}
               />
               <Route
                 path="/admin/practice/past-simple/reports/:attemptId"

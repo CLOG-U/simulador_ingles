@@ -196,6 +196,10 @@ export function AdminPracticeHubPage() {
     queryKey: ["admin-past-simple-config"],
     queryFn: adminApi.getPastSimpleConfig,
   });
+  const simpleConfig = useQuery({
+    queryKey: ["admin-present-simple-config"],
+    queryFn: adminApi.getPresentSimpleConfig,
+  });
   const perfectConfig = useQuery({
     queryKey: ["admin-present-perfect-config"],
     queryFn: adminApi.getPresentPerfectConfig,
@@ -221,6 +225,18 @@ export function AdminPracticeHubPage() {
             }
             to="/admin/practice/past-simple"
             cta="Abrir Past Simple Practice"
+            tone="practice"
+          />
+          <ModuleCard
+            title="Present Simple Practice"
+            description="Mismo banco del examen, con feedback inmediato y sin cupo de intentos."
+            meta={
+              simpleConfig.data
+                ? `${simpleConfig.data.practice_enabled ? "Habilitada" : "Deshabilitada"} · Banco: ${simpleConfig.data.question_bank_size ?? "—"} preguntas`
+                : "Cargando…"
+            }
+            to="/admin/practice/present-simple"
+            cta="Abrir Present Simple Practice"
             tone="practice"
           />
           <ModuleCard
@@ -1230,6 +1246,120 @@ export function AdminPresentPerfectExamPage() {
   );
 }
 
+
+/** Present Simple Practice: habilitación + banco de preguntas. */
+export function AdminPresentSimplePracticePage() {
+  const queryClient = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["admin-present-simple-config"],
+    queryFn: adminApi.getPresentSimpleConfig,
+  });
+  const questionsQuery = useQuery({
+    queryKey: ["admin-present-simple-questions"],
+    queryFn: adminApi.listPresentSimpleQuestions,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-present-simple-attempts", "practice"],
+    queryFn: () => adminApi.listPresentSimpleAttempts("practice"),
+  });
+  const [notice, setNotice] = useState("");
+
+  const toggleQuestion = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      adminApi.togglePresentSimpleQuestion(id, active),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-present-simple-questions"],
+      }),
+  });
+
+  const togglePractice = async () => {
+    if (!config) return;
+    await adminApi.updatePresentSimpleConfig({
+      practice_enabled: !config.practice_enabled,
+    });
+    setNotice(
+      !config.practice_enabled
+        ? "Present Simple Practice habilitada globalmente."
+        : "Present Simple Practice deshabilitada.",
+    );
+    void queryClient.invalidateQueries({ queryKey: ["admin-present-simple-config"] });
+  };
+
+  return (
+    <AppShell title="Present Simple Practice" nav={adminNav} wide>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BackLink to="/admin/practice" label="← Práctica" />
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              config?.practice_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            disabled={!config}
+            onClick={() => void togglePractice()}
+          >
+            {config?.practice_enabled
+              ? "Práctica habilitada"
+              : "Práctica deshabilitada"}
+          </button>
+        </div>
+
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-sky/30 bg-white shadow-sm">
+          <div className="border-b border-brand-sky/20 bg-gradient-to-r from-brand-sky to-brand-primary px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Configuración de la práctica</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Entrenamiento con feedback. No usa nota mínima ni temporizador.
+            </p>
+          </div>
+          <div className="space-y-3 p-6">
+            <p className="text-sm text-gray-600">
+              Banco compartido con el examen: {config?.question_bank_size ?? "—"}{" "}
+              preguntas · Cada sesión toma {config?.question_count ?? 20}. Sin
+              cupo de intentos; también se habilita por estudiante en Usuarios.
+            </p>
+            <p className="text-sm text-gray-600">
+              La nota mínima y el temporizador del examen oficial se configuran en{" "}
+              <Link
+                to="/admin/exams/present-simple"
+                className="font-semibold text-brand-primary underline"
+              >
+                Present Simple Exam
+              </Link>
+              .
+            </p>
+            {notice && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">
+                {notice}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <PastSimpleQuestionsSection
+          questions={questionsQuery.data?.items}
+          isLoading={questionsQuery.isLoading}
+          isError={questionsQuery.isError}
+          error={questionsQuery.error}
+          onToggle={(id, active) => toggleQuestion.mutate({ id, active })}
+        />
+
+        <ModuleReportsSection
+          title="Reportes de Present Simple Practice"
+          description="Sesiones de práctica. Entra al reporte específico de cada sesión."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/practice/present-simple/reports/${id}`}
+          emptyMessage="Aún no hay sesiones de práctica."
+        />
+      </div>
+    </AppShell>
+  );
+}
 
 /** Present Perfect Practice: habilitación + banco de preguntas. */
 export function AdminPresentPerfectPracticePage() {

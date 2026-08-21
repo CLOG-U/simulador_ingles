@@ -814,6 +814,18 @@ export function AdminUsersPage() {
                                 </p>
                               </AttemptInfo>
 
+                              <AttemptInfo title="Present Simple Práctica">
+                                <p>
+                                  {presentAccess?.practice_enabled
+                                    ? "Habilitada"
+                                    : "Bloqueada"}
+                                </p>
+                                <p>
+                                  {presentAccess?.practice_submitted_attempts ?? 0}{" "}
+                                  sesión(es) completada(s)
+                                </p>
+                              </AttemptInfo>
+
                               <AttemptInfo title="Present Perfect Práctica">
                                 <p>
                                   {perfectAccess?.practice_enabled
@@ -1312,6 +1324,63 @@ export function AdminUsersPage() {
                                         resetModuleMutation.mutate({
                                           userId: u.id,
                                           examType: "past_simple_exam",
+                                          mode: "practice",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+                                <ActionGroup title="Present Simple Práctica">
+                                  <button
+                                    type="button"
+                                    className={
+                                      presentAccess?.practice_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "present_simple_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "present_simple_exam",
+                                        practiceEnabled:
+                                          !presentAccess?.practice_enabled,
+                                      })
+                                    }
+                                  >
+                                    {presentAccess?.practice_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <Link
+                                    to={`/admin/students/${u.id}/report`}
+                                    className="btn-admin-secondary"
+                                  >
+                                    Ver sesiones (
+                                    {presentAccess?.practice_submitted_attempts ??
+                                      0}
+                                    )
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "present_simple_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear la PRÁCTICA Present Simple de ${u.username}?\n\nSe eliminarán solo las sesiones de práctica (no el examen).`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "present_simple_exam",
                                           mode: "practice",
                                         });
                                       }

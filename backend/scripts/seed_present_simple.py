@@ -51,7 +51,7 @@ async def seed_present_simple(session: AsyncSession) -> None:
             PresentSimpleConfig(
                 id=uuid.uuid4(),
                 is_enabled=False,
-                practice_enabled=False,
+                practice_enabled=True,
                 question_count=20,
                 passing_percentage=70,
                 duration_minutes=None,
