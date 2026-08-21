@@ -1194,9 +1194,7 @@ export function AdminUsersPage() {
                                     Resetear
                                   </button>
                                 </ActionGroup>
-                              </ModuleGroup>
 
-                              
                                 <ActionGroup title="Present Perfect Examen">
                                   <button
                                     type="button"
@@ -1262,6 +1260,7 @@ export function AdminUsersPage() {
                                     Resetear
                                   </button>
                                 </ActionGroup>
+                              </ModuleGroup>
 
                               <ModuleGroup title="Práctica" tone="practice">
                                 <ActionGroup title="Past Simple Práctica">
