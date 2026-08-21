@@ -165,7 +165,7 @@ function QuestionInput({
 
   const hint =
     question.question_type === "order_words"
-      ? "Write the words in the correct order."
+      ? question.instruction || "Put the words in the correct order."
       : question.question_type === "transform_sentence"
         ? "Rewrite the sentence as instructed."
         : question.question_type === "fill_blank"

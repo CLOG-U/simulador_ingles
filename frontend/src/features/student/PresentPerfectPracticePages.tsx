@@ -54,7 +54,7 @@ function QuestionInput({
     <div>
       {question.question_type === "order_words" && (
         <p className="mb-2 rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
-          Write the words in the correct order.
+          {question.instruction || "Put the words in the correct order."}
         </p>
       )}
       <label htmlFor={`practice-answer-${question.id}`} className="mb-1 block text-sm font-medium">

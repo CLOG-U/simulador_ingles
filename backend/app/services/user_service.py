@@ -175,6 +175,14 @@ async def create_user(
                     practice_enabled=False,
                     allowed_attempts=1,
                 ),
+                ExamAccess(
+                    id=uuid.uuid4(),
+                    user_id=user.id,
+                    exam_type=ExamType.PRESENT_PERFECT_EXAM.value,
+                    is_enabled=False,
+                    practice_enabled=True,
+                    allowed_attempts=1,
+                ),
             ]
         )
     await log_audit(

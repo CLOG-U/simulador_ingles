@@ -318,7 +318,7 @@ export function StudentExamsPage() {
   );
 }
 
-/** Práctica module: Past Simple Practice. */
+/** Práctica: Past Simple y Present Perfect. */
 export function StudentPracticePage() {
   const pastConfigQuery = useQuery({
     queryKey: ["exam-config", "past_simple_exam"],
