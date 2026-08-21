@@ -9,8 +9,10 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import require_admin
 from app.core.database import get_db
+from app.core.errors import AppError
 from app.models import (
     AttemptStatus,
+    ExamType,
     PresentPerfectAttempt,
     PresentPerfectQuestion,
     ReviewPolicy,
