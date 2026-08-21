@@ -18,12 +18,15 @@ import {
 } from "../features/admin/AdminReportPages";
 import { AdminPastSimpleAttemptReportPage } from "../features/admin/AdminPastSimplePages";
 import { AdminPresentSimpleAttemptReportPage } from "../features/admin/AdminPresentSimplePages";
+import { AdminPresentPerfectAttemptReportPage } from "../features/admin/AdminPresentPerfectPages";
 import { AdminVerbBaseAttemptReportPage } from "../features/admin/AdminVerbBasePages";
 import {
   AdminExamsHubPage,
   AdminPastSimpleExamPage,
   AdminPastSimplePracticePage,
   AdminPracticeHubPage,
+  AdminPresentPerfectExamPage,
+  AdminPresentPerfectPracticePage,
   AdminPresentSimpleExamPage,
   AdminVerbBaseExamPage,
   AdminVerbExamPage,
@@ -44,12 +47,26 @@ import {
   PresentSimpleStartRedirect,
 } from "../features/student/PresentSimplePages";
 import {
+  PresentPerfectExamPage,
+  PresentPerfectInstructionsPage,
+  PresentPerfectResultPage,
+  PresentPerfectReviewPage,
+  PresentPerfectStartRedirect,
+} from "../features/student/PresentPerfectPages";
+import {
   PastSimplePracticeInstructionsPage,
   PastSimplePracticeResultPage,
   PastSimplePracticeReviewPage,
   PastSimplePracticeSessionPage,
   PastSimplePracticeStartRedirect,
 } from "../features/student/PastSimplePracticePages";
+import {
+  PresentPerfectPracticeInstructionsPage,
+  PresentPerfectPracticeResultPage,
+  PresentPerfectPracticeReviewPage,
+  PresentPerfectPracticeSessionPage,
+  PresentPerfectPracticeStartRedirect,
+} from "../features/student/PresentPerfectPracticePages";
 import {
   ExamPage,
   ExamResultPage,
@@ -175,6 +192,26 @@ export function App() {
                 element={<PresentSimpleReviewPage />}
               />
               <Route
+                path="/student/exams/present_perfect_exam/instructions"
+                element={<PresentPerfectInstructionsPage />}
+              />
+              <Route
+                path="/student/exams/present_perfect_exam/start"
+                element={<PresentPerfectStartRedirect />}
+              />
+              <Route
+                path="/student/exams/present_perfect_exam/attempts/:attemptId"
+                element={<PresentPerfectExamPage />}
+              />
+              <Route
+                path="/student/exams/present_perfect_exam/results/:attemptId"
+                element={<PresentPerfectResultPage />}
+              />
+              <Route
+                path="/student/exams/present_perfect_exam/results/:attemptId/review"
+                element={<PresentPerfectReviewPage />}
+              />
+              <Route
                 path="/student/practice/past_simple"
                 element={<PastSimplePracticeInstructionsPage />}
               />
@@ -193,6 +230,26 @@ export function App() {
               <Route
                 path="/student/practice/past_simple/results/:sessionId/review"
                 element={<PastSimplePracticeReviewPage />}
+              />
+              <Route
+                path="/student/practice/present_perfect"
+                element={<PresentPerfectPracticeInstructionsPage />}
+              />
+              <Route
+                path="/student/practice/present_perfect/start"
+                element={<PresentPerfectPracticeStartRedirect />}
+              />
+              <Route
+                path="/student/practice/present_perfect/sessions/:sessionId"
+                element={<PresentPerfectPracticeSessionPage />}
+              />
+              <Route
+                path="/student/practice/present_perfect/results/:sessionId"
+                element={<PresentPerfectPracticeResultPage />}
+              />
+              <Route
+                path="/student/practice/present_perfect/results/:sessionId/review"
+                element={<PresentPerfectPracticeReviewPage />}
               />
             </Route>
 
@@ -213,10 +270,18 @@ export function App() {
                 path="/admin/exams/present-simple"
                 element={<AdminPresentSimpleExamPage />}
               />
+              <Route
+                path="/admin/exams/present-perfect"
+                element={<AdminPresentPerfectExamPage />}
+              />
               <Route path="/admin/practice" element={<AdminPracticeHubPage />} />
               <Route
                 path="/admin/practice/past-simple"
                 element={<AdminPastSimplePracticePage />}
+              />
+              <Route
+                path="/admin/practice/present-perfect"
+                element={<AdminPresentPerfectPracticePage />}
               />
               <Route path="/admin/results" element={<AdminResultsPage />} />
               <Route
@@ -244,9 +309,21 @@ export function App() {
                 }
               />
               <Route
+                path="/admin/students/:userId/exams/present-perfect"
+                element={
+                  <AdminStudentModuleReportPage module="present-perfect-exam" />
+                }
+              />
+              <Route
                 path="/admin/students/:userId/practice/past-simple"
                 element={
                   <AdminStudentModuleReportPage module="past-simple-practice" />
+                }
+              />
+              <Route
+                path="/admin/students/:userId/practice/present-perfect"
+                element={
+                  <AdminStudentModuleReportPage module="present-perfect-practice" />
                 }
               />
               <Route
@@ -264,6 +341,14 @@ export function App() {
               <Route
                 path="/admin/exams/present-simple/reports/:attemptId"
                 element={<AdminPresentSimpleAttemptReportPage />}
+              />
+              <Route
+                path="/admin/exams/present-perfect/reports/:attemptId"
+                element={<AdminPresentPerfectAttemptReportPage />}
+              />
+              <Route
+                path="/admin/practice/present-perfect/reports/:attemptId"
+                element={<AdminPresentPerfectAttemptReportPage />}
               />
               <Route
                 path="/admin/practice/past-simple/reports/:attemptId"

@@ -269,6 +269,7 @@ async def create_or_get_practice(
     await exam_access_service.ensure_practice_available(
         session,
         user_id=user.id,
+        exam_type=ExamType.PRESENT_SIMPLE_EXAM,
     )
 
     existing = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)

@@ -10,6 +10,7 @@ import {
 import {
   examApi,
   pastSimpleApi,
+  presentPerfectApi,
   presentSimpleApi,
   verbBaseApi,
 } from "../src/lib/endpoints";
@@ -42,6 +43,11 @@ vi.mock("../src/lib/endpoints", () => ({
   presentSimpleApi: {
     config: vi.fn(),
     attemptStatus: vi.fn(),
+  },
+  presentPerfectApi: {
+    config: vi.fn(),
+    attemptStatus: vi.fn(),
+    practiceStatus: vi.fn(),
   },
 }));
 
@@ -140,7 +146,7 @@ describe("Student modules", () => {
       is_enabled: true,
       practice_enabled: false,
       question_count: 20,
-      question_bank_size: 35,
+      question_bank_size: 100,
       passing_percentage: 70,
       duration_minutes: null,
       review_policy: "FULL",
@@ -154,6 +160,39 @@ describe("Student modules", () => {
       submitted_count: 0,
       max_attempts: 1,
       can_start_new: true,
+      last_submitted: null,
+    });
+    vi.mocked(presentPerfectApi.config).mockResolvedValue({
+      exam_type: "present_perfect_exam",
+      is_enabled: true,
+      practice_enabled: true,
+      question_count: 20,
+      question_bank_size: 100,
+      passing_percentage: 70,
+      duration_minutes: null,
+      review_policy: "FULL",
+      title: "Present Perfect Exam",
+    });
+    vi.mocked(presentPerfectApi.attemptStatus).mockResolvedValue({
+      exam_type: "present_perfect_exam",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: 1,
+      can_start_new: true,
+      last_submitted: null,
+    });
+    vi.mocked(presentPerfectApi.practiceStatus).mockResolvedValue({
+      exam_type: "present_perfect_exam",
+      mode: "practice",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: null,
+      can_start_new: true,
+      question_bank_size: 100,
       last_submitted: null,
     });
   });
@@ -174,7 +213,7 @@ describe("Student modules", () => {
     );
   });
 
-  it("lists Verb, Verb Base, Past Simple and Present Simple exams", async () => {
+  it("lists Verb, Verb Base, Past Simple, Present Simple and Present Perfect exams", async () => {
     renderAt("/student/exams");
     expect(await screen.findByRole("heading", { name: "Verb Exam" })).toBeInTheDocument();
     expect(
@@ -186,15 +225,23 @@ describe("Student modules", () => {
     expect(
       screen.getByRole("heading", { name: "Present Simple Exam" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Present Perfect Exam" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Start Practice")).not.toBeInTheDocument();
   });
 
-  it("lists Past Simple practice in the Práctica module", async () => {
+  it("lists Past Simple and Present Perfect practice in the Práctica module", async () => {
     renderAt("/student/practice");
-    expect(await screen.findByText("Start Practice")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Past Simple Practice" }),
+      await screen.findByRole("heading", { name: "Past Simple Practice" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Present Perfect Practice" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findAllByRole("link", { name: "Start Practice" }),
+    ).toHaveLength(2);
     expect(screen.queryByRole("heading", { name: "Verb Exam" })).not.toBeInTheDocument();
   });
 });

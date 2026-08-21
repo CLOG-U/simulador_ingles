@@ -17,6 +17,9 @@ import type {
   PresentSimpleConfig,
   PresentSimpleQuestionAdmin,
   PresentSimpleResult,
+  PresentPerfectConfig,
+  PresentPerfectQuestionAdmin,
+  PresentPerfectResult,
   UserMe,
   VerbBaseResult,
   VerbItem,
@@ -206,6 +209,64 @@ export const presentSimpleApi = {
   result: (attemptId: string) =>
     apiFetch<PresentSimpleResult>(
       `/present-simple/attempts/${attemptId}/result`,
+    ),
+};
+
+export const presentPerfectApi = {
+  config: () =>
+    apiFetch<PresentPerfectConfig>("/present-perfect/config"),
+  attemptStatus: () =>
+    apiFetch<AttemptStatus>("/present-perfect/attempts/status"),
+  startAttempt: () =>
+    apiFetch<PastSimpleAttempt>("/present-perfect/attempts", { method: "POST" }),
+  currentAttempt: () =>
+    apiFetch<PastSimpleAttempt | null>("/present-perfect/attempts/current"),
+  getAttempt: (id: string) =>
+    apiFetch<PastSimpleAttempt>(`/present-perfect/attempts/${id}`),
+  saveAnswer: (attemptId: string, questionId: string, answer: string | null) =>
+    apiFetch<{ status: string }>(
+      `/present-perfect/attempts/${attemptId}/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submit: (attemptId: string) =>
+    apiFetch<PastSimpleAttempt>(`/present-perfect/attempts/${attemptId}/submit`, {
+      method: "POST",
+    }),
+  result: (attemptId: string) =>
+    apiFetch<PresentPerfectResult>(
+      `/present-perfect/attempts/${attemptId}/result`,
+    ),
+  practiceStatus: () =>
+    apiFetch<AttemptStatus>("/present-perfect/practice/status"),
+  startPractice: () =>
+    apiFetch<PastSimpleAttempt>("/present-perfect/practice/sessions", {
+      method: "POST",
+    }),
+  getPractice: (id: string) =>
+    apiFetch<PastSimpleAttempt>(`/present-perfect/practice/sessions/${id}`),
+  checkPracticeAnswer: (
+    attemptId: string,
+    questionId: string,
+    answer: string | null,
+  ) =>
+    apiFetch<PastSimpleQuestion>(
+      `/present-perfect/practice/sessions/${attemptId}/questions/${questionId}/check`,
+      {
+        method: "POST",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submitPractice: (attemptId: string) =>
+    apiFetch<PresentPerfectResult>(
+      `/present-perfect/practice/sessions/${attemptId}/submit`,
+      { method: "POST" },
+    ),
+  practiceResult: (attemptId: string) =>
+    apiFetch<PresentPerfectResult>(
+      `/present-perfect/practice/sessions/${attemptId}/result`,
     ),
 };
 
@@ -469,6 +530,53 @@ export const adminApi = {
   ) =>
     apiFetch<PresentSimpleResult>(
       `/admin/present-simple/attempts/${attemptId}/questions/${questionId}/grade`,
+      { method: "PATCH", body: JSON.stringify({ correct }) },
+    ),
+  getPresentPerfectConfig: () =>
+    apiFetch<PresentPerfectConfig>("/admin/present-perfect/config"),
+  updatePresentPerfectConfig: (
+    data: Partial<
+      Pick<
+        PresentPerfectConfig,
+        | "is_enabled"
+        | "practice_enabled"
+        | "passing_percentage"
+        | "duration_minutes"
+        | "review_policy"
+      >
+    >,
+  ) =>
+    apiFetch<PresentPerfectConfig>("/admin/present-perfect/config", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  listPresentPerfectQuestions: () =>
+    apiFetch<{ items: PresentPerfectQuestionAdmin[] }>(
+      "/admin/present-perfect/questions",
+    ),
+  togglePresentPerfectQuestion: (questionId: string, active: boolean) =>
+    apiFetch<{ id: string; active: boolean }>(
+      `/admin/present-perfect/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ active }),
+      },
+    ),
+  listPresentPerfectAttempts: (mode: "exam" | "practice" = "exam") =>
+    apiFetch<{ items: AdminAttemptListItem[]; total: number }>(
+      `/admin/present-perfect/attempts?mode=${mode}`,
+    ),
+  presentPerfectAttemptReport: (attemptId: string) =>
+    apiFetch<PresentPerfectResult>(
+      `/admin/present-perfect/attempts/${attemptId}`,
+    ),
+  overridePresentPerfectGrade: (
+    attemptId: string,
+    questionId: string,
+    correct: boolean,
+  ) =>
+    apiFetch<PresentPerfectResult>(
+      `/admin/present-perfect/attempts/${attemptId}/questions/${questionId}/grade`,
       { method: "PATCH", body: JSON.stringify({ correct }) },
     ),
   downloadAttemptsCsv: async () => {

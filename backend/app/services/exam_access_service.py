@@ -9,19 +9,27 @@ from app.models import (
     ExamConfig,
     ExamType,
     PastSimpleConfig,
+    PresentPerfectConfig,
     PresentSimpleConfig,
     VerbBaseConfig,
 )
 
+_CONFIG_MODEL = {
+    ExamType.VERB_EXAM: ExamConfig,
+    ExamType.VERB_BASE_EXAM: VerbBaseConfig,
+    ExamType.PAST_SIMPLE_EXAM: PastSimpleConfig,
+    ExamType.PRESENT_SIMPLE_EXAM: PresentSimpleConfig,
+    ExamType.PRESENT_PERFECT_EXAM: PresentPerfectConfig,
+}
+
+_PRACTICE_EXAMS = {
+    ExamType.PAST_SIMPLE_EXAM,
+    ExamType.PRESENT_PERFECT_EXAM,
+}
+
 
 async def _global_exam_enabled(session: AsyncSession, exam_type: ExamType) -> bool:
-    model_map = {
-        ExamType.VERB_EXAM: ExamConfig,
-        ExamType.VERB_BASE_EXAM: VerbBaseConfig,
-        ExamType.PAST_SIMPLE_EXAM: PastSimpleConfig,
-        ExamType.PRESENT_SIMPLE_EXAM: PresentSimpleConfig,
-    }
-    model = model_map[exam_type]
+    model = _CONFIG_MODEL[exam_type]
     result = await session.execute(select(model).limit(1))
     config = result.scalar_one_or_none()
     return bool(config and config.is_enabled)
@@ -76,26 +84,36 @@ async def ensure_exam_available(
     return access
 
 
-async def _global_practice_enabled(session: AsyncSession) -> bool:
-    result = await session.execute(select(PastSimpleConfig).limit(1))
+async def _global_practice_enabled(session: AsyncSession, exam_type: ExamType) -> bool:
+    if exam_type not in _PRACTICE_EXAMS:
+        return False
+    model = _CONFIG_MODEL[exam_type]
+    result = await session.execute(select(model).limit(1))
     config = result.scalar_one_or_none()
-    return bool(config and config.practice_enabled)
+    return bool(config and getattr(config, "practice_enabled", False))
 
 
 async def ensure_practice_available(
     session: AsyncSession,
     *,
     user_id: uuid.UUID,
+    exam_type: ExamType = ExamType.PAST_SIMPLE_EXAM,
 ) -> ExamAccess:
+    if exam_type not in _PRACTICE_EXAMS:
+        raise AppError(
+            "PRACTICE_NOT_AVAILABLE",
+            "Este módulo no tiene modo práctica.",
+            status_code=403,
+        )
     access = await get_or_create_access(
         session,
         user_id=user_id,
-        exam_type=ExamType.PAST_SIMPLE_EXAM,
+        exam_type=exam_type,
     )
-    if not await _global_practice_enabled(session) or not access.practice_enabled:
+    if not await _global_practice_enabled(session, exam_type) or not access.practice_enabled:
         raise AppError(
             "PRACTICE_NOT_AVAILABLE",
-            "La práctica de Past Simple no está habilitada para tu cuenta.",
+            "La práctica no está habilitada para tu cuenta.",
             status_code=403,
         )
     return access
@@ -118,10 +136,10 @@ async def set_student_access(
     if is_enabled is not None:
         access.is_enabled = is_enabled
     if practice_enabled is not None:
-        if exam_type != ExamType.PAST_SIMPLE_EXAM:
+        if exam_type not in _PRACTICE_EXAMS:
             raise AppError(
                 "INVALID_EXAM_TYPE",
-                "La práctica solo aplica a Past Simple.",
+                "La práctica solo aplica a Past Simple y Present Perfect.",
                 status_code=400,
             )
         access.practice_enabled = practice_enabled

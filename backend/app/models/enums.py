@@ -12,6 +12,7 @@ class ExamType(StrEnum):
     VERB_BASE_EXAM = "verb_base_exam"
     PAST_SIMPLE_EXAM = "past_simple_exam"
     PRESENT_SIMPLE_EXAM = "present_simple_exam"
+    PRESENT_PERFECT_EXAM = "present_perfect_exam"
 
 
 class PastSimpleQuestionType(StrEnum):
@@ -47,6 +48,25 @@ class PresentSimpleQuestionType(StrEnum):
 
 
 class PresentSimpleTopic(StrEnum):
+    AFFIRMATIVE = "affirmative"
+    NEGATIVE = "negative"
+    INTERROGATIVE = "interrogative"
+    SHORT_ANSWERS = "short_answers"
+    IDENTIFY = "identify"
+    ORDER_WORDS = "order_words"
+    SENTENCES = "sentences"
+
+
+class PresentPerfectQuestionType(StrEnum):
+    MULTIPLE_CHOICE = "multiple_choice"
+    FILL_BLANK = "fill_blank"
+    ORDER_WORDS = "order_words"
+    IDENTIFY = "identify"
+    TRANSFORM_SENTENCE = "transform_sentence"
+    SHORT_ANSWER = "short_answer"
+
+
+class PresentPerfectTopic(StrEnum):
     AFFIRMATIVE = "affirmative"
     NEGATIVE = "negative"
     INTERROGATIVE = "interrogative"

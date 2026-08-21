@@ -4,6 +4,7 @@ import { AppShell, studentNav } from "../../components/AppShell";
 import {
   examApi,
   pastSimpleApi,
+  presentPerfectApi,
   presentSimpleApi,
   verbBaseApi,
 } from "../../lib/endpoints";
@@ -195,6 +196,14 @@ export function StudentExamsPage() {
     queryKey: ["attempt-status", "present_simple_exam"],
     queryFn: presentSimpleApi.attemptStatus,
   });
+  const presentPerfectConfigQuery = useQuery({
+    queryKey: ["exam-config", "present_perfect_exam"],
+    queryFn: presentPerfectApi.config,
+  });
+  const presentPerfectStatusQuery = useQuery({
+    queryKey: ["attempt-status", "present_perfect_exam"],
+    queryFn: presentPerfectApi.attemptStatus,
+  });
 
   return (
     <AppShell title="Exámenes" nav={studentNav}>
@@ -278,6 +287,31 @@ export function StudentExamsPage() {
               `/student/exams/present_simple_exam/results/${id}/review`
             }
           />
+          <ExamCard
+            title="Present Perfect Exam"
+            description="Evalúa afirmativas, negativas, interrogativas, participios y since/for en Present Perfect."
+            config={presentPerfectConfigQuery.data}
+            status={presentPerfectStatusQuery.data}
+            isLoading={
+              presentPerfectConfigQuery.isLoading ||
+              presentPerfectStatusQuery.isLoading
+            }
+            isError={
+              presentPerfectConfigQuery.isError ||
+              presentPerfectStatusQuery.isError
+            }
+            onRetry={() => {
+              void presentPerfectConfigQuery.refetch();
+              void presentPerfectStatusQuery.refetch();
+            }}
+            instructionsPath="/student/exams/present_perfect_exam/instructions"
+            examPath={(id) =>
+              `/student/exams/present_perfect_exam/attempts/${id}`
+            }
+            resultPath={(id) =>
+              `/student/exams/present_perfect_exam/results/${id}/review`
+            }
+          />
         </div>
       </div>
     </AppShell>
@@ -294,12 +328,26 @@ export function StudentPracticePage() {
     queryKey: ["attempt-status", "past_simple_practice"],
     queryFn: pastSimpleApi.practiceStatus,
   });
+  const perfectConfigQuery = useQuery({
+    queryKey: ["exam-config", "present_perfect_exam"],
+    queryFn: presentPerfectApi.config,
+  });
+  const perfectPracticeStatusQuery = useQuery({
+    queryKey: ["attempt-status", "present_perfect_practice"],
+    queryFn: presentPerfectApi.practiceStatus,
+  });
 
   const practiceAvailable = practiceStatusQuery.data?.is_available ?? false;
   const practiceOpen =
     practiceStatusQuery.data?.has_open_attempt &&
     practiceStatusQuery.data.open_attempt_id;
   const practiceSubmitted = practiceStatusQuery.data?.submitted_count ?? 0;
+
+  const perfectAvailable = perfectPracticeStatusQuery.data?.is_available ?? false;
+  const perfectOpen =
+    perfectPracticeStatusQuery.data?.has_open_attempt &&
+    perfectPracticeStatusQuery.data.open_attempt_id;
+  const perfectSubmitted = perfectPracticeStatusQuery.data?.submitted_count ?? 0;
 
   return (
     <AppShell title="Práctica" nav={studentNav}>
@@ -359,6 +407,60 @@ export function StudentPracticePage() {
             ) : (
               <Link
                 to="/student/practice/past_simple"
+                className="btn-primary mt-4"
+              >
+                Start Practice
+              </Link>
+            )}
+          </section>
+          <section className="card flex h-full flex-col">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold">Present Perfect Practice</h2>
+              <span
+                className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                  perfectAvailable
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {perfectAvailable ? "Available" : "Locked"}
+              </span>
+            </div>
+            <p className="mt-2 flex-1 text-sm text-gray-600">
+              Prepare for the exam with immediate feedback. Uses the same 100-question
+              bank; each session picks 20 balanced questions.
+            </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Bank: {perfectConfigQuery.data?.question_bank_size ?? "—"} questions ·
+              Session: 20
+            </p>
+            <p className="mt-1 text-sm text-gray-600">
+              Sessions completed: {perfectSubmitted}
+            </p>
+            {perfectPracticeStatusQuery.isLoading ? (
+              <p className="mt-4 text-sm text-gray-600">Loading practice…</p>
+            ) : perfectPracticeStatusQuery.isError ? (
+              <button
+                type="button"
+                className="btn-primary mt-4"
+                onClick={() => void perfectPracticeStatusQuery.refetch()}
+              >
+                Try Again
+              </button>
+            ) : !perfectAvailable ? (
+              <p className="mt-4 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
+                Practice is not enabled for your account.
+              </p>
+            ) : perfectOpen ? (
+              <Link
+                to={`/student/practice/present_perfect/sessions/${perfectPracticeStatusQuery.data!.open_attempt_id}`}
+                className="btn-primary mt-4"
+              >
+                Resume Practice
+              </Link>
+            ) : (
+              <Link
+                to="/student/practice/present_perfect"
                 className="btn-primary mt-4"
               >
                 Start Practice

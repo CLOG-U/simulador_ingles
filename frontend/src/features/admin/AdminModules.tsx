@@ -88,6 +88,10 @@ export function AdminExamsHubPage() {
     queryKey: ["admin-present-simple-config"],
     queryFn: adminApi.getPresentSimpleConfig,
   });
+  const perfectConfig = useQuery({
+    queryKey: ["admin-present-perfect-config"],
+    queryFn: adminApi.getPresentPerfectConfig,
+  });
 
   return (
     <AppShell title="Exámenes" nav={adminNav}>
@@ -164,6 +168,22 @@ export function AdminExamsHubPage() {
             cta="Abrir Present Simple Exam"
             tone="exam"
           />
+          <ModuleCard
+            title="Present Perfect Exam"
+            description="Evaluación oficial de Present Perfect con banco de 100 preguntas (20 por intento)."
+            meta={
+              perfectConfig.data
+                ? `${perfectConfig.data.is_enabled ? "Habilitado" : "Deshabilitado"} · Nota mín. ${perfectConfig.data.passing_percentage}% · ${
+                    perfectConfig.data.duration_minutes
+                      ? `${perfectConfig.data.duration_minutes} min`
+                      : "Sin temporizador"
+                  }`
+                : "Cargando…"
+            }
+            to="/admin/exams/present-perfect"
+            cta="Abrir Present Perfect Exam"
+            tone="exam"
+          />
         </div>
       </div>
     </AppShell>
@@ -175,6 +195,10 @@ export function AdminPracticeHubPage() {
   const pastConfig = useQuery({
     queryKey: ["admin-past-simple-config"],
     queryFn: adminApi.getPastSimpleConfig,
+  });
+  const perfectConfig = useQuery({
+    queryKey: ["admin-present-perfect-config"],
+    queryFn: adminApi.getPresentPerfectConfig,
   });
 
   return (
@@ -197,6 +221,18 @@ export function AdminPracticeHubPage() {
             }
             to="/admin/practice/past-simple"
             cta="Abrir Past Simple Practice"
+            tone="practice"
+          />
+          <ModuleCard
+            title="Present Perfect Practice"
+            description="Mismo banco del examen, con feedback inmediato y sin cupo de intentos."
+            meta={
+              perfectConfig.data
+                ? `${perfectConfig.data.practice_enabled ? "Habilitada" : "Deshabilitada"} · Banco: ${perfectConfig.data.question_bank_size ?? "—"} preguntas`
+                : "Cargando…"
+            }
+            to="/admin/practice/present-perfect"
+            cta="Abrir Present Perfect Practice"
             tone="practice"
           />
         </div>
@@ -954,6 +990,362 @@ export function AdminPastSimplePracticePage() {
 }
 
 function PastSimpleQuestionsSection({
+  questions,
+  isLoading,
+  isError,
+  error,
+  onToggle,
+}: {
+  questions?: {
+    id: string;
+    topic: string;
+    question_type: string;
+    question: string;
+    correct_answer: string;
+    active: boolean;
+  }[];
+  isLoading: boolean;
+  isError: boolean;
+  error: unknown;
+  onToggle: (id: string, active: boolean) => void;
+}) {
+  const count = questions?.length ?? 0;
+
+  return (
+    <details className="admin-collapsible">
+      <summary>
+        <div>
+          <h2 className="text-xl font-semibold">Banco de preguntas</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            {count
+              ? `${count} pregunta(s). Despliega para consultar o activar/desactivar ítems.`
+              : "Despliega para consultar o activar/desactivar ítems del banco."}
+          </p>
+        </div>
+        <span className="admin-collapsible-chevron" aria-hidden>
+          ▾
+        </span>
+      </summary>
+      <div className="admin-collapsible-body">
+        <QueryState
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+          isEmpty={!questions?.length}
+          emptyMessage="No hay preguntas cargadas."
+        >
+          <div className="admin-table-wrap">
+            <table className="admin-table min-w-[760px]">
+              <thead>
+                <tr>
+                  <th>Tema</th>
+                  <th>Tipo</th>
+                  <th>Pregunta</th>
+                  <th>Respuesta</th>
+                  <th>Activa</th>
+                </tr>
+              </thead>
+              <tbody>
+                {questions?.map((question) => (
+                  <tr key={question.id}>
+                    <td>{TOPIC_LABELS[question.topic] ?? question.topic}</td>
+                    <td>{question.question_type}</td>
+                    <td className="max-w-sm">{question.question}</td>
+                    <td className="max-w-xs">{question.correct_answer}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className={`min-h-10 rounded-lg px-3 text-xs font-semibold ${
+                          question.active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-200 text-gray-700"
+                        }`}
+                        onClick={() => onToggle(question.id, !question.active)}
+                      >
+                        {question.active ? "Activa" : "Inactiva"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </QueryState>
+      </div>
+    </details>
+  );
+}
+
+/** Present Perfect Exam: configuración + banco + reportes. */
+export function AdminPresentPerfectExamPage() {
+  const queryClient = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["admin-present-perfect-config"],
+    queryFn: adminApi.getPresentPerfectConfig,
+  });
+  const questionsQuery = useQuery({
+    queryKey: ["admin-present-perfect-questions"],
+    queryFn: adminApi.listPresentPerfectQuestions,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-present-perfect-attempts", "exam"],
+    queryFn: () => adminApi.listPresentPerfectAttempts("exam"),
+  });
+  const [passing, setPassing] = useState<number | "">("");
+  const [duration, setDuration] = useState<number | "">("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!config) return;
+    setPassing(config.passing_percentage);
+    setDuration(config.duration_minutes ?? "");
+  }, [config]);
+
+  const toggleQuestion = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      adminApi.togglePresentPerfectQuestion(id, active),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-present-perfect-questions"],
+      }),
+  });
+
+  const saveSettings = async () => {
+    await adminApi.updatePresentPerfectConfig({
+      passing_percentage:
+        passing === "" ? config?.passing_percentage : Number(passing),
+      duration_minutes: duration === "" ? null : Number(duration),
+    });
+    setNotice("Configuración de Present Perfect Exam guardada.");
+    void queryClient.invalidateQueries({
+      queryKey: ["admin-present-perfect-config"],
+    });
+  };
+
+  const toggleExam = async () => {
+    if (!config) return;
+    await adminApi.updatePresentPerfectConfig({
+      is_enabled: !config.is_enabled,
+    });
+    setNotice(
+      !config.is_enabled
+        ? "Present Perfect Exam habilitado globalmente."
+        : "Present Perfect Exam deshabilitado.",
+    );
+    void queryClient.invalidateQueries({
+      queryKey: ["admin-present-perfect-config"],
+    });
+  };
+
+  return (
+    <AppShell title="Present Perfect Exam" nav={adminNav} wide>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BackLink to="/admin/exams" label="← Exámenes" />
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              config?.is_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            disabled={!config}
+            onClick={() => void toggleExam()}
+          >
+            {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
+          </button>
+        </div>
+
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-primary/10 bg-white shadow-sm">
+          <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Configuración del examen</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Nota mínima y temporizador del examen oficial Present Perfect.
+            </p>
+          </div>
+          <div className="space-y-4 p-6">
+            <p className="text-sm text-gray-600">
+              Banco: {config?.question_bank_size ?? "—"} preguntas · Cada intento
+              toma {config?.question_count ?? 20}. Habilita también a cada
+              estudiante en Usuarios.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium">
+                Nota mínima (%)
+                <input
+                  type="number"
+                  value={passing}
+                  onChange={(e) => setPassing(Number(e.target.value))}
+                  className="admin-search mt-1"
+                />
+              </label>
+              <label className="block text-sm font-medium">
+                Temporizador (minutos, vacío = sin límite)
+                <input
+                  type="number"
+                  value={duration}
+                  onChange={(e) =>
+                    setDuration(e.target.value ? Number(e.target.value) : "")
+                  }
+                  className="admin-search mt-1"
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={!config}
+              onClick={() => void saveSettings()}
+            >
+              Guardar configuración
+            </button>
+            {notice && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">
+                {notice}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <PastSimpleQuestionsSection
+          questions={questionsQuery.data?.items}
+          isLoading={questionsQuery.isLoading}
+          isError={questionsQuery.isError}
+          error={questionsQuery.error}
+          onToggle={(id, active) => toggleQuestion.mutate({ id, active })}
+        />
+
+        <ModuleReportsSection
+          title="Reportes de Present Perfect Exam"
+          description="Intentos del examen oficial. Entra al reporte específico de cada evaluación."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/exams/present-perfect/reports/${id}`}
+          emptyMessage="Aún no hay intentos de Present Perfect Exam."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+
+/** Present Perfect Practice: habilitación + banco de preguntas. */
+export function AdminPresentPerfectPracticePage() {
+  const queryClient = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["admin-present-perfect-config"],
+    queryFn: adminApi.getPresentPerfectConfig,
+  });
+  const questionsQuery = useQuery({
+    queryKey: ["admin-present-perfect-questions"],
+    queryFn: adminApi.listPresentPerfectQuestions,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-present-perfect-attempts", "practice"],
+    queryFn: () => adminApi.listPresentPerfectAttempts("practice"),
+  });
+  const [notice, setNotice] = useState("");
+
+  const toggleQuestion = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      adminApi.togglePresentPerfectQuestion(id, active),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-present-perfect-questions"],
+      }),
+  });
+
+  const togglePractice = async () => {
+    if (!config) return;
+    await adminApi.updatePresentPerfectConfig({
+      practice_enabled: !config.practice_enabled,
+    });
+    setNotice(
+      !config.practice_enabled
+        ? "Present Perfect Practice habilitada globalmente."
+        : "Present Perfect Practice deshabilitada.",
+    );
+    void queryClient.invalidateQueries({ queryKey: ["admin-present-perfect-config"] });
+  };
+
+  return (
+    <AppShell title="Present Perfect Practice" nav={adminNav} wide>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BackLink to="/admin/practice" label="← Práctica" />
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              config?.practice_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            disabled={!config}
+            onClick={() => void togglePractice()}
+          >
+            {config?.practice_enabled
+              ? "Práctica habilitada"
+              : "Práctica deshabilitada"}
+          </button>
+        </div>
+
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-sky/30 bg-white shadow-sm">
+          <div className="border-b border-brand-sky/20 bg-gradient-to-r from-brand-sky to-brand-primary px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Configuración de la práctica</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Entrenamiento con feedback. No usa nota mínima ni temporizador.
+            </p>
+          </div>
+          <div className="space-y-3 p-6">
+            <p className="text-sm text-gray-600">
+              Banco compartido con el examen: {config?.question_bank_size ?? "—"}{" "}
+              preguntas · Cada sesión toma {config?.question_count ?? 20}. Sin
+              cupo de intentos; también se habilita por estudiante en Usuarios.
+            </p>
+            <p className="text-sm text-gray-600">
+              La nota mínima y el temporizador del examen oficial se configuran en{" "}
+              <Link
+                to="/admin/exams/present-perfect"
+                className="font-semibold text-brand-primary underline"
+              >
+                Present Perfect Exam
+              </Link>
+              .
+            </p>
+            {notice && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">
+                {notice}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <PresentPerfectQuestionsSection
+          questions={questionsQuery.data?.items}
+          isLoading={questionsQuery.isLoading}
+          isError={questionsQuery.isError}
+          error={questionsQuery.error}
+          onToggle={(id, active) => toggleQuestion.mutate({ id, active })}
+        />
+
+        <ModuleReportsSection
+          title="Reportes de Present Perfect Practice"
+          description="Sesiones de práctica. Entra al reporte específico de cada sesión."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/practice/present-perfect/reports/${id}`}
+          emptyMessage="Aún no hay sesiones de práctica."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+function PresentPerfectQuestionsSection({
   questions,
   isLoading,
   isError,

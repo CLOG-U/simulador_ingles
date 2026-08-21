@@ -16,6 +16,7 @@ from app.models import (
     ExamType,
     PastSimpleAttempt,
     PastSimpleQuestion,
+    PresentPerfectAttempt,
     PresentSimpleAttempt,
     ReviewPolicy,
     User,
@@ -27,6 +28,7 @@ from app.services import (
     exam_access_service,
     exam_service,
     past_simple_service,
+    present_perfect_service,
     present_simple_service,
     user_service,
     verb_base_service,
@@ -325,7 +327,31 @@ async def get_user_exam_access(
                     )
                 )
             ).scalar_one()
-        else:
+        elif exam_type == ExamType.PRESENT_PERFECT_EXAM:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(PresentPerfectAttempt)
+                    .where(
+                        PresentPerfectAttempt.user_id == user_id,
+                        PresentPerfectAttempt.mode == present_perfect_service.MODE_EXAM,
+                        PresentPerfectAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
+            practice_submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(PresentPerfectAttempt)
+                    .where(
+                        PresentPerfectAttempt.user_id == user_id,
+                        PresentPerfectAttempt.mode
+                        == present_perfect_service.MODE_PRACTICE,
+                        PresentPerfectAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
+        elif exam_type == ExamType.PAST_SIMPLE_EXAM:
             submitted = (
                 await db.execute(
                     select(func.count())
@@ -348,6 +374,8 @@ async def get_user_exam_access(
                     )
                 )
             ).scalar_one()
+        else:
+            submitted = 0
         items.append(
             {
                 "exam_type": exam_type.value,
@@ -475,6 +503,18 @@ async def allow_new_attempt(
                     )
                 )
             ).scalar_one()
+        elif parsed_type == ExamType.PRESENT_PERFECT_EXAM:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(PresentPerfectAttempt)
+                    .where(
+                        PresentPerfectAttempt.user_id == user_id,
+                        PresentPerfectAttempt.mode == present_perfect_service.MODE_EXAM,
+                        PresentPerfectAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
         else:
             submitted = (
                 await db.execute(
@@ -565,7 +605,15 @@ async def reset_exam_progress(
             mode=mode,
         )
         action = "PRESENT_SIMPLE_PROGRESS_RESET"
-    else:
+    elif parsed_type == ExamType.PRESENT_PERFECT_EXAM:
+        result = await present_perfect_service.reset_student_progress(
+            db,
+            user_id=user_id,
+            actor_id=admin.id,
+            mode=mode,
+        )
+        action = "PRESENT_PERFECT_PROGRESS_RESET"
+    elif parsed_type == ExamType.PAST_SIMPLE_EXAM:
         result = await past_simple_service.reset_student_progress(
             db,
             user_id=user_id,
@@ -573,6 +621,8 @@ async def reset_exam_progress(
             mode=mode,
         )
         action = "PAST_SIMPLE_PROGRESS_RESET"
+    else:
+        raise AppError("INVALID_EXAM_TYPE", "Tipo de examen no válido.", status_code=400)
     await log_audit(
         db,
         actor_user_id=admin.id,

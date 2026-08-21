@@ -7,6 +7,7 @@ from app.api.admin_audit import router as admin_audit_router
 from app.api.admin_exam import router as admin_exam_router
 from app.api.admin_export import router as admin_export_router
 from app.api.admin_past_simple import router as admin_past_simple_router
+from app.api.admin_present_perfect import router as admin_present_perfect_router
 from app.api.admin_present_simple import router as admin_present_simple_router
 from app.api.admin_users import router as admin_users_router
 from app.api.admin_verb_base import router as admin_verb_base_router
@@ -14,6 +15,7 @@ from app.api.auth import router as auth_router
 from app.api.exam import router as exam_router
 from app.api.health import router as health_router
 from app.api.past_simple_exam import router as past_simple_exam_router
+from app.api.present_perfect_exam import router as present_perfect_exam_router
 from app.api.present_simple_exam import router as present_simple_exam_router
 from app.api.verb_base_exam import router as verb_base_exam_router
 from app.core.config import settings
@@ -61,10 +63,12 @@ app.include_router(exam_router, prefix="/api/v1")
 app.include_router(verb_base_exam_router, prefix="/api/v1")
 app.include_router(past_simple_exam_router, prefix="/api/v1")
 app.include_router(present_simple_exam_router, prefix="/api/v1")
+app.include_router(present_perfect_exam_router, prefix="/api/v1")
 app.include_router(admin_users_router, prefix="/api/v1")
 app.include_router(admin_export_router, prefix="/api/v1")
 app.include_router(admin_exam_router, prefix="/api/v1")
 app.include_router(admin_past_simple_router, prefix="/api/v1")
 app.include_router(admin_present_simple_router, prefix="/api/v1")
+app.include_router(admin_present_perfect_router, prefix="/api/v1")
 app.include_router(admin_verb_base_router, prefix="/api/v1")
 app.include_router(admin_audit_router, prefix="/api/v1")

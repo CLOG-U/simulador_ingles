@@ -298,9 +298,13 @@ export function AdminUsersPage() {
             ? "Verb Base Form"
             : result.exam_type === "present_simple_exam"
               ? "Present Simple examen"
-              : result.mode === "practice"
-                ? "Past Simple práctica"
-                : "Past Simple examen";
+              : result.exam_type === "present_perfect_exam"
+                ? result.mode === "practice"
+                  ? "Present Perfect práctica"
+                  : "Present Perfect examen"
+                : result.mode === "practice"
+                  ? "Past Simple práctica"
+                  : "Past Simple examen";
       setActionNotice(
         `${moduleLabel} reiniciado (${result.deleted_attempts} intento(s) eliminados).`,
       );
@@ -684,6 +688,9 @@ export function AdminUsersPage() {
                         const presentAccess = u.exam_access?.find(
                           (item) => item.exam_type === "present_simple_exam",
                         );
+                        const perfectAccess = u.exam_access?.find(
+                          (item) => item.exam_type === "present_perfect_exam",
+                        );
                         return (
                           <div className="flex flex-wrap gap-2">
                             <ModuleGroup title="Exámenes" tone="exam">
@@ -771,6 +778,28 @@ export function AdminUsersPage() {
                                   pendiente(s)
                                 </p>
                               </AttemptInfo>
+
+                              <AttemptInfo title="Present Perfect Examen">
+                                <p>
+                                  {perfectAccess?.is_enabled
+                                    ? "Habilitado"
+                                    : "Bloqueado"}
+                                </p>
+                                <p>
+                                  Cupo: {perfectAccess?.allowed_attempts ?? 1}{" "}
+                                  intento(s)
+                                </p>
+                                <p>
+                                  {perfectAccess?.submitted_attempts ?? 0}{" "}
+                                  completado(s)
+                                </p>
+                                <p>
+                                  {perfectAccess?.remaining_attempts ??
+                                    perfectAccess?.allowed_attempts ??
+                                    1}{" "}
+                                  pendiente(s)
+                                </p>
+                              </AttemptInfo>
                             </ModuleGroup>
                             <ModuleGroup title="Práctica" tone="practice">
                               <AttemptInfo title="Past Simple Práctica">
@@ -781,6 +810,18 @@ export function AdminUsersPage() {
                                 </p>
                                 <p>
                                   {pastAccess?.practice_submitted_attempts ?? 0}{" "}
+                                  sesión(es) completada(s)
+                                </p>
+                              </AttemptInfo>
+
+                              <AttemptInfo title="Present Perfect Práctica">
+                                <p>
+                                  {perfectAccess?.practice_enabled
+                                    ? "Habilitada"
+                                    : "Bloqueada"}
+                                </p>
+                                <p>
+                                  {perfectAccess?.practice_submitted_attempts ?? 0}{" "}
                                   sesión(es) completada(s)
                                 </p>
                               </AttemptInfo>
@@ -862,6 +903,9 @@ export function AdminUsersPage() {
                           );
                           const presentAccess = u.exam_access?.find(
                             (item) => item.exam_type === "present_simple_exam",
+                          );
+                          const perfectAccess = u.exam_access?.find(
+                            (item) => item.exam_type === "present_perfect_exam",
                           );
                           const busyAccess = (
                             examType: ExamType,
@@ -1152,6 +1196,73 @@ export function AdminUsersPage() {
                                 </ActionGroup>
                               </ModuleGroup>
 
+                              
+                                <ActionGroup title="Present Perfect Examen">
+                                  <button
+                                    type="button"
+                                    className={
+                                      perfectAccess?.is_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "present_perfect_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "present_perfect_exam",
+                                        isEnabled: !perfectAccess?.is_enabled,
+                                      })
+                                    }
+                                  >
+                                    {perfectAccess?.is_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-primary"
+                                    title="Suma 1 al cupo total de intentos (se acumula)"
+                                    disabled={busyAllow(
+                                      "present_perfect_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      allowAttemptMutation.mutate({
+                                        userId: u.id,
+                                        examType: "present_perfect_exam",
+                                        mode: "exam",
+                                      })
+                                    }
+                                  >
+                                    Sumar intento
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "present_perfect_exam",
+                                      "exam",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear el EXAMEN Present Perfect de ${u.username}?\n\nSe eliminarán solo los intentos del examen (no la práctica) y quedará 1 intento disponible.`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "present_perfect_exam",
+                                          mode: "exam",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+
                               <ModuleGroup title="Práctica" tone="practice">
                                 <ActionGroup title="Past Simple Práctica">
                                   <button
@@ -1210,6 +1321,64 @@ export function AdminUsersPage() {
                                     Resetear
                                   </button>
                                 </ActionGroup>
+                                <ActionGroup title="Present Perfect Práctica">
+                                  <button
+                                    type="button"
+                                    className={
+                                      perfectAccess?.practice_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "present_perfect_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "present_perfect_exam",
+                                        practiceEnabled:
+                                          !perfectAccess?.practice_enabled,
+                                      })
+                                    }
+                                  >
+                                    {perfectAccess?.practice_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <Link
+                                    to={`/admin/students/${u.id}/report`}
+                                    className="btn-admin-secondary"
+                                  >
+                                    Ver sesiones (
+                                    {perfectAccess?.practice_submitted_attempts ??
+                                      0}
+                                    )
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "present_perfect_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear la PRÁCTICA Present Perfect de ${u.username}?\n\nSe eliminarán solo las sesiones de práctica (no el examen).`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "present_perfect_exam",
+                                          mode: "practice",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+
                               </ModuleGroup>
                             </>
                           );

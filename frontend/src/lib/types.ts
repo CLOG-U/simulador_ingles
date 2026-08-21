@@ -13,7 +13,8 @@ export type ExamType =
   | "verb_exam"
   | "verb_base_exam"
   | "past_simple_exam"
-  | "present_simple_exam";
+  | "present_simple_exam"
+  | "present_perfect_exam";
 
 export interface UserMe {
   id: string;
@@ -36,7 +37,8 @@ export interface ExamConfig {
 }
 
 export interface PastSimpleConfig {
-  exam_type: "past_simple_exam" | "present_simple_exam";
+  exam_type: "past_simple_exam" | "present_simple_exam"
+  | "present_perfect_exam";
   title: string;
   is_enabled: boolean;
   practice_enabled?: boolean;
@@ -48,6 +50,7 @@ export interface PastSimpleConfig {
 }
 
 export type PresentSimpleConfig = PastSimpleConfig;
+export type PresentPerfectConfig = PastSimpleConfig;
 
 export interface RequiredField {
   field: string;
@@ -222,6 +225,8 @@ export interface AdminStudentReport {
   past_simple_practice_attempts?: PastSimpleAttemptSummary[];
   verb_base_attempts?: AdminAttemptSummary[];
   present_simple_attempts?: PastSimpleAttemptSummary[];
+  present_perfect_attempts?: PastSimpleAttemptSummary[];
+  present_perfect_practice_attempts?: PastSimpleAttemptSummary[];
   practice_sessions_completed?: number;
 }
 
@@ -260,7 +265,8 @@ export interface PastSimpleQuestion {
 
 export interface PastSimpleAttempt {
   id: string;
-  exam_type: "past_simple_exam" | "present_simple_exam";
+  exam_type: "past_simple_exam" | "present_simple_exam"
+  | "present_perfect_exam";
   mode?: "exam" | "practice";
   exam_name: string;
   attempt_number: number;
@@ -275,6 +281,10 @@ export type PresentSimpleAttempt = PastSimpleAttempt;
 export type PresentSimpleQuestion = PastSimpleQuestion;
 export type PresentSimpleResult = PastSimpleResult;
 export type PresentSimpleQuestionAdmin = PastSimpleQuestionAdmin;
+export type PresentPerfectResult = PastSimpleResult;
+export type PresentPerfectAttempt = PastSimpleAttempt;
+export type PresentPerfectQuestion = PastSimpleQuestion;
+export type PresentPerfectQuestionAdmin = PastSimpleQuestionAdmin;
 
 export interface TopicPerformance {
   topic: string;
@@ -308,7 +318,8 @@ export interface PastSimpleResult extends PastSimpleAttempt {
 
 export interface PastSimpleAttemptSummary {
   id: string;
-  exam_type: "past_simple_exam" | "present_simple_exam";
+  exam_type: "past_simple_exam" | "present_simple_exam"
+  | "present_perfect_exam";
   exam_name: string;
   mode?: "exam" | "practice";
   attempt_number: number;

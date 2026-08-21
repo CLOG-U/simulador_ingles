@@ -10,19 +10,19 @@ from app.core.errors import AppError
 from app.models import (
     AttemptStatus,
     ExamType,
-    PastSimpleAttempt,
-    PastSimpleAttemptQuestion,
-    PastSimpleConfig,
-    PastSimpleQuestion,
-    PastSimpleQuestionType,
+    PresentPerfectAttempt,
+    PresentPerfectAttemptQuestion,
+    PresentPerfectConfig,
+    PresentPerfectQuestion,
+    PresentPerfectQuestionType,
     User,
 )
 from app.services import exam_access_service
-from app.services.past_simple_engine import (
+from app.services.present_perfect_engine import (
     select_balanced_questions,
     shuffle_order_words,
 )
-from app.services.past_simple_grading import (
+from app.services.present_perfect_grading import (
     automatic_observation,
     grade_attempt,
     grade_question,
@@ -31,13 +31,13 @@ from app.services.past_simple_grading import (
 )
 
 
-async def get_config(session: AsyncSession) -> PastSimpleConfig:
-    result = await session.execute(select(PastSimpleConfig).limit(1))
+async def get_config(session: AsyncSession) -> PresentPerfectConfig:
+    result = await session.execute(select(PresentPerfectConfig).limit(1))
     config = result.scalar_one_or_none()
     if config is None:
         raise AppError(
             "CONFIG_MISSING",
-            "Configuración de Past Simple Exam no encontrada.",
+            "Configuración de Present Perfect Exam no encontrada.",
             status_code=500,
         )
     return config
@@ -52,13 +52,13 @@ async def get_visible_config(session: AsyncSession) -> dict:
     active_count = (
         await session.execute(
             select(func.count())
-            .select_from(PastSimpleQuestion)
-            .where(PastSimpleQuestion.active.is_(True))
+            .select_from(PresentPerfectQuestion)
+            .where(PresentPerfectQuestion.active.is_(True))
         )
     ).scalar_one()
     return {
-        "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
-        "title": "Past Simple Exam",
+        "exam_type": ExamType.PRESENT_PERFECT_EXAM.value,
+        "title": "Present Perfect Exam",
         "is_enabled": config.is_enabled,
         "practice_enabled": config.practice_enabled,
         "question_count": config.question_count,
@@ -74,14 +74,14 @@ async def get_open_attempt(
     user_id: uuid.UUID,
     *,
     mode: str = MODE_EXAM,
-) -> PastSimpleAttempt | None:
+) -> PresentPerfectAttempt | None:
     result = await session.execute(
-        select(PastSimpleAttempt)
-        .options(selectinload(PastSimpleAttempt.questions))
+        select(PresentPerfectAttempt)
+        .options(selectinload(PresentPerfectAttempt.questions))
         .where(
-            PastSimpleAttempt.user_id == user_id,
-            PastSimpleAttempt.mode == mode,
-            PastSimpleAttempt.status == AttemptStatus.IN_PROGRESS,
+            PresentPerfectAttempt.user_id == user_id,
+            PresentPerfectAttempt.mode == mode,
+            PresentPerfectAttempt.status == AttemptStatus.IN_PROGRESS,
         )
         .with_for_update()
     )
@@ -107,11 +107,11 @@ async def _submitted_count(
 ) -> int:
     result = await session.execute(
         select(func.count())
-        .select_from(PastSimpleAttempt)
+        .select_from(PresentPerfectAttempt)
         .where(
-            PastSimpleAttempt.user_id == user_id,
-            PastSimpleAttempt.mode == mode,
-            PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
+            PresentPerfectAttempt.user_id == user_id,
+            PresentPerfectAttempt.mode == mode,
+            PresentPerfectAttempt.status == AttemptStatus.SUBMITTED,
         )
     )
     return result.scalar_one()
@@ -127,12 +127,14 @@ async def _create_attempt_with_questions(
     duration_minutes: int | None,
     passing_percentage: int,
     question_count: int,
-) -> PastSimpleAttempt:
+) -> PresentPerfectAttempt:
     result = await session.execute(
-        select(PastSimpleQuestion).where(PastSimpleQuestion.active.is_(True))
+        select(PresentPerfectQuestion).where(PresentPerfectQuestion.active.is_(True))
     )
     try:
-        selected = select_balanced_questions(list(result.scalars()))
+        selected = select_balanced_questions(
+            list(result.scalars()), count=question_count
+        )
     except ValueError as exc:
         raise AppError(
             "INSUFFICIENT_QUESTIONS",
@@ -142,9 +144,9 @@ async def _create_attempt_with_questions(
 
     max_number = (
         await session.execute(
-            select(func.max(PastSimpleAttempt.attempt_number)).where(
-                PastSimpleAttempt.user_id == user.id,
-                PastSimpleAttempt.mode == mode,
+            select(func.max(PresentPerfectAttempt.attempt_number)).where(
+                PresentPerfectAttempt.user_id == user.id,
+                PresentPerfectAttempt.mode == mode,
             )
         )
     ).scalar_one()
@@ -153,13 +155,13 @@ async def _create_attempt_with_questions(
         if duration_minutes
         else None
     )
-    attempt = PastSimpleAttempt(
+    attempt = PresentPerfectAttempt(
         id=uuid.uuid4(),
         user_id=user.id,
         mode=mode,
         attempt_number=(max_number or 0) + 1,
         config_snapshot={
-            "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+            "exam_type": ExamType.PRESENT_PERFECT_EXAM.value,
             "mode": mode,
             "title": title,
             "question_count": question_count,
@@ -180,11 +182,11 @@ async def _create_attempt_with_questions(
                 question.question,
                 correct_answer=question.correct_answer,
             )
-            if question.question_type == PastSimpleQuestionType.ORDER_WORDS.value
+            if question.question_type == PresentPerfectQuestionType.ORDER_WORDS.value
             else question.question
         )
         session.add(
-            PastSimpleAttemptQuestion(
+            PresentPerfectAttemptQuestion(
                 id=uuid.uuid4(),
                 attempt_id=attempt.id,
                 source_question_id=question.id,
@@ -212,7 +214,7 @@ async def _create_attempt_with_questions(
 async def create_or_get_attempt(
     session: AsyncSession,
     user: User,
-) -> PastSimpleAttempt:
+) -> PresentPerfectAttempt:
     if user.must_change_password:
         raise AppError(
             "PASSWORD_CHANGE_REQUIRED",
@@ -224,7 +226,7 @@ async def create_or_get_attempt(
     access = await exam_access_service.ensure_exam_available(
         session,
         user_id=user.id,
-        exam_type=ExamType.PAST_SIMPLE_EXAM,
+        exam_type=ExamType.PRESENT_PERFECT_EXAM,
     )
     existing = await get_open_attempt(session, user.id, mode=MODE_EXAM)
     if existing:
@@ -234,7 +236,7 @@ async def create_or_get_attempt(
     if submitted_count >= access.allowed_attempts:
         raise AppError(
             "MAX_ATTEMPTS_REACHED",
-            "Ya completaste Past Simple Exam. Contacta al profesor para un nuevo intento.",
+            "Ya completaste Present Perfect Exam. Contacta al profesor para un nuevo intento.",
             status_code=403,
         )
 
@@ -243,7 +245,7 @@ async def create_or_get_attempt(
         session,
         user=user,
         mode=MODE_EXAM,
-        title="Past Simple Exam",
+        title="Present Perfect Exam",
         review_policy=config.review_policy.value,
         duration_minutes=config.duration_minutes,
         passing_percentage=config.passing_percentage,
@@ -254,7 +256,7 @@ async def create_or_get_attempt(
 async def create_or_get_practice(
     session: AsyncSession,
     user: User,
-) -> PastSimpleAttempt:
+) -> PresentPerfectAttempt:
     if user.must_change_password:
         raise AppError(
             "PASSWORD_CHANGE_REQUIRED",
@@ -267,7 +269,7 @@ async def create_or_get_practice(
     await exam_access_service.ensure_practice_available(
         session,
         user_id=user.id,
-        exam_type=ExamType.PAST_SIMPLE_EXAM,
+        exam_type=ExamType.PRESENT_PERFECT_EXAM,
     )
 
     existing = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
@@ -279,7 +281,7 @@ async def create_or_get_practice(
             session,
             user=user,
             mode=MODE_PRACTICE,
-            title="Past Simple Practice",
+            title="Present Perfect Practice",
             review_policy="FULL",
             duration_minutes=None,
             passing_percentage=config.passing_percentage,
@@ -302,13 +304,13 @@ async def get_attempt_for_user(
     *,
     attempt_id: uuid.UUID,
     user_id: uuid.UUID,
-) -> PastSimpleAttempt:
+) -> PresentPerfectAttempt:
     result = await session.execute(
-        select(PastSimpleAttempt)
-        .options(selectinload(PastSimpleAttempt.questions))
+        select(PresentPerfectAttempt)
+        .options(selectinload(PresentPerfectAttempt.questions))
         .where(
-            PastSimpleAttempt.id == attempt_id,
-            PastSimpleAttempt.user_id == user_id,
+            PresentPerfectAttempt.id == attempt_id,
+            PresentPerfectAttempt.user_id == user_id,
         )
     )
     attempt = result.scalar_one_or_none()
@@ -341,13 +343,13 @@ async def _lock_attempt(
     *,
     attempt_id: uuid.UUID,
     user_id: uuid.UUID,
-) -> PastSimpleAttempt:
+) -> PresentPerfectAttempt:
     result = await session.execute(
-        select(PastSimpleAttempt)
-        .options(selectinload(PastSimpleAttempt.questions))
+        select(PresentPerfectAttempt)
+        .options(selectinload(PresentPerfectAttempt.questions))
         .where(
-            PastSimpleAttempt.id == attempt_id,
-            PastSimpleAttempt.user_id == user_id,
+            PresentPerfectAttempt.id == attempt_id,
+            PresentPerfectAttempt.user_id == user_id,
         )
         .with_for_update()
         .execution_options(populate_existing=True)
@@ -359,7 +361,7 @@ async def _lock_attempt(
 
 
 def serialize_question(
-    question: PastSimpleAttemptQuestion,
+    question: PresentPerfectAttemptQuestion,
     *,
     include_grades: bool,
 ) -> dict:
@@ -392,7 +394,7 @@ def serialize_question(
 
 
 def serialize_attempt(
-    attempt: PastSimpleAttempt,
+    attempt: PresentPerfectAttempt,
     *,
     include_grades: bool,
 ) -> dict:
@@ -400,9 +402,9 @@ def serialize_attempt(
     is_practice = mode == MODE_PRACTICE
     return {
         "id": str(attempt.id),
-        "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+        "exam_type": ExamType.PRESENT_PERFECT_EXAM.value,
         "mode": mode,
-        "exam_name": "Past Simple Practice" if is_practice else "Past Simple Exam",
+        "exam_name": "Present Perfect Practice" if is_practice else "Present Perfect Exam",
         "attempt_number": attempt.attempt_number,
         "status": attempt.status.value,
         "started_at": attempt.started_at.isoformat(),
@@ -420,10 +422,10 @@ def serialize_attempt(
 async def save_answer(
     session: AsyncSession,
     *,
-    attempt: PastSimpleAttempt,
+    attempt: PresentPerfectAttempt,
     question_id: uuid.UUID,
     answer: str | None,
-) -> PastSimpleAttemptQuestion:
+) -> PresentPerfectAttemptQuestion:
     locked_attempt = await _lock_attempt(
         session,
         attempt_id=attempt.id,
@@ -447,7 +449,7 @@ async def save_answer(
 async def check_practice_answer(
     session: AsyncSession,
     *,
-    attempt: PastSimpleAttempt,
+    attempt: PresentPerfectAttempt,
     question_id: uuid.UUID,
     answer: str | None,
 ) -> dict:
@@ -480,8 +482,8 @@ async def check_practice_answer(
 
 async def submit_attempt(
     session: AsyncSession,
-    attempt: PastSimpleAttempt,
-) -> PastSimpleAttempt:
+    attempt: PresentPerfectAttempt,
+) -> PresentPerfectAttempt:
     locked_attempt = await _lock_attempt(
         session,
         attempt_id=attempt.id,
@@ -513,7 +515,7 @@ async def submit_attempt(
 
 
 def serialize_result(
-    attempt: PastSimpleAttempt,
+    attempt: PresentPerfectAttempt,
     *,
     student: User,
     include_review: bool,
@@ -568,19 +570,19 @@ async def get_attempt_status(
     access = await exam_access_service.get_or_create_access(
         session,
         user_id=user_id,
-        exam_type=ExamType.PAST_SIMPLE_EXAM,
+        exam_type=ExamType.PRESENT_PERFECT_EXAM,
     )
     open_attempt = await get_open_attempt(session, user_id, mode=mode)
     submitted_count = await _submitted_count(session, user_id, mode=mode)
     last_submitted = None
     result = await session.execute(
-        select(PastSimpleAttempt)
+        select(PresentPerfectAttempt)
         .where(
-            PastSimpleAttempt.user_id == user_id,
-            PastSimpleAttempt.mode == mode,
-            PastSimpleAttempt.status == AttemptStatus.SUBMITTED,
+            PresentPerfectAttempt.user_id == user_id,
+            PresentPerfectAttempt.mode == mode,
+            PresentPerfectAttempt.status == AttemptStatus.SUBMITTED,
         )
-        .order_by(PastSimpleAttempt.submitted_at.desc())
+        .order_by(PresentPerfectAttempt.submitted_at.desc())
         .limit(1)
     )
     last = result.scalar_one_or_none()
@@ -597,7 +599,7 @@ async def get_attempt_status(
     if mode == MODE_PRACTICE:
         available = config.practice_enabled and access.practice_enabled
         return {
-            "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+            "exam_type": ExamType.PRESENT_PERFECT_EXAM.value,
             "mode": MODE_PRACTICE,
             "is_available": available,
             "has_open_attempt": open_attempt is not None,
@@ -609,15 +611,15 @@ async def get_attempt_status(
             "question_bank_size": (
                 await session.execute(
                     select(func.count())
-                    .select_from(PastSimpleQuestion)
-                    .where(PastSimpleQuestion.active.is_(True))
+                    .select_from(PresentPerfectQuestion)
+                    .where(PresentPerfectQuestion.active.is_(True))
                 )
             ).scalar_one(),
         }
 
     available = config.is_enabled and access.is_enabled
     return {
-        "exam_type": ExamType.PAST_SIMPLE_EXAM.value,
+        "exam_type": ExamType.PRESENT_PERFECT_EXAM.value,
         "mode": MODE_EXAM,
         "is_available": available,
         "has_open_attempt": open_attempt is not None,
@@ -649,15 +651,15 @@ async def reset_student_progress(
         )
 
     deleted = await session.execute(
-        delete(PastSimpleAttempt).where(
-            PastSimpleAttempt.user_id == user_id,
-            PastSimpleAttempt.mode == mode,
+        delete(PresentPerfectAttempt).where(
+            PresentPerfectAttempt.user_id == user_id,
+            PresentPerfectAttempt.mode == mode,
         )
     )
     access = await exam_access_service.get_or_create_access(
         session,
         user_id=user_id,
-        exam_type=ExamType.PAST_SIMPLE_EXAM,
+        exam_type=ExamType.PRESENT_PERFECT_EXAM,
     )
     if mode == MODE_EXAM:
         access.allowed_attempts = 1
@@ -680,12 +682,12 @@ async def override_question_grade(
     correct: bool,
 ) -> dict:
     result = await session.execute(
-        select(PastSimpleAttempt)
+        select(PresentPerfectAttempt)
         .options(
-            selectinload(PastSimpleAttempt.questions),
-            selectinload(PastSimpleAttempt.user),
+            selectinload(PresentPerfectAttempt.questions),
+            selectinload(PresentPerfectAttempt.user),
         )
-        .where(PastSimpleAttempt.id == attempt_id)
+        .where(PresentPerfectAttempt.id == attempt_id)
     )
     attempt = result.scalar_one_or_none()
     if attempt is None:
