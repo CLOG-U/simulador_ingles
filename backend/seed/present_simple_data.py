@@ -24,8 +24,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_affirmative_01",
         topic="affirmative",
         question_type="multiple_choice",
-        instruction="Choose the correct sentence.",
-        question="Which sentence is correct in the Present Simple?",
+        instruction="Choose the correct affirmative sentence.",
+        question="Which affirmative sentence is correct in the Present Simple?",
         options=[
             "She play tennis every Saturday.",
             "She plays tennis every Saturday.",
@@ -103,8 +103,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_affirmative_07",
         topic="affirmative",
         question_type="multiple_choice",
-        instruction="Choose the correct sentence.",
-        question="Which sentence is correct?",
+        instruction="Choose the correct affirmative sentence.",
+        question="Which affirmative sentence is correct?",
         options=[
             "They watches movies on Fridays.",
             "They watch movies on Fridays.",
@@ -163,8 +163,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_affirmative_12",
         topic="affirmative",
         question_type="multiple_choice",
-        instruction="Choose the correct sentence.",
-        question="Which sentence uses the third person correctly?",
+        instruction="Choose the correct affirmative sentence.",
+        question="Which affirmative sentence uses the third person correctly?",
         options=[
             "He teach math at the university.",
             "He teaches math at the university.",
@@ -214,7 +214,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="negative",
         question_type="multiple_choice",
         instruction="Choose the correct negative sentence.",
-        question="Which sentence is correct?",
+        question="Which negative sentence is correct?",
         options=[
             "She doesn't likes coffee.",
             "She don't like coffee.",
@@ -269,7 +269,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_negative_05",
         topic="negative",
         question_type="multiple_choice",
-        instruction="Choose the correct sentence.",
+        instruction="Choose the correct negative sentence.",
         question="Which negative sentence is correct?",
         options=[
             "I doesn't eat meat.",
@@ -311,7 +311,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="negative",
         question_type="multiple_choice",
         instruction="Choose the correct negative sentence.",
-        question="Which sentence is correct?",
+        question="Which negative sentence is correct?",
         options=[
             "He don't drive to work.",
             "He doesn't drives to work.",
@@ -351,7 +351,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_negative_11",
         topic="negative",
         question_type="multiple_choice",
-        instruction="Choose the correct sentence.",
+        instruction="Choose the correct negative sentence.",
         question="Which negative sentence is correct?",
         options=[
             "You doesn't need a ticket.",
@@ -393,7 +393,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="negative",
         question_type="multiple_choice",
         instruction="Choose the correct negative sentence.",
-        question="Which sentence is correct?",
+        question="Which negative sentence is correct?",
         options=[
             "My parents doesn't cook dinner.",
             "My parents don't cook dinner.",
@@ -436,8 +436,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_interrogative_02",
         topic="interrogative",
         question_type="multiple_choice",
-        instruction="Choose the correct question.",
-        question="Which question is correct?",
+        instruction="Choose the correct Present Simple question.",
+        question="Which Present Simple question is correct?",
         options=[
             "Does she plays the piano?",
             "Do she play the piano?",
@@ -489,8 +489,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_interrogative_06",
         topic="interrogative",
         question_type="multiple_choice",
-        instruction="Choose the correct question.",
-        question="Which question is correct?",
+        instruction="Choose the correct Present Simple question.",
+        question="Which Present Simple question is correct?",
         options=[
             "Do they lives in London?",
             "Does they live in London?",
@@ -554,7 +554,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_interrogative_11",
         topic="interrogative",
         question_type="fill_blank",
-        instruction="Complete the question with one word.",
+        instruction="Complete the question with Do or Does.",
         question="Where ___ your sister live?",
         options=None,
         correct_answer="does",
@@ -565,8 +565,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_interrogative_12",
         topic="interrogative",
         question_type="multiple_choice",
-        instruction="Choose the correct question.",
-        question="Which question is correct?",
+        instruction="Choose the correct Present Simple question.",
+        question="Which Present Simple question is correct?",
         options=[
             "Does we need tickets?",
             "Do we need tickets?",
@@ -603,8 +603,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_interrogative_15",
         topic="interrogative",
         question_type="multiple_choice",
-        instruction="Choose the correct question.",
-        question="Which question is correct?",
+        instruction="Choose the correct Present Simple question.",
+        question="Which Present Simple question is correct?",
         options=[
             "What time does she gets up?",
             "What time do she get up?",
@@ -813,7 +813,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="identify",
         question_type="identify",
         instruction="Identify the correct Present Simple sentence.",
-        question="Which sentence is correct?",
+        question="Which Present Simple sentence is correct?",
         options=[
             "He go to the gym on Mondays.",
             "He goes to the gym on Mondays.",
@@ -829,7 +829,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="identify",
         question_type="multiple_choice",
         instruction="Identify the correct negative sentence.",
-        question="Which sentence is correct?",
+        question="Which negative sentence is correct?",
         options=[
             "She don't works here.",
             "She doesn't works here.",
@@ -844,8 +844,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_identify_03",
         topic="identify",
         question_type="identify",
-        instruction="Identify the correct question.",
-        question="Which question is correct?",
+        instruction="Identify the correct Present Simple question.",
+        question="Which Present Simple question is correct?",
         options=[
             "Does they watch movies on Friday?",
             "Do they watches movies on Friday?",
@@ -895,7 +895,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="identify",
         question_type="identify",
         instruction="Identify the correct affirmative sentence.",
-        question="Which sentence is correct?",
+        question="Which affirmative sentence is correct?",
         options=[
             "We lives in a small town.",
             "We live in a small town.",
@@ -911,7 +911,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="identify",
         question_type="identify",
         instruction="Identify the correct negative sentence.",
-        question="Which sentence is correct?",
+        question="Which negative sentence is correct?",
         options=[
             "I doesn't like onions.",
             "I don't likes onions.",
@@ -926,8 +926,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_identify_08",
         topic="identify",
         question_type="identify",
-        instruction="Identify the correct question.",
-        question="Which question is correct?",
+        instruction="Identify the correct Present Simple question.",
+        question="Which Present Simple question is correct?",
         options=[
             "Does your sister plays tennis?",
             "Do your sister play tennis?",
@@ -943,7 +943,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="identify",
         question_type="multiple_choice",
         instruction="Identify the sentence with the correct verb form.",
-        question="Which sentence is correct?",
+        question="Which affirmative sentence has the correct verb form?",
         options=[
             "She flys to Madrid every summer.",
             "She flies to Madrid every summer.",
@@ -959,7 +959,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="identify",
         question_type="identify",
         instruction="Identify the correct negative sentence.",
-        question="Which sentence is correct?",
+        question="Which negative sentence is correct?",
         options=[
             "He don't watch TV.",
             "He doesn't watches TV.",
@@ -991,7 +991,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="identify",
         question_type="identify",
         instruction="Identify the correct affirmative sentence.",
-        question="Which sentence is correct?",
+        question="Which affirmative sentence is correct?",
         options=[
             "The bus leave at noon.",
             "The bus leaves at noon.",
@@ -1006,8 +1006,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_identify_13",
         topic="identify",
         question_type="multiple_choice",
-        instruction="Identify the correct question.",
-        question="Which question is correct?",
+        instruction="Identify the correct Present Simple question.",
+        question="Which Present Simple question is correct?",
         options=[
             "Do she work here?",
             "Does she works here?",
@@ -1023,7 +1023,7 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         topic="identify",
         question_type="identify",
         instruction="Identify the sentence that uses don't/doesn't correctly.",
-        question="Which sentence is correct?",
+        question="Which negative sentence uses don't/doesn't correctly?",
         options=[
             "We doesn't go shopping on Mondays.",
             "We don't go shopping on Mondays.",
@@ -1251,8 +1251,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_sentences_05",
         topic="sentences",
         question_type="multiple_choice",
-        instruction="Choose the sentence that correctly uses the Present Simple.",
-        question="Which sentence is correct?",
+        instruction="Choose the correct affirmative sentence in the Present Simple.",
+        question="Which affirmative sentence is correct?",
         options=[
             "Does Peter likes pizza?",
             "Peter like pizza.",
@@ -1316,8 +1316,8 @@ PRESENT_SIMPLE_QUESTIONS: list[PresentSimpleQuestionSeed] = [
         stable_key="present_simple_sentences_10",
         topic="sentences",
         question_type="multiple_choice",
-        instruction="Choose the correct sentence.",
-        question="Which sentence is correct?",
+        instruction="Choose the correct negative sentence.",
+        question="Which negative sentence is correct?",
         options=[
             "She don't go to bed early.",
             "She doesn't goes to bed early.",

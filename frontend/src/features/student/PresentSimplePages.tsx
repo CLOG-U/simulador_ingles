@@ -165,11 +165,11 @@ function QuestionInput({
 
   const hint =
     question.question_type === "order_words"
-      ? "Write the words in the correct order."
+      ? question.instruction || "Put the words in the correct order."
       : question.question_type === "transform_sentence"
-        ? "Rewrite the sentence as instructed."
+        ? question.instruction || "Rewrite the sentence as instructed."
         : question.question_type === "fill_blank"
-          ? "Fill in the blank with the correct form."
+          ? question.instruction || "Fill in the blank with the correct form."
           : question.question_type === "identify" ||
               question.question_type === "short_answer"
             ? "Type your answer."
