@@ -1,6 +1,6 @@
 """Habilita acceso de práctica Present Perfect para estudiantes existentes.
 
-Revision ID: 012_present_perfect_practice_access
+Revision ID: 012_pp_practice_access
 Revises: 011_present_perfect_exam
 Create Date: 2026-08-21
 """
@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "012_present_perfect_practice_access"
+revision: str = "012_pp_practice_access"
 down_revision: str | None = "011_present_perfect_exam"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

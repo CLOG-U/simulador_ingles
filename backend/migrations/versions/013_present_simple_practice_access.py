@@ -1,7 +1,7 @@
 """Habilita acceso de práctica Present Simple para estudiantes existentes.
 
-Revision ID: 013_present_simple_practice_access
-Revises: 012_present_perfect_practice_access
+Revision ID: 013_ps_practice_access
+Revises: 012_pp_practice_access
 Create Date: 2026-08-21
 """
 
@@ -9,8 +9,8 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "013_present_simple_practice_access"
-down_revision: str | None = "012_present_perfect_practice_access"
+revision: str = "013_ps_practice_access"
+down_revision: str | None = "012_pp_practice_access"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
