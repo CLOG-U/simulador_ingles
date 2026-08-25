@@ -134,6 +134,15 @@ export const pastSimpleApi = {
     apiFetch<PastSimpleAttempt>("/past-simple/practice/sessions", {
       method: "POST",
     }),
+  restartPractice: () =>
+    apiFetch<PastSimpleAttempt>("/past-simple/practice/sessions/restart", {
+      method: "POST",
+    }),
+  abandonPractice: () =>
+    apiFetch<{ abandoned: boolean; abandoned_count: number }>(
+      "/past-simple/practice/sessions/abandon",
+      { method: "POST" },
+    ),
   getPractice: (id: string) =>
     apiFetch<PastSimpleAttempt>(`/past-simple/practice/sessions/${id}`),
   checkPracticeAnswer: (
@@ -216,6 +225,15 @@ export const presentSimpleApi = {
     apiFetch<PastSimpleAttempt>("/present-simple/practice/sessions", {
       method: "POST",
     }),
+  restartPractice: () =>
+    apiFetch<PastSimpleAttempt>("/present-simple/practice/sessions/restart", {
+      method: "POST",
+    }),
+  abandonPractice: () =>
+    apiFetch<{ abandoned: boolean; abandoned_count: number }>(
+      "/present-simple/practice/sessions/abandon",
+      { method: "POST" },
+    ),
   getPractice: (id: string) =>
     apiFetch<PastSimpleAttempt>(`/present-simple/practice/sessions/${id}`),
   checkPracticeAnswer: (
@@ -274,6 +292,15 @@ export const presentPerfectApi = {
     apiFetch<PastSimpleAttempt>("/present-perfect/practice/sessions", {
       method: "POST",
     }),
+  restartPractice: () =>
+    apiFetch<PastSimpleAttempt>("/present-perfect/practice/sessions/restart", {
+      method: "POST",
+    }),
+  abandonPractice: () =>
+    apiFetch<{ abandoned: boolean; abandoned_count: number }>(
+      "/present-perfect/practice/sessions/abandon",
+      { method: "POST" },
+    ),
   getPractice: (id: string) =>
     apiFetch<PastSimpleAttempt>(`/present-perfect/practice/sessions/${id}`),
   checkPracticeAnswer: (

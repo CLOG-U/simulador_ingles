@@ -176,6 +176,34 @@ async def test_past_simple_attempt_is_balanced_owned_and_idempotent(
         headers=_auth(student),
     )
     assert another_practice.status_code == 200
+    open_practice_id = another_practice.json()["id"]
+    assert open_practice_id != practice_id
+
+    # Student can abandon an open session and start a fresh one without admin reset.
+    restarted = await client.post(
+        "/api/v1/past-simple/practice/sessions/restart",
+        headers=_auth(student),
+    )
+    assert restarted.status_code == 200
+    assert restarted.json()["id"] != open_practice_id
+    assert restarted.json()["mode"] == "practice"
+    assert restarted.json()["status"] == "IN_PROGRESS"
+
+    abandoned = await client.post(
+        "/api/v1/past-simple/practice/sessions/abandon",
+        headers=_auth(student),
+    )
+    assert abandoned.status_code == 200
+    assert abandoned.json()["abandoned"] is True
+
+    status_after = await client.get(
+        "/api/v1/past-simple/practice/status",
+        headers=_auth(student),
+    )
+    assert status_after.status_code == 200
+    assert status_after.json()["has_open_attempt"] is False
+    assert status_after.json()["can_start_new"] is True
+
     still_blocked = await client.post(
         "/api/v1/past-simple/attempts",
         headers=_auth(student),

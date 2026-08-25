@@ -253,9 +253,32 @@ async def create_or_get_attempt(
     )
 
 
+async def abandon_open_practice(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+) -> int:
+    """Cancela sesiones de práctica IN_PROGRESS del estudiante (no borra historial)."""
+    result = await session.execute(
+        select(PresentSimpleAttempt).where(
+            PresentSimpleAttempt.user_id == user_id,
+            PresentSimpleAttempt.mode == MODE_PRACTICE,
+            PresentSimpleAttempt.status == AttemptStatus.IN_PROGRESS,
+        )
+    )
+    abandoned = 0
+    for attempt in result.scalars():
+        attempt.status = AttemptStatus.CANCELLED
+        abandoned += 1
+    if abandoned:
+        await session.flush()
+    return abandoned
+
+
 async def create_or_get_practice(
     session: AsyncSession,
     user: User,
+    *,
+    force_new: bool = False,
 ) -> PresentSimpleAttempt:
     if user.must_change_password:
         raise AppError(
@@ -272,9 +295,12 @@ async def create_or_get_practice(
         exam_type=ExamType.PRESENT_SIMPLE_EXAM,
     )
 
-    existing = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
-    if existing:
-        return existing
+    if force_new:
+        await abandon_open_practice(session, user.id)
+    else:
+        existing = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
+        if existing:
+            return existing
 
     try:
         return await _create_attempt_with_questions(
@@ -290,13 +316,28 @@ async def create_or_get_practice(
     except IntegrityError:
         await session.rollback()
         recovered = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
-        if recovered:
+        if recovered and not force_new:
             return recovered
         raise AppError(
             "PRACTICE_START_FAILED",
             "No se pudo iniciar la práctica. Intenta de nuevo.",
             status_code=409,
         )
+
+
+async def restart_practice(
+    session: AsyncSession,
+    user: User,
+) -> PresentSimpleAttempt:
+    """Abandona la sesión abierta (si hay) y crea una práctica nueva."""
+    await exam_access_service.ensure_practice_available(
+        session,
+        user_id=user.id,
+        exam_type=ExamType.PRESENT_SIMPLE_EXAM,
+    )
+    await abandon_open_practice(session, user.id)
+    await session.commit()
+    return await create_or_get_practice(session, user, force_new=False)
 
 
 async def get_attempt_for_user(

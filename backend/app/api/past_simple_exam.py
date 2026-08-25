@@ -74,6 +74,26 @@ async def start_practice(
     return past_simple_service.serialize_attempt(attempt, include_grades=False)
 
 
+@router.post("/practice/sessions/restart")
+async def restart_practice(
+    student: User = Depends(require_student_ready),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cancela la práctica abierta (si existe) y abre una sesión nueva."""
+    attempt = await past_simple_service.restart_practice(db, student)
+    return past_simple_service.serialize_attempt(attempt, include_grades=False)
+
+
+@router.post("/practice/sessions/abandon")
+async def abandon_practice(
+    student: User = Depends(require_student_ready),
+    db: AsyncSession = Depends(get_db),
+):
+    abandoned = await past_simple_service.abandon_open_practice(db, student.id)
+    await db.commit()
+    return {"abandoned": abandoned > 0, "abandoned_count": abandoned}
+
+
 @router.get("/practice/sessions/{attempt_id}")
 async def get_practice_session(
     attempt_id: uuid.UUID,

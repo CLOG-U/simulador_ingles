@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell } from "../../components/AppShell";
 import { ApiError } from "../../lib/api";
 import { presentSimpleApi } from "../../lib/endpoints";
@@ -98,12 +98,20 @@ export function PresentSimplePracticeInstructionsPage() {
         </ul>
         <div className="flex flex-wrap gap-3">
           {status?.has_open_attempt && status.open_attempt_id ? (
-            <Link
-              to={`/student/practice/present_simple/sessions/${status.open_attempt_id}`}
-              className="btn-primary"
-            >
-              Resume Practice
-            </Link>
+            <>
+              <Link
+                to={`/student/practice/present_simple/sessions/${status.open_attempt_id}`}
+                className="btn-primary"
+              >
+                Resume Practice
+              </Link>
+              <Link
+                to="/student/practice/present_simple/start?fresh=1"
+                className="inline-flex rounded-xl border px-4 py-2.5 font-semibold"
+              >
+                Start New Session
+              </Link>
+            </>
           ) : status?.can_start_new ? (
             <Link to="/student/practice/present_simple/start" className="btn-primary">
               Start Practice
@@ -124,9 +132,11 @@ export function PresentSimplePracticeInstructionsPage() {
 
 export function PresentSimplePracticeStartRedirect() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fresh = searchParams.get("fresh") === "1";
   const startedRef = useRef(false);
   const { mutate, isPending, error } = useMutation({
-    mutationFn: presentSimpleApi.startPractice,
+    mutationFn: fresh ? presentSimpleApi.restartPractice : presentSimpleApi.startPractice,
     onSuccess: (session) => {
       navigate(`/student/practice/present_simple/sessions/${session.id}`, {
         replace: true,
@@ -383,6 +393,21 @@ export function PresentSimplePracticeSessionPage() {
             {submitting ? "Finishing…" : "Finish Practice"}
           </button>
         )}
+        <Link
+          to="/student/practice/present_simple/start?fresh=1"
+          className="inline-flex min-h-11 items-center rounded-xl border px-4"
+          onClick={(event) => {
+            if (
+              !window.confirm(
+                "Start a new practice session? Your current progress will be discarded.",
+              )
+            ) {
+              event.preventDefault();
+            }
+          }}
+        >
+          New Session
+        </Link>
       </div>
     </AppShell>
   );
@@ -456,7 +481,7 @@ function PracticeResultView({
           >
             Review Answers
           </Link>
-          <Link to="/student/practice/present_simple/start" className="btn-primary">
+          <Link to="/student/practice/present_simple/start?fresh=1" className="btn-primary">
             Practice Again
           </Link>
           <Link to="/student/practice" className="inline-flex rounded-xl border px-4 py-2.5">

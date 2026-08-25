@@ -412,12 +412,20 @@ export function StudentPracticePage() {
                 Practice is not enabled for your account.
               </p>
             ) : practiceOpen ? (
-              <Link
-                to={`/student/practice/past_simple/sessions/${practiceStatusQuery.data!.open_attempt_id}`}
-                className="btn-primary mt-4"
-              >
-                Resume Practice
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  to={`/student/practice/past_simple/sessions/${practiceStatusQuery.data!.open_attempt_id}`}
+                  className="btn-primary"
+                >
+                  Resume Practice
+                </Link>
+                <Link
+                  to="/student/practice/past_simple/start?fresh=1"
+                  className="inline-flex min-h-11 items-center rounded-xl border px-4 font-semibold"
+                >
+                  Start New Session
+                </Link>
+              </div>
             ) : (
               <Link
                 to="/student/practice/past_simple"
@@ -466,12 +474,20 @@ export function StudentPracticePage() {
                 Practice is not enabled for your account.
               </p>
             ) : simpleOpen ? (
-              <Link
-                to={`/student/practice/present_simple/sessions/${simplePracticeStatusQuery.data!.open_attempt_id}`}
-                className="btn-primary mt-4"
-              >
-                Resume Practice
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  to={`/student/practice/present_simple/sessions/${simplePracticeStatusQuery.data!.open_attempt_id}`}
+                  className="btn-primary"
+                >
+                  Resume Practice
+                </Link>
+                <Link
+                  to="/student/practice/present_simple/start?fresh=1"
+                  className="inline-flex min-h-11 items-center rounded-xl border px-4 font-semibold"
+                >
+                  Start New Session
+                </Link>
+              </div>
             ) : (
               <Link
                 to="/student/practice/present_simple"
@@ -520,12 +536,20 @@ export function StudentPracticePage() {
                 Practice is not enabled for your account.
               </p>
             ) : perfectOpen ? (
-              <Link
-                to={`/student/practice/present_perfect/sessions/${perfectPracticeStatusQuery.data!.open_attempt_id}`}
-                className="btn-primary mt-4"
-              >
-                Resume Practice
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  to={`/student/practice/present_perfect/sessions/${perfectPracticeStatusQuery.data!.open_attempt_id}`}
+                  className="btn-primary"
+                >
+                  Resume Practice
+                </Link>
+                <Link
+                  to="/student/practice/present_perfect/start?fresh=1"
+                  className="inline-flex min-h-11 items-center rounded-xl border px-4 font-semibold"
+                >
+                  Start New Session
+                </Link>
+              </div>
             ) : (
               <Link
                 to="/student/practice/present_perfect"
