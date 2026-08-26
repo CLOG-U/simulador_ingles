@@ -9,6 +9,7 @@ from app.services.present_perfect_engine import (
 )
 from app.services.present_simple_engine import select_balanced_questions
 from app.services.verb_base_service import build_base_prompt_types
+from seed.listening_data import LISTENING_QUESTIONS
 from seed.present_perfect_data import PRESENT_PERFECT_QUESTIONS
 from seed.present_simple_data import PRESENT_SIMPLE_QUESTIONS
 
@@ -18,6 +19,7 @@ def test_exam_types_include_new_modules():
     assert "verb_base_exam" in values
     assert "present_simple_exam" in values
     assert "present_perfect_exam" in values
+    assert "listening_practice" in values
 
 
 def test_verb_base_prompt_types_balanced():
@@ -66,3 +68,14 @@ def test_present_perfect_selection_returns_20_balanced():
     assert set(counts) == {topic.value for topic in PresentPerfectTopic}
     assert min(counts.values()) >= 2
     assert max(counts.values()) <= 3
+
+
+def test_listening_seed_covers_leo_manta_clip():
+    assert len(LISTENING_QUESTIONS) == 10
+    assert {item.clip_key for item in LISTENING_QUESTIONS} == {"leo-manta"}
+    assert all(item.audio_url == "/audio/leo-manta.mp3" for item in LISTENING_QUESTIONS)
+    topics = {item.topic for item in LISTENING_QUESTIONS}
+    assert {"present_simple", "past_simple", "present_perfect", "detail"} <= topics
+    assert all(item.question_type == "multiple_choice" for item in LISTENING_QUESTIONS)
+    assert all(item.options and len(item.options) == 4 for item in LISTENING_QUESTIONS)
+    assert all(item.correct_answer in item.options for item in LISTENING_QUESTIONS)

@@ -14,6 +14,7 @@ from app.models import (
     Attempt,
     AttemptStatus,
     ExamType,
+    ListeningAttempt,
     PastSimpleAttempt,
     PastSimpleQuestion,
     PresentPerfectAttempt,
@@ -27,6 +28,7 @@ from app.schemas.past_simple import ExamAccessUpdate, PastSimpleConfigUpdate
 from app.services import (
     exam_access_service,
     exam_service,
+    listening_service,
     past_simple_service,
     present_perfect_service,
     present_simple_service,
@@ -386,6 +388,19 @@ async def get_user_exam_access(
                     )
                 )
             ).scalar_one()
+        elif exam_type == ExamType.LISTENING_PRACTICE:
+            submitted = 0
+            practice_submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(ListeningAttempt)
+                    .where(
+                        ListeningAttempt.user_id == user_id,
+                        ListeningAttempt.mode == listening_service.MODE_PRACTICE,
+                        ListeningAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
         else:
             submitted = 0
         items.append(
@@ -467,6 +482,12 @@ async def allow_new_attempt(
         raise AppError(
             "INVALID_MODE",
             "Este examen no tiene modo práctica en v1.",
+            status_code=400,
+        )
+    if parsed_type == ExamType.LISTENING_PRACTICE and mode == "exam":
+        raise AppError(
+            "INVALID_MODE",
+            "Listening solo tiene modo práctica.",
             status_code=400,
         )
     if parsed_type == ExamType.VERB_EXAM:
@@ -624,6 +645,20 @@ async def reset_exam_progress(
             mode=mode,
         )
         action = "PAST_SIMPLE_PROGRESS_RESET"
+    elif parsed_type == ExamType.LISTENING_PRACTICE:
+        if mode != "practice":
+            raise AppError(
+                "INVALID_MODE",
+                "Listening solo tiene modo práctica.",
+                status_code=400,
+            )
+        result = await listening_service.reset_student_progress(
+            db,
+            user_id=user_id,
+            actor_id=admin.id,
+            mode=mode,
+        )
+        action = "LISTENING_PROGRESS_RESET"
     else:
         raise AppError("INVALID_EXAM_TYPE", "Tipo de examen no válido.", status_code=400)
     await log_audit(

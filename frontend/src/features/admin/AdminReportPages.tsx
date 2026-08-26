@@ -364,6 +364,12 @@ export function AdminStudentReportPage() {
                   to={`/admin/students/${userId}/practice/present-perfect`}
                   tone="practice"
                 />
+                <ModuleReportCard
+                  title="Listening Practice"
+                  summary={`${data.listening_practice_attempts?.length ?? 0} sesión(es) registradas`}
+                  to={`/admin/students/${userId}/practice/listening`}
+                  tone="practice"
+                />
               </div>
             </section>
           </div>
@@ -381,7 +387,8 @@ type StudentModuleKey =
   | "present-perfect-exam"
   | "past-simple-practice"
   | "present-simple-practice"
-  | "present-perfect-practice";
+  | "present-perfect-practice"
+  | "listening-practice";
 
 /** Reporte específico de un módulo para un estudiante. */
 export function AdminStudentModuleReportPage({
@@ -405,6 +412,7 @@ export function AdminStudentModuleReportPage({
     "past-simple-practice": "Reporte Past Simple Practice",
     "present-simple-practice": "Reporte Present Simple Practice",
     "present-perfect-practice": "Reporte Present Perfect Practice",
+    "listening-practice": "Reporte Listening Practice",
   };
   const backModule: Record<StudentModuleKey, string> = {
     verb: "/admin/exams/verb",
@@ -415,6 +423,7 @@ export function AdminStudentModuleReportPage({
     "past-simple-practice": "/admin/practice/past-simple",
     "present-simple-practice": "/admin/practice/present-simple",
     "present-perfect-practice": "/admin/practice/present-perfect",
+    "listening-practice": "/admin/practice/listening",
   };
 
   return (
@@ -867,6 +876,61 @@ export function AdminStudentModuleReportPage({
                             <td className="py-2">
                               <Link
                                 to={`/admin/practice/present-perfect/reports/${attempt.id}`}
+                                className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
+                              >
+                                Ver reporte
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {module === "listening-practice" && (
+              <section className="card">
+                <h3 className="mb-3 font-semibold">
+                  Historial de Listening Practice
+                </h3>
+                {(data.listening_practice_attempts?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-gray-600">Sin sesiones todavía.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[700px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="py-2">Sesión</th>
+                          <th className="py-2">Inicio</th>
+                          <th className="py-2">Entrega</th>
+                          <th className="py-2">Estado</th>
+                          <th className="py-2">Nota</th>
+                          <th className="py-2">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.listening_practice_attempts?.map((attempt) => (
+                          <tr key={attempt.id} className="border-b">
+                            <td className="py-2">#{attempt.attempt_number}</td>
+                            <td className="py-2">
+                              {formatDate(attempt.started_at)}
+                            </td>
+                            <td className="py-2">
+                              {formatDate(attempt.submitted_at)}
+                            </td>
+                            <td className="py-2">
+                              {STATUS_LABELS[attempt.status] ?? attempt.status}
+                            </td>
+                            <td className="py-2">
+                              {attempt.percentage != null
+                                ? `${attempt.percentage.toFixed(1)}%`
+                                : "—"}
+                            </td>
+                            <td className="py-2">
+                              <Link
+                                to={`/admin/practice/listening/reports/${attempt.id}`}
                                 className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
                               >
                                 Ver reporte

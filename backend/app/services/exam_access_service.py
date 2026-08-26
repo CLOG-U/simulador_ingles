@@ -8,6 +8,7 @@ from app.models import (
     ExamAccess,
     ExamConfig,
     ExamType,
+    ListeningConfig,
     PastSimpleConfig,
     PresentPerfectConfig,
     PresentSimpleConfig,
@@ -20,12 +21,14 @@ _CONFIG_MODEL = {
     ExamType.PAST_SIMPLE_EXAM: PastSimpleConfig,
     ExamType.PRESENT_SIMPLE_EXAM: PresentSimpleConfig,
     ExamType.PRESENT_PERFECT_EXAM: PresentPerfectConfig,
+    ExamType.LISTENING_PRACTICE: ListeningConfig,
 }
 
 _PRACTICE_EXAMS = {
     ExamType.PAST_SIMPLE_EXAM,
     ExamType.PRESENT_SIMPLE_EXAM,
     ExamType.PRESENT_PERFECT_EXAM,
+    ExamType.LISTENING_PRACTICE,
 }
 
 
@@ -140,7 +143,8 @@ async def set_student_access(
         if exam_type not in _PRACTICE_EXAMS:
             raise AppError(
                 "INVALID_EXAM_TYPE",
-                "La práctica solo aplica a Past Simple, Present Simple y Present Perfect.",
+                "La práctica solo aplica a Past Simple, Present Simple, "
+                "Present Perfect y Listening.",
                 status_code=400,
             )
         access.practice_enabled = practice_enabled

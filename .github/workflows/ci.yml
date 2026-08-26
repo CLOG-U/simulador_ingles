@@ -52,6 +52,7 @@ jobs:
           python -m scripts.seed_past_simple
           python -m scripts.seed_present_simple
           python -m scripts.seed_present_perfect
+          python -m scripts.seed_listening
 
       - name: Pytest
         env:

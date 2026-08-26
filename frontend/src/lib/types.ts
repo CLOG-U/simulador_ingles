@@ -14,7 +14,8 @@ export type ExamType =
   | "verb_base_exam"
   | "past_simple_exam"
   | "present_simple_exam"
-  | "present_perfect_exam";
+  | "present_perfect_exam"
+  | "listening_practice";
 
 export interface UserMe {
   id: string;
@@ -38,7 +39,7 @@ export interface ExamConfig {
 
 export interface PastSimpleConfig {
   exam_type: "past_simple_exam" | "present_simple_exam"
-  | "present_perfect_exam";
+  | "present_perfect_exam" | "listening_practice";
   title: string;
   is_enabled: boolean;
   practice_enabled?: boolean;
@@ -51,6 +52,7 @@ export interface PastSimpleConfig {
 
 export type PresentSimpleConfig = PastSimpleConfig;
 export type PresentPerfectConfig = PastSimpleConfig;
+export type ListeningConfig = PastSimpleConfig;
 
 export interface RequiredField {
   field: string;
@@ -228,6 +230,7 @@ export interface AdminStudentReport {
   present_simple_practice_attempts?: PastSimpleAttemptSummary[];
   present_perfect_attempts?: PastSimpleAttemptSummary[];
   present_perfect_practice_attempts?: PastSimpleAttemptSummary[];
+  listening_practice_attempts?: PastSimpleAttemptSummary[];
   practice_sessions_completed?: number;
 }
 
@@ -262,12 +265,14 @@ export interface PastSimpleQuestion {
   is_correct?: boolean | null;
   status?: "correct" | "incorrect" | "unanswered";
   explanation?: string;
+  audio_url?: string | null;
+  clip_title?: string | null;
 }
 
 export interface PastSimpleAttempt {
   id: string;
   exam_type: "past_simple_exam" | "present_simple_exam"
-  | "present_perfect_exam";
+  | "present_perfect_exam" | "listening_practice";
   mode?: "exam" | "practice";
   exam_name: string;
   attempt_number: number;
@@ -286,6 +291,10 @@ export type PresentPerfectResult = PastSimpleResult;
 export type PresentPerfectAttempt = PastSimpleAttempt;
 export type PresentPerfectQuestion = PastSimpleQuestion;
 export type PresentPerfectQuestionAdmin = PastSimpleQuestionAdmin;
+export type ListeningResult = PastSimpleResult;
+export type ListeningAttempt = PastSimpleAttempt;
+export type ListeningQuestion = PastSimpleQuestion;
+export type ListeningQuestionAdmin = PastSimpleQuestionAdmin;
 
 export interface TopicPerformance {
   topic: string;
@@ -320,7 +329,7 @@ export interface PastSimpleResult extends PastSimpleAttempt {
 export interface PastSimpleAttemptSummary {
   id: string;
   exam_type: "past_simple_exam" | "present_simple_exam"
-  | "present_perfect_exam";
+  | "present_perfect_exam" | "listening_practice";
   exam_name: string;
   mode?: "exam" | "practice";
   attempt_number: number;

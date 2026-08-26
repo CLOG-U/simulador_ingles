@@ -67,6 +67,9 @@ class User(Base):
     verb_base_attempts: Mapped[list["VerbBaseAttempt"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    listening_attempts: Mapped[list["ListeningAttempt"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class RefreshSession(Base):
@@ -157,7 +160,7 @@ class ExamAccess(Base):
         CheckConstraint(
             "exam_type IN ("
             "'verb_exam', 'verb_base_exam', 'past_simple_exam', "
-            "'present_simple_exam', 'present_perfect_exam'"
+            "'present_simple_exam', 'present_perfect_exam', 'listening_practice'"
             ")",
             name="ck_exam_access_type",
         ),
@@ -552,6 +555,137 @@ class PresentPerfectAttemptQuestion(Base):
     graded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     attempt: Mapped["PresentPerfectAttempt"] = relationship(back_populates="questions")
+
+
+class ListeningConfig(Base):
+    __tablename__ = "listening_config"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    practice_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    question_count: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
+    passing_percentage: Mapped[int] = mapped_column(Integer, default=70, nullable=False)
+    duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    review_policy: Mapped[ReviewPolicy] = mapped_column(
+        Enum(ReviewPolicy, name="review_policy", create_type=False),
+        default=ReviewPolicy.FULL,
+        nullable=False,
+    )
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class ListeningQuestion(Base):
+    __tablename__ = "listening_questions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    stable_key: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    exam_type: Mapped[str] = mapped_column(
+        String(32), default="listening_practice", nullable=False
+    )
+    topic: Mapped[str] = mapped_column(String(64), nullable=False)
+    question_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    instruction: Mapped[str] = mapped_column(String(255), nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    options: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    correct_answer: Mapped[str] = mapped_column(Text, nullable=False)
+    accepted_answers: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    points: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    audio_url: Mapped[str] = mapped_column(String(255), nullable=False)
+    clip_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    clip_title: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class ListeningAttempt(Base):
+    __tablename__ = "listening_attempts"
+    __table_args__ = (
+        CheckConstraint("mode IN ('exam', 'practice')", name="ck_listening_attempt_mode"),
+        UniqueConstraint(
+            "user_id", "mode", "attempt_number", name="uq_listening_attempt_user_mode_num"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    mode: Mapped[str] = mapped_column(String(16), default="practice", nullable=False)
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    config_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    status: Mapped[AttemptStatus] = mapped_column(
+        Enum(AttemptStatus, name="attempt_status", create_type=False),
+        default=AttemptStatus.IN_PROGRESS,
+        nullable=False,
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    total_questions: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
+    correct_answers: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    incorrect_answers: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    unanswered_answers: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    percentage: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    score_out_of_ten: Mapped[float | None] = mapped_column(Numeric(4, 2), nullable=True)
+    passed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="listening_attempts")
+    questions: Mapped[list["ListeningAttemptQuestion"]] = relationship(
+        back_populates="attempt", cascade="all, delete-orphan"
+    )
+
+
+class ListeningAttemptQuestion(Base):
+    __tablename__ = "listening_attempt_questions"
+    __table_args__ = (
+        UniqueConstraint("attempt_id", "position", name="uq_listening_attempt_q_pos"),
+        UniqueConstraint(
+            "attempt_id", "source_question_id", name="uq_listening_attempt_source_q"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    attempt_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("listening_attempts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    source_question_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("listening_questions.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    snapshot_topic: Mapped[str] = mapped_column(String(64), nullable=False)
+    snapshot_question_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    snapshot_instruction: Mapped[str] = mapped_column(String(255), nullable=False)
+    snapshot_question: Mapped[str] = mapped_column(Text, nullable=False)
+    snapshot_options: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    snapshot_correct_answer: Mapped[str] = mapped_column(Text, nullable=False)
+    snapshot_accepted_answers: Mapped[list] = mapped_column(JSONB, nullable=False)
+    snapshot_explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    snapshot_points: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    snapshot_audio_url: Mapped[str] = mapped_column(String(255), nullable=False)
+    snapshot_clip_title: Mapped[str] = mapped_column(String(128), nullable=False)
+    answer_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_correct: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    graded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    attempt: Mapped["ListeningAttempt"] = relationship(back_populates="questions")
 
 
 class VerbBaseConfig(Base):

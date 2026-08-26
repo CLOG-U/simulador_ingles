@@ -19,6 +19,7 @@ import {
 import { AdminPastSimpleAttemptReportPage } from "../features/admin/AdminPastSimplePages";
 import { AdminPresentSimpleAttemptReportPage } from "../features/admin/AdminPresentSimplePages";
 import { AdminPresentPerfectAttemptReportPage } from "../features/admin/AdminPresentPerfectPages";
+import { AdminListeningAttemptReportPage } from "../features/admin/AdminListeningPages";
 import { AdminVerbBaseAttemptReportPage } from "../features/admin/AdminVerbBasePages";
 import {
   AdminExamsHubPage,
@@ -29,6 +30,7 @@ import {
   AdminPresentPerfectPracticePage,
   AdminPresentSimpleExamPage,
   AdminPresentSimplePracticePage,
+  AdminListeningPracticePage,
   AdminVerbBaseExamPage,
   AdminVerbExamPage,
 } from "../features/admin/AdminModules";
@@ -75,6 +77,13 @@ import {
   PresentPerfectPracticeSessionPage,
   PresentPerfectPracticeStartRedirect,
 } from "../features/student/PresentPerfectPracticePages";
+import {
+  ListeningPracticeInstructionsPage,
+  ListeningPracticeResultPage,
+  ListeningPracticeReviewPage,
+  ListeningPracticeSessionPage,
+  ListeningPracticeStartRedirect,
+} from "../features/student/ListeningPracticePages";
 import {
   ExamPage,
   ExamResultPage,
@@ -279,6 +288,26 @@ export function App() {
                 path="/student/practice/present_perfect/results/:sessionId/review"
                 element={<PresentPerfectPracticeReviewPage />}
               />
+              <Route
+                path="/student/practice/listening"
+                element={<ListeningPracticeInstructionsPage />}
+              />
+              <Route
+                path="/student/practice/listening/start"
+                element={<ListeningPracticeStartRedirect />}
+              />
+              <Route
+                path="/student/practice/listening/sessions/:sessionId"
+                element={<ListeningPracticeSessionPage />}
+              />
+              <Route
+                path="/student/practice/listening/results/:sessionId"
+                element={<ListeningPracticeResultPage />}
+              />
+              <Route
+                path="/student/practice/listening/results/:sessionId/review"
+                element={<ListeningPracticeReviewPage />}
+              />
             </Route>
 
             <Route element={<ProtectedRoute roles={["SUPERADMIN", "ADMIN"]} />}>
@@ -314,6 +343,10 @@ export function App() {
               <Route
                 path="/admin/practice/present-perfect"
                 element={<AdminPresentPerfectPracticePage />}
+              />
+              <Route
+                path="/admin/practice/listening"
+                element={<AdminListeningPracticePage />}
               />
               <Route path="/admin/results" element={<AdminResultsPage />} />
               <Route
@@ -365,6 +398,12 @@ export function App() {
                 }
               />
               <Route
+                path="/admin/students/:userId/practice/listening"
+                element={
+                  <AdminStudentModuleReportPage module="listening-practice" />
+                }
+              />
+              <Route
                 path="/admin/exams/verb/reports/:attemptId"
                 element={<AdminAttemptReportPage />}
               />
@@ -395,6 +434,10 @@ export function App() {
               <Route
                 path="/admin/practice/past-simple/reports/:attemptId"
                 element={<AdminPastSimpleAttemptReportPage />}
+              />
+              <Route
+                path="/admin/practice/listening/reports/:attemptId"
+                element={<AdminListeningAttemptReportPage />}
               />
               {/* Compatibilidad con rutas antiguas */}
               <Route path="/admin/verbs" element={<Navigate to="/admin/exams/verb" replace />} />

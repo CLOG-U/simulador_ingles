@@ -9,6 +9,7 @@ import {
 } from "../src/features/student/StudentDashboard";
 import {
   examApi,
+  listeningApi,
   pastSimpleApi,
   presentPerfectApi,
   presentSimpleApi,
@@ -48,6 +49,10 @@ vi.mock("../src/lib/endpoints", () => ({
   presentPerfectApi: {
     config: vi.fn(),
     attemptStatus: vi.fn(),
+    practiceStatus: vi.fn(),
+  },
+  listeningApi: {
+    config: vi.fn(),
     practiceStatus: vi.fn(),
   },
 }));
@@ -208,6 +213,29 @@ describe("Student modules", () => {
       question_bank_size: 100,
       last_submitted: null,
     });
+    vi.mocked(listeningApi.config).mockResolvedValue({
+      exam_type: "listening_practice",
+      title: "Listening Practice",
+      is_enabled: false,
+      practice_enabled: true,
+      question_count: 10,
+      question_bank_size: 10,
+      passing_percentage: 70,
+      duration_minutes: null,
+      review_policy: "FULL",
+    });
+    vi.mocked(listeningApi.practiceStatus).mockResolvedValue({
+      exam_type: "listening_practice",
+      mode: "practice",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: null,
+      can_start_new: true,
+      question_bank_size: 10,
+      last_submitted: null,
+    });
   });
 
   it("shows Exámenes and Práctica modules on the student home", async () => {
@@ -244,7 +272,7 @@ describe("Student modules", () => {
     expect(screen.queryByText("Start Practice")).not.toBeInTheDocument();
   });
 
-  it("lists Past Simple, Present Simple and Present Perfect practice in the Práctica module", async () => {
+  it("lists Past Simple, Present Simple, Present Perfect and Listening practice in the Práctica module", async () => {
     renderAt("/student/practice");
     expect(
       await screen.findByRole("heading", { name: "Past Simple Practice" }),
@@ -256,8 +284,11 @@ describe("Student modules", () => {
       screen.getByRole("heading", { name: "Present Perfect Practice" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("heading", { name: "Listening Practice" }),
+    ).toBeInTheDocument();
+    expect(
       await screen.findAllByRole("link", { name: "Start Practice" }),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
     expect(screen.queryByRole("heading", { name: "Verb Exam" })).not.toBeInTheDocument();
   });
 });

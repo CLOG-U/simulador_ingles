@@ -13,6 +13,7 @@ class ExamType(StrEnum):
     PAST_SIMPLE_EXAM = "past_simple_exam"
     PRESENT_SIMPLE_EXAM = "present_simple_exam"
     PRESENT_PERFECT_EXAM = "present_perfect_exam"
+    LISTENING_PRACTICE = "listening_practice"
 
 
 class PastSimpleQuestionType(StrEnum):

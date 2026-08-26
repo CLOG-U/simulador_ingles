@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AppShell, studentNav } from "../../components/AppShell";
 import {
   examApi,
+  listeningApi,
   pastSimpleApi,
   presentPerfectApi,
   presentSimpleApi,
@@ -318,7 +319,7 @@ export function StudentExamsPage() {
   );
 }
 
-/** Práctica: Past Simple, Present Simple y Present Perfect. */
+/** Práctica: Past Simple, Present Simple, Present Perfect y Listening. */
 export function StudentPracticePage() {
   const pastConfigQuery = useQuery({
     queryKey: ["exam-config", "past_simple_exam"],
@@ -344,6 +345,14 @@ export function StudentPracticePage() {
     queryKey: ["attempt-status", "present_perfect_practice"],
     queryFn: presentPerfectApi.practiceStatus,
   });
+  const listeningConfigQuery = useQuery({
+    queryKey: ["exam-config", "listening_practice"],
+    queryFn: listeningApi.config,
+  });
+  const listeningPracticeStatusQuery = useQuery({
+    queryKey: ["attempt-status", "listening_practice"],
+    queryFn: listeningApi.practiceStatus,
+  });
 
   const practiceAvailable = practiceStatusQuery.data?.is_available ?? false;
   const practiceOpen =
@@ -362,6 +371,12 @@ export function StudentPracticePage() {
     perfectPracticeStatusQuery.data?.has_open_attempt &&
     perfectPracticeStatusQuery.data.open_attempt_id;
   const perfectSubmitted = perfectPracticeStatusQuery.data?.submitted_count ?? 0;
+
+  const listeningAvailable = listeningPracticeStatusQuery.data?.is_available ?? false;
+  const listeningOpen =
+    listeningPracticeStatusQuery.data?.has_open_attempt &&
+    listeningPracticeStatusQuery.data.open_attempt_id;
+  const listeningSubmitted = listeningPracticeStatusQuery.data?.submitted_count ?? 0;
 
   return (
     <AppShell title="Práctica" nav={studentNav}>
@@ -553,6 +568,68 @@ export function StudentPracticePage() {
             ) : (
               <Link
                 to="/student/practice/present_perfect"
+                className="btn-primary mt-4"
+              >
+                Start Practice
+              </Link>
+            )}
+          </section>
+          <section className="card flex h-full flex-col">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold">Listening Practice</h2>
+              <span
+                className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                  listeningAvailable
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {listeningAvailable ? "Available" : "Locked"}
+              </span>
+            </div>
+            <p className="mt-2 flex-1 text-sm text-gray-600">
+              Listen to Leo in Manta and answer comprehension questions about
+              Present Simple, Past Simple and Present Perfect.
+            </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Bank: {listeningConfigQuery.data?.question_bank_size ?? "—"} questions ·
+              Session: {listeningConfigQuery.data?.question_count ?? 10}
+            </p>
+            <p className="mt-1 text-sm text-gray-600">
+              Sessions completed: {listeningSubmitted}
+            </p>
+            {listeningPracticeStatusQuery.isLoading ? (
+              <p className="mt-4 text-sm text-gray-600">Loading practice…</p>
+            ) : listeningPracticeStatusQuery.isError ? (
+              <button
+                type="button"
+                className="btn-primary mt-4"
+                onClick={() => void listeningPracticeStatusQuery.refetch()}
+              >
+                Try Again
+              </button>
+            ) : !listeningAvailable ? (
+              <p className="mt-4 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
+                Practice is not enabled for your account.
+              </p>
+            ) : listeningOpen ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  to={`/student/practice/listening/sessions/${listeningPracticeStatusQuery.data!.open_attempt_id}`}
+                  className="btn-primary"
+                >
+                  Resume Practice
+                </Link>
+                <Link
+                  to="/student/practice/listening/start?fresh=1"
+                  className="inline-flex min-h-11 items-center rounded-xl border px-4 font-semibold"
+                >
+                  Start New Session
+                </Link>
+              </div>
+            ) : (
+              <Link
+                to="/student/practice/listening"
                 className="btn-primary mt-4"
               >
                 Start Practice

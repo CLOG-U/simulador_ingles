@@ -302,6 +302,8 @@ export function AdminUsersPage() {
                 ? result.mode === "practice"
                   ? "Present Perfect práctica"
                   : "Present Perfect examen"
+                : result.exam_type === "listening_practice"
+                  ? "Listening práctica"
                 : result.mode === "practice"
                   ? "Past Simple práctica"
                   : "Past Simple examen";
@@ -691,6 +693,9 @@ export function AdminUsersPage() {
                         const perfectAccess = u.exam_access?.find(
                           (item) => item.exam_type === "present_perfect_exam",
                         );
+                        const listeningAccess = u.exam_access?.find(
+                          (item) => item.exam_type === "listening_practice",
+                        );
                         return (
                           <div className="flex flex-wrap gap-2">
                             <ModuleGroup title="Exámenes" tone="exam">
@@ -837,6 +842,17 @@ export function AdminUsersPage() {
                                   sesión(es) completada(s)
                                 </p>
                               </AttemptInfo>
+                              <AttemptInfo title="Listening Práctica">
+                                <p>
+                                  {listeningAccess?.practice_enabled
+                                    ? "Habilitada"
+                                    : "Bloqueada"}
+                                </p>
+                                <p>
+                                  {listeningAccess?.practice_submitted_attempts ?? 0}{" "}
+                                  sesión(es) completada(s)
+                                </p>
+                              </AttemptInfo>
                             </ModuleGroup>
                           </div>
                         );
@@ -918,6 +934,9 @@ export function AdminUsersPage() {
                           );
                           const perfectAccess = u.exam_access?.find(
                             (item) => item.exam_type === "present_perfect_exam",
+                          );
+                          const listeningAccess = u.exam_access?.find(
+                            (item) => item.exam_type === "listening_practice",
                           );
                           const busyAccess = (
                             examType: ExamType,
@@ -1438,6 +1457,63 @@ export function AdminUsersPage() {
                                         resetModuleMutation.mutate({
                                           userId: u.id,
                                           examType: "present_perfect_exam",
+                                          mode: "practice",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+                                <ActionGroup title="Listening Práctica">
+                                  <button
+                                    type="button"
+                                    className={
+                                      listeningAccess?.practice_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "listening_practice",
+                                      "practice",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "listening_practice",
+                                        practiceEnabled:
+                                          !listeningAccess?.practice_enabled,
+                                      })
+                                    }
+                                  >
+                                    {listeningAccess?.practice_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <Link
+                                    to={`/admin/students/${u.id}/report`}
+                                    className="btn-admin-secondary"
+                                  >
+                                    Ver sesiones (
+                                    {listeningAccess?.practice_submitted_attempts ??
+                                      0}
+                                    )
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "listening_practice",
+                                      "practice",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear la PRÁCTICA Listening de ${u.username}?\n\nSe eliminarán las sesiones de listening.`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "listening_practice",
                                           mode: "practice",
                                         });
                                       }

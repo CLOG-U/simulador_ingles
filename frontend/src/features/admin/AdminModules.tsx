@@ -25,6 +25,11 @@ const TOPIC_LABELS: Record<string, string> = {
   identify: "Identify",
   order_words: "Order words",
   sentences: "Sentences",
+  detail: "Detail",
+  main_idea: "Main idea",
+  present_simple: "Present Simple",
+  past_simple: "Past Simple",
+  present_perfect: "Present Perfect",
 };
 
 function ModuleCard({
@@ -204,6 +209,10 @@ export function AdminPracticeHubPage() {
     queryKey: ["admin-present-perfect-config"],
     queryFn: adminApi.getPresentPerfectConfig,
   });
+  const listeningConfig = useQuery({
+    queryKey: ["admin-listening-config"],
+    queryFn: adminApi.getListeningConfig,
+  });
 
   return (
     <AppShell title="Práctica" nav={adminNav}>
@@ -249,6 +258,18 @@ export function AdminPracticeHubPage() {
             }
             to="/admin/practice/present-perfect"
             cta="Abrir Present Perfect Practice"
+            tone="practice"
+          />
+          <ModuleCard
+            title="Listening Practice"
+            description="Comprensión auditiva con el clip de Leo in Manta. Feedback inmediato y sin cupo de intentos."
+            meta={
+              listeningConfig.data
+                ? `${listeningConfig.data.practice_enabled ? "Habilitada" : "Deshabilitada"} · Banco: ${listeningConfig.data.question_bank_size ?? "—"} preguntas`
+                : "Cargando…"
+            }
+            to="/admin/practice/listening"
+            cta="Abrir Listening Practice"
             tone="practice"
           />
         </div>
@@ -1468,6 +1489,110 @@ export function AdminPresentPerfectPracticePage() {
           error={reportsQuery.error}
           items={reportsQuery.data?.items ?? []}
           detailPath={(id) => `/admin/practice/present-perfect/reports/${id}`}
+          emptyMessage="Aún no hay sesiones de práctica."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+/** Listening Practice: habilitación + banco de preguntas. */
+export function AdminListeningPracticePage() {
+  const queryClient = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["admin-listening-config"],
+    queryFn: adminApi.getListeningConfig,
+  });
+  const questionsQuery = useQuery({
+    queryKey: ["admin-listening-questions"],
+    queryFn: adminApi.listListeningQuestions,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-listening-attempts", "practice"],
+    queryFn: () => adminApi.listListeningAttempts("practice"),
+  });
+  const [notice, setNotice] = useState("");
+
+  const toggleQuestion = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      adminApi.toggleListeningQuestion(id, active),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-listening-questions"],
+      }),
+  });
+
+  const togglePractice = async () => {
+    if (!config) return;
+    await adminApi.updateListeningConfig({
+      practice_enabled: !config.practice_enabled,
+    });
+    setNotice(
+      !config.practice_enabled
+        ? "Listening Practice habilitada globalmente."
+        : "Listening Practice deshabilitada.",
+    );
+    void queryClient.invalidateQueries({ queryKey: ["admin-listening-config"] });
+  };
+
+  return (
+    <AppShell title="Listening Practice" nav={adminNav} wide>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BackLink to="/admin/practice" label="← Práctica" />
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              config?.practice_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            disabled={!config}
+            onClick={() => void togglePractice()}
+          >
+            {config?.practice_enabled
+              ? "Práctica habilitada"
+              : "Práctica deshabilitada"}
+          </button>
+        </div>
+
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-sky/30 bg-white shadow-sm">
+          <div className="border-b border-brand-sky/20 bg-gradient-to-r from-brand-sky to-brand-primary px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Configuración de la práctica</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Comprensión auditiva con feedback. Sin cupo de intentos.
+            </p>
+          </div>
+          <div className="space-y-3 p-6">
+            <p className="text-sm text-gray-600">
+              Clip: Leo in Manta · Banco: {config?.question_bank_size ?? "—"}{" "}
+              preguntas · Cada sesión toma {config?.question_count ?? 10}.
+              También se habilita por estudiante en Usuarios.
+            </p>
+            {notice && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">
+                {notice}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <PastSimpleQuestionsSection
+          questions={questionsQuery.data?.items}
+          isLoading={questionsQuery.isLoading}
+          isError={questionsQuery.isError}
+          error={questionsQuery.error}
+          onToggle={(id, active) => toggleQuestion.mutate({ id, active })}
+        />
+
+        <ModuleReportsSection
+          title="Reportes de Listening Practice"
+          description="Sesiones de práctica. Entra al reporte específico de cada sesión."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/practice/listening/reports/${id}`}
           emptyMessage="Aún no hay sesiones de práctica."
         />
       </div>

@@ -20,6 +20,10 @@ import type {
   PresentPerfectConfig,
   PresentPerfectQuestionAdmin,
   PresentPerfectResult,
+  ListeningConfig,
+  ListeningQuestion,
+  ListeningQuestionAdmin,
+  ListeningResult,
   UserMe,
   VerbBaseResult,
   VerbItem,
@@ -323,6 +327,48 @@ export const presentPerfectApi = {
   practiceResult: (attemptId: string) =>
     apiFetch<PresentPerfectResult>(
       `/present-perfect/practice/sessions/${attemptId}/result`,
+    ),
+};
+
+export const listeningApi = {
+  config: () => apiFetch<ListeningConfig>("/listening/config"),
+  practiceStatus: () =>
+    apiFetch<AttemptStatus>("/listening/practice/status"),
+  startPractice: () =>
+    apiFetch<PastSimpleAttempt>("/listening/practice/sessions", {
+      method: "POST",
+    }),
+  restartPractice: () =>
+    apiFetch<PastSimpleAttempt>("/listening/practice/sessions/restart", {
+      method: "POST",
+    }),
+  abandonPractice: () =>
+    apiFetch<{ abandoned: boolean; abandoned_count: number }>(
+      "/listening/practice/sessions/abandon",
+      { method: "POST" },
+    ),
+  getPractice: (id: string) =>
+    apiFetch<PastSimpleAttempt>(`/listening/practice/sessions/${id}`),
+  checkPracticeAnswer: (
+    attemptId: string,
+    questionId: string,
+    answer: string | null,
+  ) =>
+    apiFetch<ListeningQuestion>(
+      `/listening/practice/sessions/${attemptId}/questions/${questionId}/check`,
+      {
+        method: "POST",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submitPractice: (attemptId: string) =>
+    apiFetch<ListeningResult>(
+      `/listening/practice/sessions/${attemptId}/submit`,
+      { method: "POST" },
+    ),
+  practiceResult: (attemptId: string) =>
+    apiFetch<ListeningResult>(
+      `/listening/practice/sessions/${attemptId}/result`,
     ),
 };
 
@@ -633,6 +679,49 @@ export const adminApi = {
   ) =>
     apiFetch<PresentPerfectResult>(
       `/admin/present-perfect/attempts/${attemptId}/questions/${questionId}/grade`,
+      { method: "PATCH", body: JSON.stringify({ correct }) },
+    ),
+  getListeningConfig: () =>
+    apiFetch<ListeningConfig>("/admin/listening/config"),
+  updateListeningConfig: (
+    data: Partial<
+      Pick<
+        ListeningConfig,
+        | "is_enabled"
+        | "practice_enabled"
+        | "passing_percentage"
+        | "duration_minutes"
+        | "review_policy"
+      >
+    >,
+  ) =>
+    apiFetch<ListeningConfig>("/admin/listening/config", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  listListeningQuestions: () =>
+    apiFetch<{ items: ListeningQuestionAdmin[] }>("/admin/listening/questions"),
+  toggleListeningQuestion: (questionId: string, active: boolean) =>
+    apiFetch<{ id: string; active: boolean }>(
+      `/admin/listening/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ active }),
+      },
+    ),
+  listListeningAttempts: (mode: "exam" | "practice" = "practice") =>
+    apiFetch<{ items: AdminAttemptListItem[]; total: number }>(
+      `/admin/listening/attempts?mode=${mode}`,
+    ),
+  listeningAttemptReport: (attemptId: string) =>
+    apiFetch<ListeningResult>(`/admin/listening/attempts/${attemptId}`),
+  overrideListeningGrade: (
+    attemptId: string,
+    questionId: string,
+    correct: boolean,
+  ) =>
+    apiFetch<ListeningResult>(
+      `/admin/listening/attempts/${attemptId}/questions/${questionId}/grade`,
       { method: "PATCH", body: JSON.stringify({ correct }) },
     ),
   downloadAttemptsCsv: async () => {
