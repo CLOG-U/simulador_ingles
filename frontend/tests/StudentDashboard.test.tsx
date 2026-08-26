@@ -220,6 +220,7 @@ describe("Student modules", () => {
       practice_enabled: true,
       question_count: 10,
       question_bank_size: 10,
+      clip_count: 1,
       passing_percentage: 70,
       duration_minutes: null,
       review_policy: "FULL",
@@ -288,7 +289,11 @@ describe("Student modules", () => {
     ).toBeInTheDocument();
     expect(
       await screen.findAllByRole("link", { name: "Start Practice" }),
-    ).toHaveLength(4);
+    ).toHaveLength(3);
+    expect(screen.getByRole("link", { name: "Open Listening" })).toHaveAttribute(
+      "href",
+      "/student/practice/listening",
+    );
     expect(screen.queryByRole("heading", { name: "Verb Exam" })).not.toBeInTheDocument();
   });
 });

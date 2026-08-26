@@ -1,10 +1,34 @@
-"""Banco inicial de Listening Practice: clip Leo in Manta."""
+"""Banco inicial de Listening Practice: clips + preguntas."""
 
 from dataclasses import dataclass
 
 LEO_MANTA_AUDIO_URL = "/audio/leo-manta.mp3"
 LEO_MANTA_CLIP_KEY = "leo-manta"
 LEO_MANTA_CLIP_TITLE = "Leo in Manta"
+
+
+@dataclass(frozen=True)
+class ListeningClipSeed:
+    clip_key: str
+    title: str
+    description: str
+    audio_url: str
+    sort_order: int = 1
+
+
+LISTENING_CLIPS: list[ListeningClipSeed] = [
+    ListeningClipSeed(
+        clip_key=LEO_MANTA_CLIP_KEY,
+        title=LEO_MANTA_CLIP_TITLE,
+        description=(
+            "Leo talks about his life in Manta, a Saturday at the beach, "
+            "and the sports he has tried. You will hear Present Simple, "
+            "Past Simple and Present Perfect."
+        ),
+        audio_url=LEO_MANTA_AUDIO_URL,
+        sort_order=1,
+    ),
+]
 
 
 @dataclass(frozen=True)

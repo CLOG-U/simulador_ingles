@@ -373,9 +373,6 @@ export function StudentPracticePage() {
   const perfectSubmitted = perfectPracticeStatusQuery.data?.submitted_count ?? 0;
 
   const listeningAvailable = listeningPracticeStatusQuery.data?.is_available ?? false;
-  const listeningOpen =
-    listeningPracticeStatusQuery.data?.has_open_attempt &&
-    listeningPracticeStatusQuery.data.open_attempt_id;
   const listeningSubmitted = listeningPracticeStatusQuery.data?.submitted_count ?? 0;
 
   return (
@@ -588,15 +585,12 @@ export function StudentPracticePage() {
               </span>
             </div>
             <p className="mt-2 flex-1 text-sm text-gray-600">
-              Listen to Leo in Manta and answer comprehension questions about
-              Present Simple, Past Simple and Present Perfect.
+              Listen to short audios and answer comprehension questions. You can
+              replay each clip as many times as you need.
             </p>
             <p className="mt-3 text-sm text-gray-600">
-              Bank: {listeningConfigQuery.data?.question_bank_size ?? "—"} questions ·
-              Session: {listeningConfigQuery.data?.question_count ?? 10}
-            </p>
-            <p className="mt-1 text-sm text-gray-600">
-              Sessions completed: {listeningSubmitted}
+              Clips: {listeningConfigQuery.data?.clip_count ?? "—"} · Sessions
+              completed: {listeningSubmitted}
             </p>
             {listeningPracticeStatusQuery.isLoading ? (
               <p className="mt-4 text-sm text-gray-600">Loading practice…</p>
@@ -612,27 +606,12 @@ export function StudentPracticePage() {
               <p className="mt-4 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
                 Practice is not enabled for your account.
               </p>
-            ) : listeningOpen ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link
-                  to={`/student/practice/listening/sessions/${listeningPracticeStatusQuery.data!.open_attempt_id}`}
-                  className="btn-primary"
-                >
-                  Resume Practice
-                </Link>
-                <Link
-                  to="/student/practice/listening/start?fresh=1"
-                  className="inline-flex min-h-11 items-center rounded-xl border px-4 font-semibold"
-                >
-                  Start New Session
-                </Link>
-              </div>
             ) : (
               <Link
                 to="/student/practice/listening"
                 className="btn-primary mt-4"
               >
-                Start Practice
+                Open Listening
               </Link>
             )}
           </section>

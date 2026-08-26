@@ -297,6 +297,10 @@ export function App() {
                 element={<ListeningPracticeStartRedirect />}
               />
               <Route
+                path="/student/practice/listening/:clipKey/start"
+                element={<ListeningPracticeStartRedirect />}
+              />
+              <Route
                 path="/student/practice/listening/sessions/:sessionId"
                 element={<ListeningPracticeSessionPage />}
               />

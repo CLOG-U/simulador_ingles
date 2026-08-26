@@ -45,6 +45,7 @@ export interface PastSimpleConfig {
   practice_enabled?: boolean;
   question_count: number;
   question_bank_size?: number;
+  clip_count?: number;
   passing_percentage: number;
   duration_minutes: number | null;
   review_policy: string;
@@ -53,6 +54,18 @@ export interface PastSimpleConfig {
 export type PresentSimpleConfig = PastSimpleConfig;
 export type PresentPerfectConfig = PastSimpleConfig;
 export type ListeningConfig = PastSimpleConfig;
+
+export interface ListeningClip {
+  clip_key: string;
+  title: string;
+  description: string;
+  audio_url: string | null;
+  question_count: number;
+  submitted_count: number;
+  has_open_attempt: boolean;
+  open_attempt_id: string | null;
+  can_start: boolean;
+}
 
 export interface RequiredField {
   field: string;
@@ -275,6 +288,8 @@ export interface PastSimpleAttempt {
   | "present_perfect_exam" | "listening_practice";
   mode?: "exam" | "practice";
   exam_name: string;
+  clip_key?: string | null;
+  clip_title?: string | null;
   attempt_number: number;
   status: string;
   started_at: string;

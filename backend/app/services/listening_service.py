@@ -24,6 +24,18 @@ from app.services.listening_grading import (
     recompute_attempt_from_grades,
     topic_performance,
 )
+from seed.listening_data import LISTENING_CLIPS
+
+
+def clip_catalog() -> list:
+    return sorted(LISTENING_CLIPS, key=lambda item: (item.sort_order, item.title))
+
+
+def _clip_meta(clip_key: str):
+    for item in LISTENING_CLIPS:
+        if item.clip_key == clip_key:
+            return item
+    return None
 
 
 async def get_config(session: AsyncSession) -> ListeningConfig:
@@ -51,6 +63,13 @@ async def get_visible_config(session: AsyncSession) -> dict:
             .where(ListeningQuestion.active.is_(True))
         )
     ).scalar_one()
+    clip_count = (
+        await session.execute(
+            select(func.count(func.distinct(ListeningQuestion.clip_key))).where(
+                ListeningQuestion.active.is_(True)
+            )
+        )
+    ).scalar_one()
     return {
         "exam_type": ExamType.LISTENING_PRACTICE.value,
         "title": "Listening Practice",
@@ -58,10 +77,72 @@ async def get_visible_config(session: AsyncSession) -> dict:
         "practice_enabled": config.practice_enabled,
         "question_count": config.question_count,
         "question_bank_size": active_count,
+        "clip_count": clip_count,
         "passing_percentage": config.passing_percentage,
         "duration_minutes": config.duration_minutes,
         "review_policy": config.review_policy.value,
     }
+
+
+async def list_practice_clips(session: AsyncSession, user_id: uuid.UUID) -> dict:
+    config = await get_config(session)
+    access = await exam_access_service.get_or_create_access(
+        session,
+        user_id=user_id,
+        exam_type=ExamType.LISTENING_PRACTICE,
+    )
+    available = bool(config.practice_enabled and access.practice_enabled)
+
+    counts_result = await session.execute(
+        select(ListeningQuestion.clip_key, func.count())
+        .where(ListeningQuestion.active.is_(True))
+        .group_by(ListeningQuestion.clip_key)
+    )
+    question_counts = {clip_key: count for clip_key, count in counts_result.all()}
+
+    titles_result = await session.execute(
+        select(ListeningQuestion.clip_key, ListeningQuestion.clip_title)
+        .where(ListeningQuestion.active.is_(True))
+        .distinct()
+    )
+    titles = {clip_key: title for clip_key, title in titles_result.all()}
+
+    catalog = {item.clip_key: item for item in clip_catalog()}
+    clip_keys = list(catalog.keys())
+    for key in question_counts:
+        if key not in catalog:
+            clip_keys.append(key)
+
+    items = []
+    for clip_key in clip_keys:
+        question_count = int(question_counts.get(clip_key, 0))
+        if question_count == 0:
+            continue
+        meta = catalog.get(clip_key)
+        open_attempt = await get_open_attempt(
+            session, user_id, mode=MODE_PRACTICE, clip_key=clip_key
+        )
+        submitted_count = await _submitted_count(
+            session, user_id, mode=MODE_PRACTICE, clip_key=clip_key
+        )
+        items.append(
+            {
+                "clip_key": clip_key,
+                "title": meta.title if meta else titles.get(clip_key, clip_key),
+                "description": (
+                    meta.description
+                    if meta
+                    else "Listen to the audio and answer the questions."
+                ),
+                "audio_url": meta.audio_url if meta else None,
+                "question_count": question_count,
+                "submitted_count": submitted_count,
+                "has_open_attempt": open_attempt is not None,
+                "open_attempt_id": str(open_attempt.id) if open_attempt else None,
+                "can_start": available,
+            }
+        )
+    return {"is_available": available, "items": items}
 
 
 async def get_open_attempt(
@@ -69,8 +150,9 @@ async def get_open_attempt(
     user_id: uuid.UUID,
     *,
     mode: str = MODE_EXAM,
+    clip_key: str | None = None,
 ) -> ListeningAttempt | None:
-    result = await session.execute(
+    query = (
         select(ListeningAttempt)
         .options(selectinload(ListeningAttempt.questions))
         .where(
@@ -80,7 +162,10 @@ async def get_open_attempt(
         )
         .with_for_update()
     )
-    attempt = result.scalar_one_or_none()
+    if clip_key:
+        query = query.where(ListeningAttempt.clip_key == clip_key)
+    result = await session.execute(query)
+    attempt = result.scalars().first()
     if (
         attempt
         and attempt.expires_at
@@ -99,16 +184,16 @@ async def _submitted_count(
     user_id: uuid.UUID,
     *,
     mode: str = MODE_EXAM,
+    clip_key: str | None = None,
 ) -> int:
-    result = await session.execute(
-        select(func.count())
-        .select_from(ListeningAttempt)
-        .where(
-            ListeningAttempt.user_id == user_id,
-            ListeningAttempt.mode == mode,
-            ListeningAttempt.status == AttemptStatus.SUBMITTED,
-        )
+    query = select(func.count()).select_from(ListeningAttempt).where(
+        ListeningAttempt.user_id == user_id,
+        ListeningAttempt.mode == mode,
+        ListeningAttempt.status == AttemptStatus.SUBMITTED,
     )
+    if clip_key:
+        query = query.where(ListeningAttempt.clip_key == clip_key)
+    result = await session.execute(query)
     return result.scalar_one()
 
 
@@ -122,27 +207,32 @@ async def _create_attempt_with_questions(
     duration_minutes: int | None,
     passing_percentage: int,
     question_count: int,
+    clip_key: str,
 ) -> ListeningAttempt:
-    result = await session.execute(
-        select(ListeningQuestion).where(ListeningQuestion.active.is_(True))
-    )
+    query = select(ListeningQuestion).where(ListeningQuestion.active.is_(True))
+    if clip_key:
+        query = query.where(ListeningQuestion.clip_key == clip_key)
+    result = await session.execute(query)
     bank = list(result.scalars())
     if not bank:
         raise AppError(
             "INSUFFICIENT_QUESTIONS",
-            "No hay preguntas de listening activas.",
+            "No hay preguntas de listening activas para este audio.",
             status_code=503,
         )
-    selected = sorted(bank, key=lambda item: item.stable_key)[:question_count]
-    if len(selected) < question_count:
-        selected = sorted(bank, key=lambda item: item.stable_key)
+    selected = sorted(bank, key=lambda item: item.stable_key)
+    if question_count > 0:
+        selected = selected[:question_count]
     question_count = len(selected)
+    resolved_clip_key = clip_key or selected[0].clip_key
+    clip_title = selected[0].clip_title
 
     max_number = (
         await session.execute(
             select(func.max(ListeningAttempt.attempt_number)).where(
                 ListeningAttempt.user_id == user.id,
                 ListeningAttempt.mode == mode,
+                ListeningAttempt.clip_key == resolved_clip_key,
             )
         )
     ).scalar_one()
@@ -155,11 +245,14 @@ async def _create_attempt_with_questions(
         id=uuid.uuid4(),
         user_id=user.id,
         mode=mode,
+        clip_key=resolved_clip_key,
         attempt_number=(max_number or 0) + 1,
         config_snapshot={
             "exam_type": ExamType.LISTENING_PRACTICE.value,
             "mode": mode,
             "title": title,
+            "clip_key": resolved_clip_key,
+            "clip_title": clip_title,
             "question_count": question_count,
             "passing_percentage": passing_percentage,
             "duration_minutes": duration_minutes,
@@ -231,6 +324,8 @@ async def create_or_get_attempt(
         )
 
     config = await get_config(session)
+    clip = clip_catalog()[0] if clip_catalog() else None
+    clip_key = clip.clip_key if clip else "leo-manta"
     return await _create_attempt_with_questions(
         session,
         user=user,
@@ -240,21 +335,25 @@ async def create_or_get_attempt(
         duration_minutes=config.duration_minutes,
         passing_percentage=config.passing_percentage,
         question_count=config.question_count,
+        clip_key=clip_key,
     )
 
 
 async def abandon_open_practice(
     session: AsyncSession,
     user_id: uuid.UUID,
+    *,
+    clip_key: str | None = None,
 ) -> int:
     """Cancela sesiones de práctica IN_PROGRESS del estudiante (no borra historial)."""
-    result = await session.execute(
-        select(ListeningAttempt).where(
-            ListeningAttempt.user_id == user_id,
-            ListeningAttempt.mode == MODE_PRACTICE,
-            ListeningAttempt.status == AttemptStatus.IN_PROGRESS,
-        )
+    query = select(ListeningAttempt).where(
+        ListeningAttempt.user_id == user_id,
+        ListeningAttempt.mode == MODE_PRACTICE,
+        ListeningAttempt.status == AttemptStatus.IN_PROGRESS,
     )
+    if clip_key:
+        query = query.where(ListeningAttempt.clip_key == clip_key)
+    result = await session.execute(query)
     abandoned = 0
     for attempt in result.scalars():
         attempt.status = AttemptStatus.CANCELLED
@@ -264,10 +363,22 @@ async def abandon_open_practice(
     return abandoned
 
 
+def _require_clip_key(clip_key: str | None) -> str:
+    key = (clip_key or "").strip()
+    if not key:
+        raise AppError(
+            "CLIP_REQUIRED",
+            "Debes indicar el audio de listening.",
+            status_code=400,
+        )
+    return key
+
+
 async def create_or_get_practice(
     session: AsyncSession,
     user: User,
     *,
+    clip_key: str,
     force_new: bool = False,
 ) -> ListeningAttempt:
     if user.must_change_password:
@@ -277,6 +388,7 @@ async def create_or_get_practice(
             status_code=403,
         )
 
+    resolved_key = _require_clip_key(clip_key)
     await session.execute(select(User).where(User.id == user.id).with_for_update())
     config = await get_config(session)
     await exam_access_service.ensure_practice_available(
@@ -286,26 +398,33 @@ async def create_or_get_practice(
     )
 
     if force_new:
-        await abandon_open_practice(session, user.id)
+        await abandon_open_practice(session, user.id, clip_key=resolved_key)
     else:
-        existing = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
+        existing = await get_open_attempt(
+            session, user.id, mode=MODE_PRACTICE, clip_key=resolved_key
+        )
         if existing:
             return existing
 
+    meta = _clip_meta(resolved_key)
+    title = meta.title if meta else resolved_key
     try:
         return await _create_attempt_with_questions(
             session,
             user=user,
             mode=MODE_PRACTICE,
-            title="Listening Practice",
+            title=title,
             review_policy="FULL",
             duration_minutes=None,
             passing_percentage=config.passing_percentage,
-            question_count=config.question_count,
+            question_count=0,
+            clip_key=resolved_key,
         )
     except IntegrityError:
         await session.rollback()
-        recovered = await get_open_attempt(session, user.id, mode=MODE_PRACTICE)
+        recovered = await get_open_attempt(
+            session, user.id, mode=MODE_PRACTICE, clip_key=resolved_key
+        )
         if recovered and not force_new:
             return recovered
         raise AppError(
@@ -318,16 +437,19 @@ async def create_or_get_practice(
 async def restart_practice(
     session: AsyncSession,
     user: User,
+    *,
+    clip_key: str,
 ) -> ListeningAttempt:
-    """Abandona la sesión abierta (si hay) y crea una práctica nueva."""
+    """Abandona la sesión abierta de este clip (si hay) y crea una práctica nueva."""
+    resolved_key = _require_clip_key(clip_key)
     await exam_access_service.ensure_practice_available(
         session,
         user_id=user.id,
         exam_type=ExamType.LISTENING_PRACTICE,
     )
-    await abandon_open_practice(session, user.id)
+    await abandon_open_practice(session, user.id, clip_key=resolved_key)
     await session.commit()
-    return await create_or_get_practice(session, user, force_new=False)
+    return await create_or_get_practice(session, user, clip_key=resolved_key, force_new=False)
 
 
 async def get_attempt_for_user(
@@ -433,11 +555,17 @@ def serialize_attempt(
 ) -> dict:
     mode = attempt.mode or MODE_EXAM
     is_practice = mode == MODE_PRACTICE
+    clip_key = attempt.clip_key or (attempt.config_snapshot or {}).get("clip_key")
+    clip_title = (attempt.config_snapshot or {}).get("clip_title")
+    if not clip_title and attempt.questions:
+        clip_title = attempt.questions[0].snapshot_clip_title
     return {
         "id": str(attempt.id),
         "exam_type": ExamType.LISTENING_PRACTICE.value,
         "mode": mode,
-        "exam_name": "Listening Practice" if is_practice else "Listening Exam",
+        "exam_name": clip_title or ("Listening Practice" if is_practice else "Listening Exam"),
+        "clip_key": clip_key,
+        "clip_title": clip_title,
         "attempt_number": attempt.attempt_number,
         "status": attempt.status.value,
         "started_at": attempt.started_at.isoformat(),
@@ -641,13 +769,6 @@ async def get_attempt_status(
             "max_attempts": None,
             "can_start_new": available,
             "last_submitted": last_submitted,
-            "question_bank_size": (
-                await session.execute(
-                    select(func.count())
-                    .select_from(ListeningQuestion)
-                    .where(ListeningQuestion.active.is_(True))
-                )
-            ).scalar_one(),
         }
 
     available = config.is_enabled and access.is_enabled

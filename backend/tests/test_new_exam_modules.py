@@ -9,7 +9,7 @@ from app.services.present_perfect_engine import (
 )
 from app.services.present_simple_engine import select_balanced_questions
 from app.services.verb_base_service import build_base_prompt_types
-from seed.listening_data import LISTENING_QUESTIONS
+from seed.listening_data import LISTENING_CLIPS, LISTENING_QUESTIONS
 from seed.present_perfect_data import PRESENT_PERFECT_QUESTIONS
 from seed.present_simple_data import PRESENT_SIMPLE_QUESTIONS
 
@@ -79,3 +79,11 @@ def test_listening_seed_covers_leo_manta_clip():
     assert all(item.question_type == "multiple_choice" for item in LISTENING_QUESTIONS)
     assert all(item.options and len(item.options) == 4 for item in LISTENING_QUESTIONS)
     assert all(item.correct_answer in item.options for item in LISTENING_QUESTIONS)
+
+
+def test_listening_clip_catalog_includes_leo_manta():
+    assert any(item.clip_key == "leo-manta" for item in LISTENING_CLIPS)
+    leo = next(item for item in LISTENING_CLIPS if item.clip_key == "leo-manta")
+    assert leo.title == "Leo in Manta"
+    assert "Manta" in leo.description
+    assert leo.audio_url == "/audio/leo-manta.mp3"

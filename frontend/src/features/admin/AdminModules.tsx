@@ -262,10 +262,10 @@ export function AdminPracticeHubPage() {
           />
           <ModuleCard
             title="Listening Practice"
-            description="Comprensión auditiva con el clip de Leo in Manta. Feedback inmediato y sin cupo de intentos."
+            description="Comprensión auditiva con varios clips. Feedback inmediato y sin cupo de intentos."
             meta={
               listeningConfig.data
-                ? `${listeningConfig.data.practice_enabled ? "Habilitada" : "Deshabilitada"} · Banco: ${listeningConfig.data.question_bank_size ?? "—"} preguntas`
+                ? `${listeningConfig.data.practice_enabled ? "Habilitada" : "Deshabilitada"} · ${listeningConfig.data.clip_count ?? "—"} clip(s) · Banco: ${listeningConfig.data.question_bank_size ?? "—"} preguntas`
                 : "Cargando…"
             }
             to="/admin/practice/listening"
@@ -1565,9 +1565,9 @@ export function AdminListeningPracticePage() {
           </div>
           <div className="space-y-3 p-6">
             <p className="text-sm text-gray-600">
-              Clip: Leo in Manta · Banco: {config?.question_bank_size ?? "—"}{" "}
-              preguntas · Cada sesión toma {config?.question_count ?? 10}.
-              También se habilita por estudiante en Usuarios.
+              Varios clips de audio. Banco total: {config?.question_bank_size ?? "—"}{" "}
+              preguntas · Cada clip usa sus propias preguntas. También se habilita
+              por estudiante en Usuarios.
             </p>
             {notice && (
               <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">

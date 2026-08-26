@@ -21,6 +21,7 @@ import type {
   PresentPerfectQuestionAdmin,
   PresentPerfectResult,
   ListeningConfig,
+  ListeningClip,
   ListeningQuestion,
   ListeningQuestionAdmin,
   ListeningResult,
@@ -334,17 +335,25 @@ export const listeningApi = {
   config: () => apiFetch<ListeningConfig>("/listening/config"),
   practiceStatus: () =>
     apiFetch<AttemptStatus>("/listening/practice/status"),
-  startPractice: () =>
-    apiFetch<PastSimpleAttempt>("/listening/practice/sessions", {
-      method: "POST",
-    }),
-  restartPractice: () =>
-    apiFetch<PastSimpleAttempt>("/listening/practice/sessions/restart", {
-      method: "POST",
-    }),
-  abandonPractice: () =>
+  listClips: () =>
+    apiFetch<{ is_available: boolean; items: ListeningClip[] }>(
+      "/listening/practice/clips",
+    ),
+  startPractice: (clipKey: string) =>
+    apiFetch<PastSimpleAttempt>(
+      `/listening/practice/sessions?clip_key=${encodeURIComponent(clipKey)}`,
+      { method: "POST" },
+    ),
+  restartPractice: (clipKey: string) =>
+    apiFetch<PastSimpleAttempt>(
+      `/listening/practice/sessions/restart?clip_key=${encodeURIComponent(clipKey)}`,
+      { method: "POST" },
+    ),
+  abandonPractice: (clipKey?: string) =>
     apiFetch<{ abandoned: boolean; abandoned_count: number }>(
-      "/listening/practice/sessions/abandon",
+      clipKey
+        ? `/listening/practice/sessions/abandon?clip_key=${encodeURIComponent(clipKey)}`
+        : "/listening/practice/sessions/abandon",
       { method: "POST" },
     ),
   getPractice: (id: string) =>

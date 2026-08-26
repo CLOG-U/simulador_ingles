@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_student_ready
@@ -53,6 +53,14 @@ async def current_attempt(
     return listening_service.serialize_attempt(attempt, include_grades=False)
 
 
+@router.get("/practice/clips")
+async def list_practice_clips(
+    student: User = Depends(require_student_ready),
+    db: AsyncSession = Depends(get_db),
+):
+    return await listening_service.list_practice_clips(db, student.id)
+
+
 @router.get("/practice/status")
 async def practice_status(
     student: User = Depends(require_student_ready),
@@ -69,8 +77,11 @@ async def practice_status(
 async def start_practice(
     student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
+    clip_key: str = Query(..., min_length=1, max_length=64),
 ):
-    attempt = await listening_service.create_or_get_practice(db, student)
+    attempt = await listening_service.create_or_get_practice(
+        db, student, clip_key=clip_key
+    )
     return listening_service.serialize_attempt(attempt, include_grades=False)
 
 
@@ -78,9 +89,10 @@ async def start_practice(
 async def restart_practice(
     student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
+    clip_key: str = Query(..., min_length=1, max_length=64),
 ):
-    """Cancela la práctica abierta (si existe) y abre una sesión nueva."""
-    attempt = await listening_service.restart_practice(db, student)
+    """Cancela la práctica abierta de este clip (si existe) y abre una sesión nueva."""
+    attempt = await listening_service.restart_practice(db, student, clip_key=clip_key)
     return listening_service.serialize_attempt(attempt, include_grades=False)
 
 
@@ -88,8 +100,11 @@ async def restart_practice(
 async def abandon_practice(
     student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
+    clip_key: str | None = Query(default=None, max_length=64),
 ):
-    abandoned = await listening_service.abandon_open_practice(db, student.id)
+    abandoned = await listening_service.abandon_open_practice(
+        db, student.id, clip_key=clip_key
+    )
     await db.commit()
     return {"abandoned": abandoned > 0, "abandoned_count": abandoned}
 

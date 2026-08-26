@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { AppShell } from "../../components/AppShell";
 import { ApiError } from "../../lib/api";
 import { listeningApi } from "../../lib/endpoints";
-import type { ListeningQuestion, ListeningResult } from "../../lib/types";
+import type { ListeningClip, ListeningQuestion, ListeningResult } from "../../lib/types";
 
 function ListeningPlayer({
   src,
@@ -92,71 +92,113 @@ function QuestionInput({
 }
 
 export function ListeningPracticeInstructionsPage() {
-  const { data: status } = useQuery({
-    queryKey: ["listening-practice-status"],
-    queryFn: listeningApi.practiceStatus,
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["listening-practice-clips"],
+    queryFn: listeningApi.listClips,
   });
 
   return (
     <AppShell title="Listening Practice">
-      <section className="card max-w-2xl space-y-4">
-        <h2 className="text-xl font-semibold">Listening Practice</h2>
-        <p>
-          Listen to Leo talking about his life in Manta, a day at the beach, and
-          the sports he has tried. Then answer the comprehension questions.
-          You can replay the audio as many times as you need.
-        </p>
-        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
-          <li>Clip: Leo in Manta</li>
-          <li>
-            Questions: {status?.question_bank_size ?? "—"} (Present Simple, Past
-            Simple and Present Perfect)
-          </li>
-          <li>Check answers as you go</li>
-          <li>Unlimited practice sessions</li>
-          <li>Sessions completed: {status?.submitted_count ?? 0}</li>
-        </ul>
-        <div className="flex flex-wrap gap-3">
-          {status?.has_open_attempt && status.open_attempt_id ? (
-            <>
-              <Link
-                to={`/student/practice/listening/sessions/${status.open_attempt_id}`}
-                className="btn-primary"
-              >
-                Resume Practice
-              </Link>
-              <Link
-                to="/student/practice/listening/start?fresh=1"
-                className="inline-flex rounded-xl border px-4 py-2.5 font-semibold"
-              >
-                Start New Session
-              </Link>
-            </>
-          ) : status?.can_start_new ? (
-            <Link to="/student/practice/listening/start" className="btn-primary">
-              Start Practice
-            </Link>
-          ) : (
-            <p className="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
-              Practice is not enabled for your account.
-            </p>
-          )}
+      <div className="space-y-5">
+        <section className="card max-w-3xl space-y-3">
+          <h2 className="text-xl font-semibold">Listening Practice</h2>
+          <p>
+            Listen to short audios and answer comprehension questions. You can
+            replay each clip as many times as you need and check answers as you
+            go. Practice sessions do not count as exam attempts.
+          </p>
           <Link to="/student/practice" className="inline-flex rounded-xl border px-4 py-2.5">
             Back to Practice
           </Link>
-        </div>
-      </section>
+        </section>
+
+        {isError ? (
+          <section className="card space-y-3">
+            <p className="text-danger">
+              {error instanceof ApiError
+                ? error.message
+                : "Listening clips could not be loaded."}
+            </p>
+            <button type="button" className="btn-primary" onClick={() => void refetch()}>
+              Try Again
+            </button>
+          </section>
+        ) : isLoading ? (
+          <p>Loading clips…</p>
+        ) : data && data.items.length === 0 ? (
+          <p className="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
+            No listening clips are available yet.
+          </p>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2">
+            {data?.items.map((clip) => (
+              <ClipCard key={clip.clip_key} clip={clip} available={data.is_available} />
+            ))}
+          </div>
+        )}
+      </div>
     </AppShell>
+  );
+}
+
+function ClipCard({
+  clip,
+  available,
+}: {
+  clip: ListeningClip;
+  available: boolean;
+}) {
+  const canStart = available && clip.can_start;
+  return (
+    <section className="card flex h-full flex-col">
+      <h3 className="text-lg font-semibold">{clip.title}</h3>
+      <p className="mt-2 flex-1 text-sm text-gray-600">{clip.description}</p>
+      <p className="mt-3 text-sm text-gray-600">
+        {clip.question_count} questions · Sessions completed: {clip.submitted_count}
+      </p>
+      {!canStart ? (
+        <p className="mt-4 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
+          Practice is not enabled for your account.
+        </p>
+      ) : clip.has_open_attempt && clip.open_attempt_id ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            to={`/student/practice/listening/sessions/${clip.open_attempt_id}`}
+            className="btn-primary"
+          >
+            Resume Practice
+          </Link>
+          <Link
+            to={`/student/practice/listening/${clip.clip_key}/start?fresh=1`}
+            className="inline-flex min-h-11 items-center rounded-xl border px-4 font-semibold"
+          >
+            Start New Session
+          </Link>
+        </div>
+      ) : (
+        <Link
+          to={`/student/practice/listening/${clip.clip_key}/start`}
+          className="btn-primary mt-4"
+        >
+          Start Practice
+        </Link>
+      )}
+    </section>
   );
 }
 
 export function ListeningPracticeStartRedirect() {
   const navigate = useNavigate();
+  const { clipKey: clipKeyParam } = useParams();
   const [searchParams] = useSearchParams();
+  const clipKey = clipKeyParam || searchParams.get("clip") || "leo-manta";
   const fresh = searchParams.get("fresh") === "1";
   const startedRef = useRef(false);
   const { mutate, isPending, error } = useMutation({
-    mutationFn: fresh ? listeningApi.restartPractice : listeningApi.startPractice,
+    mutationFn: () =>
+      fresh
+        ? listeningApi.restartPractice(clipKey)
+        : listeningApi.startPractice(clipKey),
     onSuccess: (session) => {
       navigate(`/student/practice/listening/sessions/${session.id}`, {
         replace: true,
@@ -215,7 +257,12 @@ export function ListeningPracticeSessionPage() {
   );
   const question = questions[index];
   const audioUrl = question?.audio_url || questions[0]?.audio_url;
-  const clipTitle = question?.clip_title || questions[0]?.clip_title || "Leo in Manta";
+  const clipTitle =
+    session?.clip_title ||
+    question?.clip_title ||
+    questions[0]?.clip_title ||
+    "Listening clip";
+  const clipKey = session?.clip_key || "leo-manta";
 
   useEffect(() => {
     if (!session || initializedRef.current === session.id) return;
@@ -403,7 +450,7 @@ export function ListeningPracticeSessionPage() {
           </button>
         )}
         <Link
-          to="/student/practice/listening/start?fresh=1"
+          to={`/student/practice/listening/${clipKey}/start?fresh=1`}
           className="inline-flex min-h-11 items-center rounded-xl border px-4"
           onClick={(event) => {
             if (
@@ -492,11 +539,14 @@ function PracticeResultView({
           >
             Review answers
           </Link>
-          <Link to="/student/practice/listening/start?fresh=1" className="btn-primary">
+          <Link
+            to={`/student/practice/listening/${result.clip_key || "leo-manta"}/start?fresh=1`}
+            className="btn-primary"
+          >
             Practice Again
           </Link>
-          <Link to="/student/practice" className="inline-flex rounded-xl border px-4 py-2.5">
-            Back to Practice
+          <Link to="/student/practice/listening" className="inline-flex rounded-xl border px-4 py-2.5">
+            Back to Listening
           </Link>
         </div>
       </div>

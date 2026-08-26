@@ -613,7 +613,11 @@ class ListeningAttempt(Base):
     __table_args__ = (
         CheckConstraint("mode IN ('exam', 'practice')", name="ck_listening_attempt_mode"),
         UniqueConstraint(
-            "user_id", "mode", "attempt_number", name="uq_listening_attempt_user_mode_num"
+            "user_id",
+            "mode",
+            "clip_key",
+            "attempt_number",
+            name="uq_listening_attempt_user_mode_clip_num",
         ),
     )
 
@@ -622,6 +626,7 @@ class ListeningAttempt(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     mode: Mapped[str] = mapped_column(String(16), default="practice", nullable=False)
+    clip_key: Mapped[str] = mapped_column(String(64), default="leo-manta", nullable=False)
     attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
     config_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
     status: Mapped[AttemptStatus] = mapped_column(
