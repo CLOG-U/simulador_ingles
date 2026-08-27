@@ -29,11 +29,14 @@ export interface UserMe {
 
 export interface ExamConfig {
   exam_type?: ExamType;
+  title?: string;
   is_enabled?: boolean;
+  practice_enabled?: boolean;
   question_count: number;
+  question_bank_size?: number;
   passing_percentage: number;
   duration_minutes: number | null;
-  max_attempts: number;
+  max_attempts?: number;
   review_policy: string;
 }
 
@@ -92,11 +95,15 @@ export interface ExamQuestion {
   };
   expected?: { base: string; past?: string; spanish?: string };
   fully_correct?: boolean;
+  is_correct?: boolean | null;
+  status?: "correct" | "incorrect" | "unanswered";
+  correct_answer?: string;
 }
 
 export interface Attempt {
   id: string;
   exam_type?: ExamType;
+  mode?: "exam" | "practice";
   exam_name?: string;
   attempt_number?: number;
   status: string;
@@ -239,6 +246,7 @@ export interface AdminStudentReport {
   past_simple_attempts: PastSimpleAttemptSummary[];
   past_simple_practice_attempts?: PastSimpleAttemptSummary[];
   verb_base_attempts?: AdminAttemptSummary[];
+  verb_base_practice_attempts?: AdminAttemptSummary[];
   present_simple_attempts?: PastSimpleAttemptSummary[];
   present_simple_practice_attempts?: PastSimpleAttemptSummary[];
   present_perfect_attempts?: PastSimpleAttemptSummary[];

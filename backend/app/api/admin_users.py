@@ -68,19 +68,22 @@ async def list_users(
         else:
             past_exam_counts[user_id] = count
 
-    verb_base_counts: dict = {}
+    verb_base_exam_counts: dict = {}
+    verb_base_practice_counts: dict = {}
     if student_ids:
         verb_base_counts_result = await db.execute(
-            select(VerbBaseAttempt.user_id, func.count())
+            select(VerbBaseAttempt.user_id, VerbBaseAttempt.mode, func.count())
             .where(
                 VerbBaseAttempt.user_id.in_(student_ids),
                 VerbBaseAttempt.status == AttemptStatus.SUBMITTED,
             )
-            .group_by(VerbBaseAttempt.user_id)
+            .group_by(VerbBaseAttempt.user_id, VerbBaseAttempt.mode)
         )
-        verb_base_counts = {
-            user_id: count for user_id, count in verb_base_counts_result.all()
-        }
+        for user_id, mode, count in verb_base_counts_result.all():
+            if mode == "practice":
+                verb_base_practice_counts[user_id] = count
+            else:
+                verb_base_exam_counts[user_id] = count
 
     present_exam_counts: dict = {}
     present_practice_counts: dict = {}
@@ -139,7 +142,7 @@ async def list_users(
         if exam_type == ExamType.VERB_EXAM.value:
             return verb_used
         if exam_type == ExamType.VERB_BASE_EXAM.value:
-            return verb_base_counts.get(user_id, 0)
+            return verb_base_exam_counts.get(user_id, 0)
         if exam_type == ExamType.PRESENT_SIMPLE_EXAM.value:
             return present_exam_counts.get(user_id, 0)
         if exam_type == ExamType.PRESENT_PERFECT_EXAM.value:
@@ -185,6 +188,9 @@ async def list_users(
                                 else listening_practice_counts.get(user.id, 0)
                                 if access.exam_type
                                 == ExamType.LISTENING_PRACTICE.value
+                                else verb_base_practice_counts.get(user.id, 0)
+                                if access.exam_type
+                                == ExamType.VERB_BASE_EXAM.value
                                 else 0
                             ),
                         }
@@ -259,10 +265,22 @@ async def student_report(
 
     verb_base_result = await db.execute(
         select(VerbBaseAttempt)
-        .where(VerbBaseAttempt.user_id == user_id)
+        .where(
+            VerbBaseAttempt.user_id == user_id,
+            VerbBaseAttempt.mode == "exam",
+        )
         .order_by(VerbBaseAttempt.started_at.desc())
     )
     verb_base_attempts = verb_base_result.scalars().all()
+    verb_base_practice_result = await db.execute(
+        select(VerbBaseAttempt)
+        .where(
+            VerbBaseAttempt.user_id == user_id,
+            VerbBaseAttempt.mode == "practice",
+        )
+        .order_by(VerbBaseAttempt.started_at.desc())
+    )
+    verb_base_practice_attempts = verb_base_practice_result.scalars().all()
 
     present_result = await db.execute(
         select(PresentSimpleAttempt)
@@ -350,11 +368,12 @@ async def student_report(
             "total_questions": attempt.total_questions,
         }
 
-    def _serialize_verb_base(attempt: VerbBaseAttempt) -> dict:
+    def _serialize_verb_base(attempt: VerbBaseAttempt, *, exam_name: str) -> dict:
         return {
             "id": str(attempt.id),
             "exam_type": ExamType.VERB_BASE_EXAM.value,
-            "exam_name": "Verb Base Form",
+            "mode": attempt.mode,
+            "exam_name": exam_name,
             "status": attempt.status.value,
             "started_at": attempt.started_at.isoformat(),
             "submitted_at": (
@@ -388,7 +407,12 @@ async def student_report(
             for a in attempts
         ],
         "verb_base_attempts": [
-            _serialize_verb_base(attempt) for attempt in verb_base_attempts
+            _serialize_verb_base(attempt, exam_name="Verb Base Form")
+            for attempt in verb_base_attempts
+        ],
+        "verb_base_practice_attempts": [
+            _serialize_verb_base(attempt, exam_name="Verb Base Form Practice")
+            for attempt in verb_base_practice_attempts
         ],
         "past_simple_attempts": [
             _serialize_past_simple(
@@ -464,6 +488,11 @@ async def student_report(
         + sum(
             1
             for attempt in listening_practice_attempts
+            if attempt.status == AttemptStatus.SUBMITTED
+        )
+        + sum(
+            1
+            for attempt in verb_base_practice_attempts
             if attempt.status == AttemptStatus.SUBMITTED
         ),
     }

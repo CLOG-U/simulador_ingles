@@ -197,6 +197,10 @@ export function AdminExamsHubPage() {
 
 /** Hub: listado de prácticas. */
 export function AdminPracticeHubPage() {
+  const verbBaseConfig = useQuery({
+    queryKey: ["admin-verb-base-config"],
+    queryFn: adminApi.getVerbBaseConfig,
+  });
   const pastConfig = useQuery({
     queryKey: ["admin-past-simple-config"],
     queryFn: adminApi.getPastSimpleConfig,
@@ -224,6 +228,18 @@ export function AdminPracticeHubPage() {
           </p>
         </section>
         <div className="grid gap-5 md:grid-cols-2">
+          <ModuleCard
+            title="Verb Base Form Practice"
+            description="Español ↔ forma base. Feedback inmediato y sin cupo de intentos."
+            meta={
+              verbBaseConfig.data
+                ? `${verbBaseConfig.data.practice_enabled ? "Habilitada" : "Deshabilitada"} · Banco: ${verbBaseConfig.data.question_bank_size ?? "—"} verbos`
+                : "Cargando…"
+            }
+            to="/admin/practice/verb-base"
+            cta="Abrir Verb Base Form Practice"
+            tone="practice"
+          />
           <ModuleCard
             title="Past Simple Practice"
             description="Misma banco de preguntas del examen, con feedback inmediato y sin cupo de intentos."
@@ -492,7 +508,7 @@ export function AdminVerbBaseExamPage() {
   });
   const reportsQuery = useQuery({
     queryKey: ["admin-attempts", "verb_base_exam"],
-    queryFn: adminApi.listVerbBaseAttempts,
+    queryFn: () => adminApi.listVerbBaseAttempts("exam"),
   });
   const [passing, setPassing] = useState<number | "">("");
   const [duration, setDuration] = useState<number | "">("");
@@ -604,6 +620,99 @@ export function AdminVerbBaseExamPage() {
           items={reportsQuery.data?.items ?? []}
           detailPath={(id) => `/admin/exams/verb-base/reports/${id}`}
           emptyMessage="Aún no hay intentos de Verb Base Form."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+/** Verb Base Form Practice: habilitación + reportes. */
+export function AdminVerbBasePracticePage() {
+  const queryClient = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["admin-verb-base-config"],
+    queryFn: adminApi.getVerbBaseConfig,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-attempts", "verb_base_practice"],
+    queryFn: () => adminApi.listVerbBaseAttempts("practice"),
+  });
+  const [notice, setNotice] = useState("");
+
+  const togglePractice = async () => {
+    if (!config) return;
+    await adminApi.updateVerbBaseConfig({
+      practice_enabled: !config.practice_enabled,
+    });
+    setNotice(
+      !config.practice_enabled
+        ? "Verb Base Form Practice habilitada globalmente."
+        : "Verb Base Form Practice deshabilitada.",
+    );
+    void queryClient.invalidateQueries({ queryKey: ["admin-verb-base-config"] });
+  };
+
+  return (
+    <AppShell title="Verb Base Form Practice" nav={adminNav} wide>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BackLink to="/admin/practice" label="← Práctica" />
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              config?.practice_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            disabled={!config}
+            onClick={() => void togglePractice()}
+          >
+            {config?.practice_enabled
+              ? "Práctica habilitada"
+              : "Práctica deshabilitada"}
+          </button>
+        </div>
+
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-sky/30 bg-white shadow-sm">
+          <div className="border-b border-brand-sky/20 bg-gradient-to-r from-brand-sky to-brand-primary px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Configuración de la práctica</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Entrenamiento con feedback. No usa nota mínima ni temporizador.
+            </p>
+          </div>
+          <div className="space-y-3 p-6">
+            <p className="text-sm text-gray-600">
+              Banco compartido con el examen: {config?.question_bank_size ?? "—"}{" "}
+              verbos activos · Cada sesión toma {config?.question_count ?? 20}.
+              Sin cupo de intentos; también se habilita por estudiante en Usuarios.
+            </p>
+            <p className="text-sm text-gray-600">
+              La nota mínima y el temporizador del examen oficial se configuran en{" "}
+              <Link
+                to="/admin/exams/verb-base"
+                className="font-semibold text-brand-primary underline"
+              >
+                Verb Base Form
+              </Link>
+              .
+            </p>
+            {notice && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">
+                {notice}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <ModuleReportsSection
+          title="Reportes de Verb Base Form Practice"
+          description="Sesiones de práctica. Entra al reporte específico de cada sesión."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/practice/verb-base/reports/${id}`}
+          emptyMessage="Aún no hay sesiones de práctica."
         />
       </div>
     </AppShell>

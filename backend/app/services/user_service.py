@@ -170,6 +170,14 @@ async def create_user(
                 ExamAccess(
                     id=uuid.uuid4(),
                     user_id=user.id,
+                    exam_type=ExamType.VERB_BASE_EXAM.value,
+                    is_enabled=False,
+                    practice_enabled=True,
+                    allowed_attempts=1,
+                ),
+                ExamAccess(
+                    id=uuid.uuid4(),
+                    user_id=user.id,
                     exam_type=ExamType.PAST_SIMPLE_EXAM.value,
                     is_enabled=False,
                     practice_enabled=False,

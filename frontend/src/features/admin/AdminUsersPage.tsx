@@ -807,6 +807,17 @@ export function AdminUsersPage() {
                               </AttemptInfo>
                             </ModuleGroup>
                             <ModuleGroup title="Práctica" tone="practice">
+                              <AttemptInfo title="Verb Base Form Práctica">
+                                <p>
+                                  {verbBaseAccess?.practice_enabled
+                                    ? "Habilitada"
+                                    : "Bloqueada"}
+                                </p>
+                                <p>
+                                  {verbBaseAccess?.practice_submitted_attempts ?? 0}{" "}
+                                  sesión(es) completada(s)
+                                </p>
+                              </AttemptInfo>
                               <AttemptInfo title="Past Simple Práctica">
                                 <p>
                                   {pastAccess?.practice_enabled
@@ -1294,6 +1305,63 @@ export function AdminUsersPage() {
                               </ModuleGroup>
 
                               <ModuleGroup title="Práctica" tone="practice">
+                                <ActionGroup title="Verb Base Form Práctica">
+                                  <button
+                                    type="button"
+                                    className={
+                                      verbBaseAccess?.practice_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "verb_base_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "verb_base_exam",
+                                        practiceEnabled:
+                                          !verbBaseAccess?.practice_enabled,
+                                      })
+                                    }
+                                  >
+                                    {verbBaseAccess?.practice_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <Link
+                                    to={`/admin/students/${u.id}/practice/verb-base`}
+                                    className="btn-admin-secondary"
+                                  >
+                                    Ver sesiones (
+                                    {verbBaseAccess?.practice_submitted_attempts ??
+                                      0}
+                                    )
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "verb_base_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear la PRÁCTICA Verb Base Form de ${u.username}?\n\nSe eliminarán solo las sesiones de práctica (no el examen).`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "verb_base_exam",
+                                          mode: "practice",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
                                 <ActionGroup title="Past Simple Práctica">
                                   <button
                                     type="button"

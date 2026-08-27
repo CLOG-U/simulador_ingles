@@ -8,6 +8,7 @@ import type {
   AttemptStatus,
   ExamAccess,
   ExamConfig,
+  ExamQuestion,
   ExamType,
   PastSimpleAttempt,
   PastSimpleConfig,
@@ -195,6 +196,41 @@ export const verbBaseApi = {
     }),
   result: (attemptId: string) =>
     apiFetch<VerbBaseResult>(`/verb-base/attempts/${attemptId}/result`),
+  practiceStatus: () => apiFetch<AttemptStatus>("/verb-base/practice/status"),
+  startPractice: () =>
+    apiFetch<Attempt>("/verb-base/practice/sessions", { method: "POST" }),
+  restartPractice: () =>
+    apiFetch<Attempt>("/verb-base/practice/sessions/restart", {
+      method: "POST",
+    }),
+  abandonPractice: () =>
+    apiFetch<{ abandoned: boolean; abandoned_count: number }>(
+      "/verb-base/practice/sessions/abandon",
+      { method: "POST" },
+    ),
+  getPractice: (id: string) =>
+    apiFetch<Attempt>(`/verb-base/practice/sessions/${id}`),
+  checkPracticeAnswer: (
+    attemptId: string,
+    questionId: string,
+    answer: string | null,
+  ) =>
+    apiFetch<ExamQuestion>(
+      `/verb-base/practice/sessions/${attemptId}/questions/${questionId}/check`,
+      {
+        method: "POST",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submitPractice: (attemptId: string) =>
+    apiFetch<VerbBaseResult>(
+      `/verb-base/practice/sessions/${attemptId}/submit`,
+      { method: "POST" },
+    ),
+  practiceResult: (attemptId: string) =>
+    apiFetch<VerbBaseResult>(
+      `/verb-base/practice/sessions/${attemptId}/result`,
+    ),
 };
 
 export const presentSimpleApi = {
@@ -574,16 +610,22 @@ export const adminApi = {
     ),
   updateVerbBaseConfig: (
     data: Partial<
-      Pick<ExamConfig, "is_enabled" | "passing_percentage" | "duration_minutes">
+      Pick<
+        ExamConfig,
+        | "is_enabled"
+        | "practice_enabled"
+        | "passing_percentage"
+        | "duration_minutes"
+      >
     > & { review_policy?: string },
   ) =>
     apiFetch<ExamConfig>("/admin/verb-base/config", {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
-  listVerbBaseAttempts: () =>
+  listVerbBaseAttempts: (mode: "exam" | "practice" = "exam") =>
     apiFetch<{ items: AdminAttemptListItem[]; total: number }>(
-      "/admin/verb-base/attempts",
+      `/admin/verb-base/attempts?mode=${mode}`,
     ),
   verbBaseAttemptReport: (attemptId: string) =>
     apiFetch<VerbBaseResult>(`/admin/verb-base/attempts/${attemptId}`),

@@ -313,6 +313,18 @@ async def get_user_exam_access(
                     .select_from(VerbBaseAttempt)
                     .where(
                         VerbBaseAttempt.user_id == user_id,
+                        VerbBaseAttempt.mode == verb_base_service.MODE_EXAM,
+                        VerbBaseAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
+            practice_submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(VerbBaseAttempt)
+                    .where(
+                        VerbBaseAttempt.user_id == user_id,
+                        VerbBaseAttempt.mode == verb_base_service.MODE_PRACTICE,
                         VerbBaseAttempt.status == AttemptStatus.SUBMITTED,
                     )
                 )
@@ -478,12 +490,6 @@ async def allow_new_attempt(
             "Verb Exam no tiene modo práctica.",
             status_code=400,
         )
-    if parsed_type == ExamType.VERB_BASE_EXAM and mode == "practice":
-        raise AppError(
-            "INVALID_MODE",
-            "Este examen no tiene modo práctica en v1.",
-            status_code=400,
-        )
     if parsed_type == ExamType.LISTENING_PRACTICE and mode == "exam":
         raise AppError(
             "INVALID_MODE",
@@ -517,6 +523,7 @@ async def allow_new_attempt(
                     .select_from(VerbBaseAttempt)
                     .where(
                         VerbBaseAttempt.user_id == user_id,
+                        VerbBaseAttempt.mode == verb_base_service.MODE_EXAM,
                         VerbBaseAttempt.status == AttemptStatus.SUBMITTED,
                     )
                 )
@@ -607,19 +614,12 @@ async def reset_exam_progress(
         )
         action = "VERB_EXAM_PROGRESS_RESET"
     elif parsed_type == ExamType.VERB_BASE_EXAM:
-        if mode != "exam":
-            raise AppError(
-                "INVALID_MODE",
-                "Verb Base Form no tiene modo práctica.",
-                status_code=400,
-            )
-        deleted = await verb_base_service.delete_attempts_for_user(db, user_id)
-        access = await exam_access_service.get_or_create_access(
-            db, user_id=user_id, exam_type=parsed_type
+        result = await verb_base_service.reset_student_progress(
+            db,
+            user_id=user_id,
+            actor_id=admin.id,
+            mode=mode,
         )
-        access.allowed_attempts = 1
-        access.updated_by = admin.id
-        result = {"mode": "exam", "deleted_attempts": deleted, "allowed_attempts": 1}
         action = "VERB_BASE_PROGRESS_RESET"
     elif parsed_type == ExamType.PRESENT_SIMPLE_EXAM:
         result = await present_simple_service.reset_student_progress(

@@ -35,6 +35,7 @@ vi.mock("../src/lib/endpoints", () => ({
   verbBaseApi: {
     config: vi.fn(),
     attemptStatus: vi.fn(),
+    practiceStatus: vi.fn(),
   },
   pastSimpleApi: {
     config: vi.fn(),
@@ -112,6 +113,18 @@ describe("Student modules", () => {
       submitted_count: 0,
       max_attempts: 1,
       can_start_new: true,
+      last_submitted: null,
+    });
+    vi.mocked(verbBaseApi.practiceStatus).mockResolvedValue({
+      exam_type: "verb_base_exam",
+      mode: "practice",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: null,
+      can_start_new: true,
+      question_bank_size: 50,
       last_submitted: null,
     });
     vi.mocked(pastSimpleApi.config).mockResolvedValue({
@@ -273,10 +286,13 @@ describe("Student modules", () => {
     expect(screen.queryByText("Start Practice")).not.toBeInTheDocument();
   });
 
-  it("lists Past Simple, Present Simple, Present Perfect and Listening practice in the Práctica module", async () => {
+  it("lists Verb Base, Past Simple, Present Simple, Present Perfect and Listening practice in the Práctica module", async () => {
     renderAt("/student/practice");
     expect(
-      await screen.findByRole("heading", { name: "Past Simple Practice" }),
+      await screen.findByRole("heading", { name: "Verb Base Form Practice" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Past Simple Practice" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Present Simple Practice" }),
@@ -289,7 +305,7 @@ describe("Student modules", () => {
     ).toBeInTheDocument();
     expect(
       await screen.findAllByRole("link", { name: "Start Practice" }),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
     expect(screen.getByRole("link", { name: "Open Listening" })).toHaveAttribute(
       "href",
       "/student/practice/listening",

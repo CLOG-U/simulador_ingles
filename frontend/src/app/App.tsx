@@ -32,6 +32,7 @@ import {
   AdminPresentSimplePracticePage,
   AdminListeningPracticePage,
   AdminVerbBaseExamPage,
+  AdminVerbBasePracticePage,
   AdminVerbExamPage,
 } from "../features/admin/AdminModules";
 import { ExamInstructionsPage } from "../features/student/ExamInstructionsPage";
@@ -63,6 +64,13 @@ import {
   PastSimplePracticeSessionPage,
   PastSimplePracticeStartRedirect,
 } from "../features/student/PastSimplePracticePages";
+import {
+  VerbBasePracticeInstructionsPage,
+  VerbBasePracticeResultPage,
+  VerbBasePracticeReviewPage,
+  VerbBasePracticeSessionPage,
+  VerbBasePracticeStartRedirect,
+} from "../features/student/VerbBasePracticePages";
 import {
   PresentSimplePracticeInstructionsPage,
   PresentSimplePracticeResultPage,
@@ -229,6 +237,26 @@ export function App() {
                 element={<PresentPerfectReviewPage />}
               />
               <Route
+                path="/student/practice/verb_base"
+                element={<VerbBasePracticeInstructionsPage />}
+              />
+              <Route
+                path="/student/practice/verb_base/start"
+                element={<VerbBasePracticeStartRedirect />}
+              />
+              <Route
+                path="/student/practice/verb_base/sessions/:sessionId"
+                element={<VerbBasePracticeSessionPage />}
+              />
+              <Route
+                path="/student/practice/verb_base/results/:sessionId"
+                element={<VerbBasePracticeResultPage />}
+              />
+              <Route
+                path="/student/practice/verb_base/results/:sessionId/review"
+                element={<VerbBasePracticeReviewPage />}
+              />
+              <Route
                 path="/student/practice/past_simple"
                 element={<PastSimplePracticeInstructionsPage />}
               />
@@ -337,6 +365,10 @@ export function App() {
               />
               <Route path="/admin/practice" element={<AdminPracticeHubPage />} />
               <Route
+                path="/admin/practice/verb-base"
+                element={<AdminVerbBasePracticePage />}
+              />
+              <Route
                 path="/admin/practice/past-simple"
                 element={<AdminPastSimplePracticePage />}
               />
@@ -384,6 +416,12 @@ export function App() {
                 }
               />
               <Route
+                path="/admin/students/:userId/practice/verb-base"
+                element={
+                  <AdminStudentModuleReportPage module="verb-base-practice" />
+                }
+              />
+              <Route
                 path="/admin/students/:userId/practice/past-simple"
                 element={
                   <AdminStudentModuleReportPage module="past-simple-practice" />
@@ -410,6 +448,10 @@ export function App() {
               <Route
                 path="/admin/exams/verb/reports/:attemptId"
                 element={<AdminAttemptReportPage />}
+              />
+              <Route
+                path="/admin/practice/verb-base/reports/:attemptId"
+                element={<AdminVerbBaseAttemptReportPage />}
               />
               <Route
                 path="/admin/exams/verb-base/reports/:attemptId"
