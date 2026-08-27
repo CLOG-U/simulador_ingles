@@ -99,9 +99,18 @@ def test_listening_seed_covers_daniel_saturday_clip():
     assert {"present_simple", "past_simple", "present_perfect", "detail"} <= topics
 
 
-def test_listening_clip_catalog_includes_leo_and_daniel():
+def test_listening_seed_covers_emily_photography_clip():
+    items = _listening_questions("emily-photography")
+    assert len(items) == 10
+    assert all(item.clip_title == "Listening 3: My Favorite Hobby" for item in items)
+    assert all(item.audio_url == "/audio/emily-photography.mp3" for item in items)
+    topics = {item.topic for item in items}
+    assert {"present_simple", "past_simple", "present_perfect", "detail"} <= topics
+
+
+def test_listening_clip_catalog_includes_leo_daniel_and_emily():
     keys = {item.clip_key for item in LISTENING_CLIPS}
-    assert keys == {"leo-manta", "daniel-saturday"}
+    assert keys == {"leo-manta", "daniel-saturday", "emily-photography"}
     leo = next(item for item in LISTENING_CLIPS if item.clip_key == "leo-manta")
     assert leo.title == "Listening 1: The Life of Leo"
     assert "Manta" in leo.description
@@ -110,4 +119,8 @@ def test_listening_clip_catalog_includes_leo_and_daniel():
     assert daniel.title == "Listening 2: A Different Saturday"
     assert "Saturday" in daniel.description
     assert daniel.audio_url == "/audio/daniel-saturday.mp3"
-    assert leo.sort_order < daniel.sort_order
+    emily = next(item for item in LISTENING_CLIPS if item.clip_key == "emily-photography")
+    assert emily.title == "Listening 3: My Favorite Hobby"
+    assert "photography" in emily.description
+    assert emily.audio_url == "/audio/emily-photography.mp3"
+    assert leo.sort_order < daniel.sort_order < emily.sort_order
