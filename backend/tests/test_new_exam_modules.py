@@ -73,6 +73,7 @@ def test_present_perfect_selection_returns_20_balanced():
 def test_listening_seed_covers_leo_manta_clip():
     assert len(LISTENING_QUESTIONS) == 10
     assert {item.clip_key for item in LISTENING_QUESTIONS} == {"leo-manta"}
+    assert all(item.clip_title == "Listening 1: The Life of Leo" for item in LISTENING_QUESTIONS)
     assert all(item.audio_url == "/audio/leo-manta.mp3" for item in LISTENING_QUESTIONS)
     topics = {item.topic for item in LISTENING_QUESTIONS}
     assert {"present_simple", "past_simple", "present_perfect", "detail"} <= topics
@@ -84,6 +85,6 @@ def test_listening_seed_covers_leo_manta_clip():
 def test_listening_clip_catalog_includes_leo_manta():
     assert any(item.clip_key == "leo-manta" for item in LISTENING_CLIPS)
     leo = next(item for item in LISTENING_CLIPS if item.clip_key == "leo-manta")
-    assert leo.title == "Leo in Manta"
+    assert leo.title == "Listening 1: The Life of Leo"
     assert "Manta" in leo.description
     assert leo.audio_url == "/audio/leo-manta.mp3"

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 LEO_MANTA_AUDIO_URL = "/audio/leo-manta.mp3"
 LEO_MANTA_CLIP_KEY = "leo-manta"
-LEO_MANTA_CLIP_TITLE = "Leo in Manta"
+LEO_MANTA_CLIP_TITLE = "Listening 1: The Life of Leo"
 
 
 @dataclass(frozen=True)

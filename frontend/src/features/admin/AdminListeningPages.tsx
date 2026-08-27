@@ -44,7 +44,7 @@ export function AdminListeningAttemptReportPage() {
   });
 
   const audioUrl = data?.questions[0]?.audio_url;
-  const clipTitle = data?.questions[0]?.clip_title || "Leo in Manta";
+  const clipTitle = data?.questions[0]?.clip_title || "Listening 1: The Life of Leo";
 
   return (
     <AppShell title="Reporte Listening Practice" nav={adminNav}>
