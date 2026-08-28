@@ -304,6 +304,12 @@ export function AdminStudentReportPage() {
                   {data.present_perfect_attempts?.length ?? 0} intento(s)
                 </p>
                 <p>
+                  <span className="font-semibold text-brand-primary">
+                    Listening Exam:
+                  </span>{" "}
+                  {data.listening_exam_attempts?.length ?? 0} intento(s)
+                </p>
+                <p>
                   <span className="font-semibold text-brand-primary">Práctica:</span>{" "}
                   {data.practice_sessions_completed ??
                     data.past_simple_practice_attempts?.filter(
@@ -345,6 +351,11 @@ export function AdminStudentReportPage() {
                   title="Present Perfect Exam"
                   summary={`${data.present_perfect_attempts?.length ?? 0} intento(s) registrados`}
                   to={`/admin/students/${userId}/exams/present-perfect`}
+                />
+                <ModuleReportCard
+                  title="Listening Exam"
+                  summary={`${data.listening_exam_attempts?.length ?? 0} intento(s) registrados`}
+                  to={`/admin/students/${userId}/exams/listening`}
                 />
                 <ModuleReportCard
                   title="Verb Base Form Practice"
@@ -392,6 +403,7 @@ type StudentModuleKey =
   | "past-simple-exam"
   | "present-simple-exam"
   | "present-perfect-exam"
+  | "listening-exam"
   | "past-simple-practice"
   | "present-simple-practice"
   | "present-perfect-practice"
@@ -417,6 +429,7 @@ export function AdminStudentModuleReportPage({
     "past-simple-exam": "Reporte Past Simple Exam",
     "present-simple-exam": "Reporte Present Simple Exam",
     "present-perfect-exam": "Reporte Present Perfect Exam",
+    "listening-exam": "Reporte Listening Exam",
     "past-simple-practice": "Reporte Past Simple Practice",
     "present-simple-practice": "Reporte Present Simple Practice",
     "present-perfect-practice": "Reporte Present Perfect Practice",
@@ -429,6 +442,7 @@ export function AdminStudentModuleReportPage({
     "past-simple-exam": "/admin/exams/past-simple",
     "present-simple-exam": "/admin/exams/present-simple",
     "present-perfect-exam": "/admin/exams/present-perfect",
+    "listening-exam": "/admin/exams/listening",
     "past-simple-practice": "/admin/practice/past-simple",
     "present-simple-practice": "/admin/practice/present-simple",
     "present-perfect-practice": "/admin/practice/present-perfect",
@@ -769,6 +783,63 @@ export function AdminStudentModuleReportPage({
                             <td className="py-2">
                               <Link
                                 to={`/admin/exams/present-perfect/reports/${attempt.id}`}
+                                className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
+                              >
+                                Ver reporte
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {module === "listening-exam" && (
+              <section className="card">
+                <h3 className="mb-3 font-semibold">
+                  Historial de Listening Exam
+                </h3>
+                {(data.listening_exam_attempts?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-gray-600">
+                    Sin intentos todavía. Consulta también el listado del módulo.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[700px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="py-2">Intento</th>
+                          <th className="py-2">Inicio</th>
+                          <th className="py-2">Entrega</th>
+                          <th className="py-2">Estado</th>
+                          <th className="py-2">Nota</th>
+                          <th className="py-2">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.listening_exam_attempts?.map((attempt) => (
+                          <tr key={attempt.id} className="border-b">
+                            <td className="py-2">#{attempt.attempt_number}</td>
+                            <td className="py-2">
+                              {formatDate(attempt.started_at)}
+                            </td>
+                            <td className="py-2">
+                              {formatDate(attempt.submitted_at)}
+                            </td>
+                            <td className="py-2">
+                              {STATUS_LABELS[attempt.status] ?? attempt.status}
+                            </td>
+                            <td className="py-2">
+                              {attempt.percentage != null
+                                ? `${attempt.percentage.toFixed(1)}%`
+                                : "—"}
+                            </td>
+                            <td className="py-2">
+                              <Link
+                                to={`/admin/exams/listening/reports/${attempt.id}`}
                                 className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
                               >
                                 Ver reporte

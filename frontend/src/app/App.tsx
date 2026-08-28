@@ -30,6 +30,7 @@ import {
   AdminPresentPerfectPracticePage,
   AdminPresentSimpleExamPage,
   AdminPresentSimplePracticePage,
+  AdminListeningExamPage,
   AdminListeningPracticePage,
   AdminVerbBaseExamPage,
   AdminVerbBasePracticePage,
@@ -85,6 +86,13 @@ import {
   PresentPerfectPracticeSessionPage,
   PresentPerfectPracticeStartRedirect,
 } from "../features/student/PresentPerfectPracticePages";
+import {
+  ListeningExamInstructionsPage,
+  ListeningExamPage,
+  ListeningExamResultPage,
+  ListeningExamReviewPage,
+  ListeningExamStartRedirect,
+} from "../features/student/ListeningExamPages";
 import {
   ListeningPracticeInstructionsPage,
   ListeningPracticeResultPage,
@@ -237,6 +245,26 @@ export function App() {
                 element={<PresentPerfectReviewPage />}
               />
               <Route
+                path="/student/exams/listening_practice/instructions"
+                element={<ListeningExamInstructionsPage />}
+              />
+              <Route
+                path="/student/exams/listening_practice/start"
+                element={<ListeningExamStartRedirect />}
+              />
+              <Route
+                path="/student/exams/listening_practice/attempts/:attemptId"
+                element={<ListeningExamPage />}
+              />
+              <Route
+                path="/student/exams/listening_practice/results/:attemptId"
+                element={<ListeningExamResultPage />}
+              />
+              <Route
+                path="/student/exams/listening_practice/results/:attemptId/review"
+                element={<ListeningExamReviewPage />}
+              />
+              <Route
                 path="/student/practice/verb_base"
                 element={<VerbBasePracticeInstructionsPage />}
               />
@@ -363,6 +391,10 @@ export function App() {
                 path="/admin/exams/present-perfect"
                 element={<AdminPresentPerfectExamPage />}
               />
+              <Route
+                path="/admin/exams/listening"
+                element={<AdminListeningExamPage />}
+              />
               <Route path="/admin/practice" element={<AdminPracticeHubPage />} />
               <Route
                 path="/admin/practice/verb-base"
@@ -413,6 +445,12 @@ export function App() {
                 path="/admin/students/:userId/exams/present-perfect"
                 element={
                   <AdminStudentModuleReportPage module="present-perfect-exam" />
+                }
+              />
+              <Route
+                path="/admin/students/:userId/exams/listening"
+                element={
+                  <AdminStudentModuleReportPage module="listening-exam" />
                 }
               />
               <Route
@@ -468,6 +506,10 @@ export function App() {
               <Route
                 path="/admin/exams/present-perfect/reports/:attemptId"
                 element={<AdminPresentPerfectAttemptReportPage />}
+              />
+              <Route
+                path="/admin/exams/listening/reports/:attemptId"
+                element={<AdminListeningAttemptReportPage />}
               />
               <Route
                 path="/admin/practice/present-perfect/reports/:attemptId"

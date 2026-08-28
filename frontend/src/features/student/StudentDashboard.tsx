@@ -205,6 +205,14 @@ export function StudentExamsPage() {
     queryKey: ["attempt-status", "present_perfect_exam"],
     queryFn: presentPerfectApi.attemptStatus,
   });
+  const listeningConfigQuery = useQuery({
+    queryKey: ["exam-config", "listening_exam"],
+    queryFn: listeningApi.config,
+  });
+  const listeningStatusQuery = useQuery({
+    queryKey: ["attempt-status", "listening_exam"],
+    queryFn: listeningApi.attemptStatus,
+  });
 
   return (
     <AppShell title="Exámenes" nav={studentNav}>
@@ -311,6 +319,29 @@ export function StudentExamsPage() {
             }
             resultPath={(id) =>
               `/student/exams/present_perfect_exam/results/${id}/review`
+            }
+          />
+          <ExamCard
+            title="Listening Exam"
+            description="Listen to Emma's Weekend and answer questions in Present Simple, Past Simple and Present Perfect."
+            config={listeningConfigQuery.data}
+            status={listeningStatusQuery.data}
+            isLoading={
+              listeningConfigQuery.isLoading || listeningStatusQuery.isLoading
+            }
+            isError={
+              listeningConfigQuery.isError || listeningStatusQuery.isError
+            }
+            onRetry={() => {
+              void listeningConfigQuery.refetch();
+              void listeningStatusQuery.refetch();
+            }}
+            instructionsPath="/student/exams/listening_practice/instructions"
+            examPath={(id) =>
+              `/student/exams/listening_practice/attempts/${id}`
+            }
+            resultPath={(id) =>
+              `/student/exams/listening_practice/results/${id}/review`
             }
           />
         </div>

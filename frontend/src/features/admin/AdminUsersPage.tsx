@@ -303,7 +303,9 @@ export function AdminUsersPage() {
                   ? "Present Perfect práctica"
                   : "Present Perfect examen"
                 : result.exam_type === "listening_practice"
-                  ? "Listening práctica"
+                  ? result.mode === "practice"
+                    ? "Listening práctica"
+                    : "Listening examen"
                 : result.mode === "practice"
                   ? "Past Simple práctica"
                   : "Past Simple examen";
@@ -805,6 +807,27 @@ export function AdminUsersPage() {
                                   pendiente(s)
                                 </p>
                               </AttemptInfo>
+                              <AttemptInfo title="Listening Examen">
+                                <p>
+                                  {listeningAccess?.is_enabled
+                                    ? "Habilitado"
+                                    : "Bloqueado"}
+                                </p>
+                                <p>
+                                  Cupo: {listeningAccess?.allowed_attempts ?? 1}{" "}
+                                  intento(s)
+                                </p>
+                                <p>
+                                  {listeningAccess?.submitted_attempts ?? 0}{" "}
+                                  completado(s)
+                                </p>
+                                <p>
+                                  {listeningAccess?.remaining_attempts ??
+                                    listeningAccess?.allowed_attempts ??
+                                    1}{" "}
+                                  pendiente(s)
+                                </p>
+                              </AttemptInfo>
                             </ModuleGroup>
                             <ModuleGroup title="Práctica" tone="practice">
                               <AttemptInfo title="Verb Base Form Práctica">
@@ -1294,6 +1317,72 @@ export function AdminUsersPage() {
                                         resetModuleMutation.mutate({
                                           userId: u.id,
                                           examType: "present_perfect_exam",
+                                          mode: "exam",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+
+                                <ActionGroup title="Listening Examen">
+                                  <button
+                                    type="button"
+                                    className={
+                                      listeningAccess?.is_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "listening_practice",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "listening_practice",
+                                        isEnabled: !listeningAccess?.is_enabled,
+                                      })
+                                    }
+                                  >
+                                    {listeningAccess?.is_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-primary"
+                                    title="Suma 1 al cupo total de intentos (se acumula)"
+                                    disabled={busyAllow(
+                                      "listening_practice",
+                                      "exam",
+                                    )}
+                                    onClick={() =>
+                                      allowAttemptMutation.mutate({
+                                        userId: u.id,
+                                        examType: "listening_practice",
+                                        mode: "exam",
+                                      })
+                                    }
+                                  >
+                                    Sumar intento
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "listening_practice",
+                                      "exam",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear el EXAMEN Listening de ${u.username}?\n\nSe eliminarán solo los intentos del examen (no la práctica) y quedará 1 intento disponible.`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "listening_practice",
                                           mode: "exam",
                                         });
                                       }

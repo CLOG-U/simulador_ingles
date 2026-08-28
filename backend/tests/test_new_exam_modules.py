@@ -9,7 +9,7 @@ from app.services.present_perfect_engine import (
 )
 from app.services.present_simple_engine import select_balanced_questions
 from app.services.verb_base_service import MODE_EXAM, MODE_PRACTICE, build_base_prompt_types
-from seed.listening_data import LISTENING_CLIPS, LISTENING_QUESTIONS
+from seed.listening_data import LISTENING_CLIPS, LISTENING_EXAM_CLIPS, LISTENING_QUESTIONS
 from seed.present_perfect_data import PRESENT_PERFECT_QUESTIONS
 from seed.present_simple_data import PRESENT_SIMPLE_QUESTIONS
 
@@ -129,3 +129,24 @@ def test_listening_clip_catalog_includes_leo_daniel_and_emily():
     assert "photography" in emily.description
     assert emily.audio_url == "/audio/emily-photography.mp3"
     assert leo.sort_order < daniel.sort_order < emily.sort_order
+
+
+def test_listening_exam_seed_covers_emma_weekend_clip():
+    items = _listening_questions("emma-weekend")
+    assert len(items) >= 20
+    assert len(items) == 22
+    assert all(item.clip_title == "Listening Exam 1: Emma's Weekend" for item in items)
+    assert all(item.audio_url == "/audio/emma-weekend.mp3" for item in items)
+    topics = {item.topic for item in items}
+    assert {"present_simple", "past_simple", "present_perfect", "detail"} <= topics
+
+
+def test_listening_exam_clip_is_not_in_practice_catalog():
+    keys = {item.clip_key for item in LISTENING_CLIPS}
+    exam_keys = {item.clip_key for item in LISTENING_EXAM_CLIPS}
+    assert "emma-weekend" not in keys
+    assert exam_keys == {"emma-weekend"}
+    emma = LISTENING_EXAM_CLIPS[0]
+    assert emma.title == "Listening Exam 1: Emma's Weekend"
+    assert emma.audio_url == "/audio/emma-weekend.mp3"
+    assert "Emma" in emma.description or "weekend" in emma.description.lower()

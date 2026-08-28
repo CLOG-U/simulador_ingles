@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import database_connect_args, settings
 from app.models import ListeningConfig, ListeningQuestion, ReviewPolicy
-from seed.listening_data import LISTENING_QUESTIONS
+from seed.listening_data import LISTENING_EXAM_QUESTION_COUNT, LISTENING_QUESTIONS
 
 
 async def seed_listening(session: AsyncSession) -> None:
@@ -53,14 +53,14 @@ async def seed_listening(session: AsyncSession) -> None:
                 id=uuid.uuid4(),
                 is_enabled=False,
                 practice_enabled=True,
-                question_count=10,
+                question_count=LISTENING_EXAM_QUESTION_COUNT,
                 passing_percentage=70,
                 duration_minutes=None,
                 review_policy=ReviewPolicy.FULL,
             )
         )
     else:
-        config.question_count = 10
+        config.question_count = LISTENING_EXAM_QUESTION_COUNT
         if not config.practice_enabled:
             config.practice_enabled = True
 

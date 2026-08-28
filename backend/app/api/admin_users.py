@@ -89,6 +89,7 @@ async def list_users(
     present_practice_counts: dict = {}
     present_perfect_exam_counts: dict = {}
     present_perfect_practice_counts: dict = {}
+    listening_exam_counts: dict = {}
     listening_practice_counts: dict = {}
     if student_ids:
         present_counts_result = await db.execute(
@@ -126,17 +127,22 @@ async def list_users(
             else:
                 present_perfect_exam_counts[user_id] = count
         listening_counts_result = await db.execute(
-            select(ListeningAttempt.user_id, func.count())
+            select(
+                ListeningAttempt.user_id,
+                ListeningAttempt.mode,
+                func.count(),
+            )
             .where(
                 ListeningAttempt.user_id.in_(student_ids),
-                ListeningAttempt.mode == "practice",
                 ListeningAttempt.status == AttemptStatus.SUBMITTED,
             )
-            .group_by(ListeningAttempt.user_id)
+            .group_by(ListeningAttempt.user_id, ListeningAttempt.mode)
         )
-        listening_practice_counts = {
-            user_id: count for user_id, count in listening_counts_result.all()
-        }
+        for user_id, mode, count in listening_counts_result.all():
+            if mode == "practice":
+                listening_practice_counts[user_id] = count
+            else:
+                listening_exam_counts[user_id] = count
 
     def _submitted_for_exam(user_id, exam_type: str, verb_used: int) -> int:
         if exam_type == ExamType.VERB_EXAM.value:
@@ -149,6 +155,8 @@ async def list_users(
             return present_perfect_exam_counts.get(user_id, 0)
         if exam_type == ExamType.PAST_SIMPLE_EXAM.value:
             return past_exam_counts.get(user_id, 0)
+        if exam_type == ExamType.LISTENING_PRACTICE.value:
+            return listening_exam_counts.get(user_id, 0)
         return 0
 
     items: list[AdminUserResponse] = []
@@ -329,6 +337,15 @@ async def student_report(
         .order_by(ListeningAttempt.started_at.desc())
     )
     listening_practice_attempts = listening_practice_result.scalars().all()
+    listening_exam_result = await db.execute(
+        select(ListeningAttempt)
+        .where(
+            ListeningAttempt.user_id == user_id,
+            ListeningAttempt.mode == "exam",
+        )
+        .order_by(ListeningAttempt.started_at.desc())
+    )
+    listening_exam_attempts = listening_exam_result.scalars().all()
 
     stats = await exam_service.get_student_attempt_stats(db, [user_id])
     attempt_summary = stats.get(user_id, {})
@@ -461,6 +478,14 @@ async def student_report(
                 exam_type=ExamType.LISTENING_PRACTICE.value,
             )
             for attempt in listening_practice_attempts
+        ],
+        "listening_exam_attempts": [
+            _serialize_past_simple(
+                attempt,
+                exam_name="Listening Exam",
+                exam_type=ExamType.LISTENING_PRACTICE.value,
+            )
+            for attempt in listening_exam_attempts
         ],
         "past_simple_practice_attempts": [
             _serialize_past_simple(

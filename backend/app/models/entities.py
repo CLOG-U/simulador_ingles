@@ -563,7 +563,7 @@ class ListeningConfig(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     practice_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    question_count: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
+    question_count: Mapped[int] = mapped_column(Integer, default=22, nullable=False)
     passing_percentage: Mapped[int] = mapped_column(Integer, default=70, nullable=False)
     duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     review_policy: Mapped[ReviewPolicy] = mapped_column(

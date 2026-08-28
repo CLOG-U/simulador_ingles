@@ -43,11 +43,15 @@ export function AdminListeningAttemptReportPage() {
     },
   });
 
+  const isExam = data?.mode === "exam";
   const audioUrl = data?.questions[0]?.audio_url;
   const clipTitle = data?.questions[0]?.clip_title || "Listening clip";
 
   return (
-    <AppShell title="Reporte Listening Practice" nav={adminNav}>
+    <AppShell
+      title={isExam ? "Reporte Listening Exam" : "Reporte Listening Practice"}
+      nav={adminNav}
+    >
       <QueryState
         isLoading={isLoading}
         isError={isError}
@@ -158,13 +162,19 @@ export function AdminListeningAttemptReportPage() {
                     Reporte general
                   </Link>
                   <Link
-                    to={`/admin/students/${data.student_id}/practice/listening`}
+                    to={`/admin/students/${data.student_id}/${
+                      isExam ? "exams" : "practice"
+                    }/listening`}
                     className="inline-flex rounded-xl border px-4 py-2.5"
                   >
-                    Reporte Practice
+                    {isExam ? "Reporte Exam" : "Reporte Practice"}
                   </Link>
                   <Link
-                    to="/admin/practice/listening"
+                    to={
+                      isExam
+                        ? "/admin/exams/listening"
+                        : "/admin/practice/listening"
+                    }
                     className="inline-flex rounded-xl border px-4 py-2.5"
                   >
                     Volver al módulo

@@ -54,6 +54,7 @@ vi.mock("../src/lib/endpoints", () => ({
   },
   listeningApi: {
     config: vi.fn(),
+    attemptStatus: vi.fn(),
     practiceStatus: vi.fn(),
   },
 }));
@@ -228,15 +229,27 @@ describe("Student modules", () => {
     });
     vi.mocked(listeningApi.config).mockResolvedValue({
       exam_type: "listening_practice",
-      title: "Listening Practice",
-      is_enabled: false,
+      title: "Listening Exam",
+      is_enabled: true,
       practice_enabled: true,
-      question_count: 10,
-      question_bank_size: 10,
-      clip_count: 1,
+      question_count: 22,
+      question_bank_size: 30,
+      exam_question_bank_size: 22,
+      exam_clip_title: "Listening Exam 1: Emma's Weekend",
+      clip_count: 3,
       passing_percentage: 70,
       duration_minutes: null,
       review_policy: "FULL",
+    });
+    vi.mocked(listeningApi.attemptStatus).mockResolvedValue({
+      exam_type: "listening_practice",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: 1,
+      can_start_new: true,
+      last_submitted: null,
     });
     vi.mocked(listeningApi.practiceStatus).mockResolvedValue({
       exam_type: "listening_practice",
@@ -268,7 +281,7 @@ describe("Student modules", () => {
     );
   });
 
-  it("lists Verb, Verb Base, Past Simple, Present Simple and Present Perfect exams", async () => {
+  it("lists Verb, Verb Base, Past Simple, Present Simple, Present Perfect and Listening exams", async () => {
     renderAt("/student/exams");
     expect(await screen.findByRole("heading", { name: "Verb Exam" })).toBeInTheDocument();
     expect(
@@ -282,6 +295,9 @@ describe("Student modules", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Present Perfect Exam" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Listening Exam" }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Start Practice")).not.toBeInTheDocument();
   });

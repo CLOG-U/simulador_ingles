@@ -401,7 +401,17 @@ async def get_user_exam_access(
                 )
             ).scalar_one()
         elif exam_type == ExamType.LISTENING_PRACTICE:
-            submitted = 0
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(ListeningAttempt)
+                    .where(
+                        ListeningAttempt.user_id == user_id,
+                        ListeningAttempt.mode == listening_service.MODE_EXAM,
+                        ListeningAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
             practice_submitted = (
                 await db.execute(
                     select(func.count())
@@ -490,12 +500,6 @@ async def allow_new_attempt(
             "Verb Exam no tiene modo práctica.",
             status_code=400,
         )
-    if parsed_type == ExamType.LISTENING_PRACTICE and mode == "exam":
-        raise AppError(
-            "INVALID_MODE",
-            "Listening solo tiene modo práctica.",
-            status_code=400,
-        )
     if parsed_type == ExamType.VERB_EXAM:
         access = await exam_service.allow_new_attempt(db, user_id, actor_id=admin.id)
         submitted = (
@@ -549,6 +553,18 @@ async def allow_new_attempt(
                         PresentPerfectAttempt.user_id == user_id,
                         PresentPerfectAttempt.mode == present_perfect_service.MODE_EXAM,
                         PresentPerfectAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
+        elif parsed_type == ExamType.LISTENING_PRACTICE:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(ListeningAttempt)
+                    .where(
+                        ListeningAttempt.user_id == user_id,
+                        ListeningAttempt.mode == mode,
+                        ListeningAttempt.status == AttemptStatus.SUBMITTED,
                     )
                 )
             ).scalar_one()
@@ -646,12 +662,6 @@ async def reset_exam_progress(
         )
         action = "PAST_SIMPLE_PROGRESS_RESET"
     elif parsed_type == ExamType.LISTENING_PRACTICE:
-        if mode != "practice":
-            raise AppError(
-                "INVALID_MODE",
-                "Listening solo tiene modo práctica.",
-                status_code=400,
-            )
         result = await listening_service.reset_student_progress(
             db,
             user_id=user_id,

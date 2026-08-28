@@ -75,6 +75,7 @@ async def update_config(
 async def list_questions(
     topic: str | None = None,
     active: bool | None = None,
+    scope: str | None = Query(default=None, pattern="^(exam|practice)$"),
     _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -83,6 +84,13 @@ async def list_questions(
         query = query.where(ListeningQuestion.topic == topic)
     if active is not None:
         query = query.where(ListeningQuestion.active == active)
+    if scope == "exam":
+        exam_keys = list(listening_service.exam_clip_keys())
+        query = query.where(ListeningQuestion.clip_key.in_(exam_keys or ["__none__"]))
+    elif scope == "practice":
+        exam_keys = listening_service.exam_clip_keys()
+        if exam_keys:
+            query = query.where(ListeningQuestion.clip_key.notin_(list(exam_keys)))
     result = await db.execute(
         query.order_by(ListeningQuestion.topic, ListeningQuestion.stable_key)
     )

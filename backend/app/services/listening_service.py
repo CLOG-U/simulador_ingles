@@ -24,15 +24,37 @@ from app.services.listening_grading import (
     recompute_attempt_from_grades,
     topic_performance,
 )
-from seed.listening_data import LISTENING_CLIPS
+from seed.listening_data import (
+    EMMA_WEEKEND_CLIP_KEY,
+    LISTENING_CLIPS,
+    LISTENING_EXAM_CLIPS,
+    LISTENING_EXAM_QUESTION_COUNT,
+)
 
 
 def clip_catalog() -> list:
     return sorted(LISTENING_CLIPS, key=lambda item: (item.sort_order, item.title))
 
 
+def exam_clip_catalog() -> list:
+    return sorted(LISTENING_EXAM_CLIPS, key=lambda item: (item.sort_order, item.title))
+
+
+def exam_clip_key() -> str:
+    clips = exam_clip_catalog()
+    return clips[0].clip_key if clips else EMMA_WEEKEND_CLIP_KEY
+
+
+def exam_clip_keys() -> set[str]:
+    return {item.clip_key for item in LISTENING_EXAM_CLIPS}
+
+
+def practice_clip_keys() -> set[str]:
+    return {item.clip_key for item in LISTENING_CLIPS}
+
+
 def _clip_meta(clip_key: str):
-    for item in LISTENING_CLIPS:
+    for item in (*LISTENING_CLIPS, *LISTENING_EXAM_CLIPS):
         if item.clip_key == clip_key:
             return item
     return None
@@ -56,27 +78,46 @@ MODE_PRACTICE = "practice"
 
 async def get_visible_config(session: AsyncSession) -> dict:
     config = await get_config(session)
-    active_count = (
+    practice_keys = list(practice_clip_keys())
+    exam_keys = list(exam_clip_keys())
+    practice_count = (
         await session.execute(
             select(func.count())
             .select_from(ListeningQuestion)
-            .where(ListeningQuestion.active.is_(True))
+            .where(
+                ListeningQuestion.active.is_(True),
+                ListeningQuestion.clip_key.in_(practice_keys),
+            )
+        )
+    ).scalar_one()
+    exam_count = (
+        await session.execute(
+            select(func.count())
+            .select_from(ListeningQuestion)
+            .where(
+                ListeningQuestion.active.is_(True),
+                ListeningQuestion.clip_key.in_(exam_keys),
+            )
         )
     ).scalar_one()
     clip_count = (
         await session.execute(
             select(func.count(func.distinct(ListeningQuestion.clip_key))).where(
-                ListeningQuestion.active.is_(True)
+                ListeningQuestion.active.is_(True),
+                ListeningQuestion.clip_key.in_(practice_keys),
             )
         )
     ).scalar_one()
+    exam_meta = exam_clip_catalog()[0] if exam_clip_catalog() else None
     return {
         "exam_type": ExamType.LISTENING_PRACTICE.value,
-        "title": "Listening Practice",
+        "title": "Listening Exam",
+        "exam_clip_title": exam_meta.title if exam_meta else None,
         "is_enabled": config.is_enabled,
         "practice_enabled": config.practice_enabled,
-        "question_count": config.question_count,
-        "question_bank_size": active_count,
+        "question_count": config.question_count or LISTENING_EXAM_QUESTION_COUNT,
+        "question_bank_size": practice_count,
+        "exam_question_bank_size": exam_count,
         "clip_count": clip_count,
         "passing_percentage": config.passing_percentage,
         "duration_minutes": config.duration_minutes,
@@ -108,13 +149,16 @@ async def list_practice_clips(session: AsyncSession, user_id: uuid.UUID) -> dict
     titles = {clip_key: title for clip_key, title in titles_result.all()}
 
     catalog = {item.clip_key: item for item in clip_catalog()}
+    excluded = exam_clip_keys()
     clip_keys = list(catalog.keys())
     for key in question_counts:
-        if key not in catalog:
+        if key not in catalog and key not in excluded:
             clip_keys.append(key)
 
     items = []
     for clip_key in clip_keys:
+        if clip_key in excluded:
+            continue
         question_count = int(question_counts.get(clip_key, 0))
         if question_count == 0:
             continue
@@ -324,8 +368,7 @@ async def create_or_get_attempt(
         )
 
     config = await get_config(session)
-    clip = clip_catalog()[0] if clip_catalog() else None
-    clip_key = clip.clip_key if clip else "leo-manta"
+    clip_key = exam_clip_key()
     return await _create_attempt_with_questions(
         session,
         user=user,
@@ -389,6 +432,12 @@ async def create_or_get_practice(
         )
 
     resolved_key = _require_clip_key(clip_key)
+    if resolved_key in exam_clip_keys():
+        raise AppError(
+            "EXAM_CLIP",
+            "Este audio pertenece al examen de listening, no a la práctica.",
+            status_code=400,
+        )
     await session.execute(select(User).where(User.id == user.id).with_for_update())
     config = await get_config(session)
     await exam_access_service.ensure_practice_available(

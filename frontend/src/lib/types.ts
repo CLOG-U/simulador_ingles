@@ -48,6 +48,8 @@ export interface PastSimpleConfig {
   practice_enabled?: boolean;
   question_count: number;
   question_bank_size?: number;
+  exam_question_bank_size?: number;
+  exam_clip_title?: string | null;
   clip_count?: number;
   passing_percentage: number;
   duration_minutes: number | null;
@@ -252,6 +254,7 @@ export interface AdminStudentReport {
   present_perfect_attempts?: PastSimpleAttemptSummary[];
   present_perfect_practice_attempts?: PastSimpleAttemptSummary[];
   listening_practice_attempts?: PastSimpleAttemptSummary[];
+  listening_exam_attempts?: PastSimpleAttemptSummary[];
   practice_sessions_completed?: number;
 }
 

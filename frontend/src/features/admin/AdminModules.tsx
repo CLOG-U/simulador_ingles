@@ -97,6 +97,10 @@ export function AdminExamsHubPage() {
     queryKey: ["admin-present-perfect-config"],
     queryFn: adminApi.getPresentPerfectConfig,
   });
+  const listeningExamConfig = useQuery({
+    queryKey: ["admin-listening-config"],
+    queryFn: adminApi.getListeningConfig,
+  });
 
   return (
     <AppShell title="Exámenes" nav={adminNav}>
@@ -187,6 +191,22 @@ export function AdminExamsHubPage() {
             }
             to="/admin/exams/present-perfect"
             cta="Abrir Present Perfect Exam"
+            tone="exam"
+          />
+          <ModuleCard
+            title="Listening Exam"
+            description="Evaluación oficial de listening: Emma's Weekend, 22 preguntas de opción múltiple."
+            meta={
+              listeningExamConfig.data
+                ? `${listeningExamConfig.data.is_enabled ? "Habilitado" : "Deshabilitado"} · Nota mín. ${listeningExamConfig.data.passing_percentage}% · ${
+                    listeningExamConfig.data.duration_minutes
+                      ? `${listeningExamConfig.data.duration_minutes} min`
+                      : "Sin temporizador"
+                  }`
+                : "Cargando…"
+            }
+            to="/admin/exams/listening"
+            cta="Abrir Listening Exam"
             tone="exam"
           />
         </div>
@@ -1613,8 +1633,8 @@ export function AdminListeningPracticePage() {
     queryFn: adminApi.getListeningConfig,
   });
   const questionsQuery = useQuery({
-    queryKey: ["admin-listening-questions"],
-    queryFn: adminApi.listListeningQuestions,
+    queryKey: ["admin-listening-questions", "practice"],
+    queryFn: () => adminApi.listListeningQuestions("practice"),
   });
   const reportsQuery = useQuery({
     queryKey: ["admin-listening-attempts", "practice"],
@@ -1627,7 +1647,7 @@ export function AdminListeningPracticePage() {
       adminApi.toggleListeningQuestion(id, active),
     onSuccess: () =>
       void queryClient.invalidateQueries({
-        queryKey: ["admin-listening-questions"],
+        queryKey: ["admin-listening-questions", "practice"],
       }),
   });
 
@@ -1703,6 +1723,155 @@ export function AdminListeningPracticePage() {
           items={reportsQuery.data?.items ?? []}
           detailPath={(id) => `/admin/practice/listening/reports/${id}`}
           emptyMessage="Aún no hay sesiones de práctica."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+/** Listening Exam: habilitación, temporizador y banco de Emma. */
+export function AdminListeningExamPage() {
+  const queryClient = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["admin-listening-config"],
+    queryFn: adminApi.getListeningConfig,
+  });
+  const questionsQuery = useQuery({
+    queryKey: ["admin-listening-questions", "exam"],
+    queryFn: () => adminApi.listListeningQuestions("exam"),
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-listening-attempts", "exam"],
+    queryFn: () => adminApi.listListeningAttempts("exam"),
+  });
+  const [passing, setPassing] = useState<number | "">("");
+  const [duration, setDuration] = useState<number | "">("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!config) return;
+    setPassing(config.passing_percentage);
+    setDuration(config.duration_minutes ?? "");
+  }, [config]);
+
+  const toggleQuestion = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      adminApi.toggleListeningQuestion(id, active),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-listening-questions", "exam"],
+      }),
+  });
+
+  const saveSettings = async () => {
+    await adminApi.updateListeningConfig({
+      passing_percentage:
+        passing === "" ? config?.passing_percentage : Number(passing),
+      duration_minutes: duration === "" ? null : Number(duration),
+    });
+    setNotice("Configuración de Listening Exam guardada.");
+    void queryClient.invalidateQueries({ queryKey: ["admin-listening-config"] });
+  };
+
+  const toggleExam = async () => {
+    if (!config) return;
+    await adminApi.updateListeningConfig({ is_enabled: !config.is_enabled });
+    setNotice(
+      !config.is_enabled
+        ? "Listening Exam habilitado globalmente."
+        : "Listening Exam deshabilitado.",
+    );
+    void queryClient.invalidateQueries({ queryKey: ["admin-listening-config"] });
+  };
+
+  return (
+    <AppShell title="Listening Exam" nav={adminNav} wide>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BackLink to="/admin/exams" label="← Exámenes" />
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              config?.is_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            disabled={!config}
+            onClick={() => void toggleExam()}
+          >
+            {config?.is_enabled ? "Examen habilitado" : "Examen deshabilitado"}
+          </button>
+        </div>
+
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-primary/10 bg-white shadow-sm">
+          <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Configuración del examen</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Nota mínima y temporizador de Listening Exam 1: Emma's Weekend.
+            </p>
+          </div>
+          <div className="space-y-4 p-6">
+            <p className="text-sm text-gray-600">
+              Banco: {config?.exam_question_bank_size ?? "—"} preguntas · Cada
+              intento toma {config?.question_count ?? 22}. Audio:{" "}
+              {config?.exam_clip_title ?? "Emma's Weekend"}. La práctica se
+              gestiona en el módulo Práctica.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium">
+                Nota mínima (%)
+                <input
+                  type="number"
+                  value={passing}
+                  onChange={(e) => setPassing(Number(e.target.value))}
+                  className="admin-search mt-1"
+                />
+              </label>
+              <label className="block text-sm font-medium">
+                Temporizador (minutos, vacío = sin límite)
+                <input
+                  type="number"
+                  value={duration}
+                  onChange={(e) =>
+                    setDuration(e.target.value ? Number(e.target.value) : "")
+                  }
+                  className="admin-search mt-1"
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={!config}
+              onClick={() => void saveSettings()}
+            >
+              Guardar configuración
+            </button>
+            {notice && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">
+                {notice}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <PastSimpleQuestionsSection
+          questions={questionsQuery.data?.items}
+          isLoading={questionsQuery.isLoading}
+          isError={questionsQuery.isError}
+          error={questionsQuery.error}
+          onToggle={(id, active) => toggleQuestion.mutate({ id, active })}
+        />
+
+        <ModuleReportsSection
+          title="Reportes de Listening Exam"
+          description="Intentos del examen oficial. Entra al reporte específico de cada evaluación."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/exams/listening/reports/${id}`}
+          emptyMessage="Aún no hay intentos de Listening Exam."
         />
       </div>
     </AppShell>

@@ -369,6 +369,25 @@ export const presentPerfectApi = {
 
 export const listeningApi = {
   config: () => apiFetch<ListeningConfig>("/listening/config"),
+  attemptStatus: () => apiFetch<AttemptStatus>("/listening/attempts/status"),
+  startAttempt: () =>
+    apiFetch<PastSimpleAttempt>("/listening/attempts", { method: "POST" }),
+  getAttempt: (id: string) =>
+    apiFetch<PastSimpleAttempt>(`/listening/attempts/${id}`),
+  saveAnswer: (attemptId: string, questionId: string, answer: string | null) =>
+    apiFetch<{ status: string }>(
+      `/listening/attempts/${attemptId}/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submit: (attemptId: string) =>
+    apiFetch<PastSimpleAttempt>(`/listening/attempts/${attemptId}/submit`, {
+      method: "POST",
+    }),
+  result: (attemptId: string) =>
+    apiFetch<ListeningResult>(`/listening/attempts/${attemptId}/result`),
   practiceStatus: () =>
     apiFetch<AttemptStatus>("/listening/practice/status"),
   listClips: () =>
@@ -750,8 +769,12 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
-  listListeningQuestions: () =>
-    apiFetch<{ items: ListeningQuestionAdmin[] }>("/admin/listening/questions"),
+  listListeningQuestions: (scope?: "exam" | "practice") =>
+    apiFetch<{ items: ListeningQuestionAdmin[] }>(
+      scope
+        ? `/admin/listening/questions?scope=${scope}`
+        : "/admin/listening/questions",
+    ),
   toggleListeningQuestion: (questionId: string, active: boolean) =>
     apiFetch<{ id: string; active: boolean }>(
       `/admin/listening/questions/${questionId}`,

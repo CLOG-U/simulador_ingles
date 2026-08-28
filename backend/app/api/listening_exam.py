@@ -210,6 +210,8 @@ async def get_attempt(
         attempt_id=attempt_id,
         user_id=student.id,
     )
+    if attempt.mode != listening_service.MODE_EXAM:
+        raise AppError("NOT_FOUND", "Intento no encontrado.", status_code=404)
     review_policy = attempt.config_snapshot.get("review_policy", "FULL")
     return listening_service.serialize_attempt(
         attempt,
@@ -233,6 +235,8 @@ async def save_answer(
         attempt_id=attempt_id,
         user_id=student.id,
     )
+    if attempt.mode != listening_service.MODE_EXAM:
+        raise AppError("NOT_FOUND", "Intento no encontrado.", status_code=404)
     await listening_service.save_answer(
         db,
         attempt=attempt,
@@ -253,6 +257,8 @@ async def submit_attempt(
         attempt_id=attempt_id,
         user_id=student.id,
     )
+    if attempt.mode != listening_service.MODE_EXAM:
+        raise AppError("NOT_FOUND", "Intento no encontrado.", status_code=404)
     submitted = await listening_service.submit_attempt(db, attempt)
     return listening_service.serialize_attempt(submitted, include_grades=False)
 
@@ -268,6 +274,8 @@ async def result(
         attempt_id=attempt_id,
         user_id=student.id,
     )
+    if attempt.mode != listening_service.MODE_EXAM:
+        raise AppError("NOT_FOUND", "Intento no encontrado.", status_code=404)
     if attempt.status != AttemptStatus.SUBMITTED:
         raise AppError(
             "NOT_SUBMITTED",

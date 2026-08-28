@@ -6,7 +6,7 @@ import { ApiError } from "../../lib/api";
 import { listeningApi } from "../../lib/endpoints";
 import type { ListeningClip, ListeningQuestion, ListeningResult } from "../../lib/types";
 
-function ListeningPlayer({
+export function ListeningPlayer({
   src,
   title,
 }: {
