@@ -29,12 +29,23 @@ async def attempt_status(
     return await listening_service.get_attempt_status(db, student.id)
 
 
+@router.get("/exam/clips")
+async def list_exam_clips(
+    student: User = Depends(require_student_ready),
+    db: AsyncSession = Depends(get_db),
+):
+    return await listening_service.list_exam_clips(db, student.id)
+
+
 @router.post("/attempts")
 async def start_attempt(
     student: User = Depends(require_student_ready),
     db: AsyncSession = Depends(get_db),
+    clip_key: str = Query(..., min_length=1, max_length=64),
 ):
-    attempt = await listening_service.create_or_get_attempt(db, student)
+    attempt = await listening_service.create_or_get_attempt(
+        db, student, clip_key=clip_key
+    )
     return listening_service.serialize_attempt(attempt, include_grades=False)
 
 

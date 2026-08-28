@@ -234,9 +234,10 @@ describe("Student modules", () => {
       practice_enabled: true,
       question_count: 22,
       question_bank_size: 30,
-      exam_question_bank_size: 22,
+      exam_question_bank_size: 44,
       exam_clip_title: "Listening Exam 1: Emma's Weekend",
       clip_count: 3,
+      exam_clip_count: 2,
       passing_percentage: 70,
       duration_minutes: null,
       review_policy: "FULL",
@@ -299,6 +300,9 @@ describe("Student modules", () => {
     expect(
       screen.getByRole("heading", { name: "Listening Exam" }),
     ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: "Open Listening Exam" }),
+    ).toHaveAttribute("href", "/student/exams/listening_practice");
     expect(screen.queryByText("Start Practice")).not.toBeInTheDocument();
   });
 

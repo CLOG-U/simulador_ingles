@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell } from "../../components/AppShell";
 import { ApiError } from "../../lib/api";
 import { listeningApi } from "../../lib/endpoints";
 import type {
+  ListeningClip,
   PastSimpleAttempt,
   PastSimpleQuestion,
   PastSimpleResult,
@@ -50,39 +51,131 @@ function RequestError({
 }
 
 export function ListeningExamInstructionsPage() {
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["listening-exam-clips"],
+    queryFn: listeningApi.listExamClips,
+  });
+
   return (
     <AppShell title="Listening Exam">
-      <section className="card max-w-2xl space-y-4">
-        <h2 className="text-xl font-semibold">Listening Exam 1: Emma's Weekend</h2>
-        <p>
-          Listen to the audio and choose the correct answer for each question. You will
-          see your results after completing the exam.
-        </p>
-        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
-          <li>Total questions: 22</li>
-          <li>You can play the audio as many times as you need.</li>
-          <li>Each question has the same value.</li>
-          <li>Answers cannot be checked during the exam.</li>
-          <li>Submit the exam when you finish.</li>
-        </ul>
-        <div className="flex flex-wrap gap-3">
-          <Link to="/student/exams/listening_practice/start" className="btn-primary">
-            Start Exam
-          </Link>
+      <div className="space-y-5">
+        <section className="card max-w-3xl space-y-3">
+          <h2 className="text-xl font-semibold">Listening Exam</h2>
+          <p>
+            Listen to the official exam audios and choose the correct answer for
+            each question. You can replay each clip as many times as you need.
+            Answers cannot be checked during the exam.
+          </p>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700">
+            <li>Each audio is a separate exam attempt.</li>
+            <li>Each question has the same value.</li>
+            <li>Submit the exam when you finish.</li>
+          </ul>
           <Link to="/student/exams" className="inline-flex rounded-xl border px-4 py-2.5">
             Back to Exams
           </Link>
-        </div>
-      </section>
+        </section>
+
+        {isError ? (
+          <section className="card space-y-3">
+            <p className="text-danger">
+              {error instanceof ApiError
+                ? error.message
+                : "Listening exams could not be loaded."}
+            </p>
+            <button type="button" className="btn-primary" onClick={() => void refetch()}>
+              Try Again
+            </button>
+          </section>
+        ) : isLoading ? (
+          <p>Loading exams…</p>
+        ) : data && data.items.length === 0 ? (
+          <p className="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
+            No listening exams are available yet.
+          </p>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2">
+            {data?.items.map((clip) => (
+              <ExamClipCard key={clip.clip_key} clip={clip} available={data.is_available} />
+            ))}
+          </div>
+        )}
+      </div>
     </AppShell>
+  );
+}
+
+function ExamClipCard({
+  clip,
+  available,
+}: {
+  clip: ListeningClip;
+  available: boolean;
+}) {
+  if (!available) {
+    return (
+      <section className="card flex h-full flex-col">
+        <h3 className="text-lg font-semibold">{clip.title}</h3>
+        <p className="mt-2 flex-1 text-sm text-gray-600">{clip.description}</p>
+        <p className="mt-3 text-sm text-gray-600">{clip.question_count} questions</p>
+        <p className="mt-4 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
+          This exam is not enabled for your account.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="card flex h-full flex-col">
+      <h3 className="text-lg font-semibold">{clip.title}</h3>
+      <p className="mt-2 flex-1 text-sm text-gray-600">{clip.description}</p>
+      <p className="mt-3 text-sm text-gray-600">
+        {clip.question_count} questions · Attempts completed: {clip.submitted_count}
+      </p>
+      {clip.has_open_attempt && clip.open_attempt_id ? (
+        <Link
+          to={`/student/exams/listening_practice/attempts/${clip.open_attempt_id}`}
+          className="btn-primary mt-4"
+        >
+          Resume Exam
+        </Link>
+      ) : clip.can_start ? (
+        <Link
+          to={`/student/exams/listening_practice/${clip.clip_key}/start`}
+          className="btn-primary mt-4"
+        >
+          Start Exam
+        </Link>
+      ) : (
+        <div className="mt-4 space-y-3">
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            You already completed this exam. Contact your teacher for a new attempt.
+          </p>
+          {clip.last_result_id && (
+            <Link
+              to={`/student/exams/listening_practice/results/${clip.last_result_id}/review`}
+              className="btn-primary"
+            >
+              View Result
+              {clip.last_percentage != null
+                ? ` (${clip.last_percentage.toFixed(1)}%)`
+                : ""}
+            </Link>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
 export function ListeningExamStartRedirect() {
   const navigate = useNavigate();
+  const { clipKey: clipKeyParam } = useParams();
+  const [searchParams] = useSearchParams();
+  const clipKey = clipKeyParam || searchParams.get("clip") || "";
   const startedRef = useRef(false);
   const { mutate, isPending, error } = useMutation({
-    mutationFn: listeningApi.startAttempt,
+    mutationFn: () => listeningApi.startAttempt(clipKey),
     onSuccess: (attempt) => {
       navigate(`/student/exams/listening_practice/attempts/${attempt.id}`, {
         replace: true,
@@ -91,10 +184,22 @@ export function ListeningExamStartRedirect() {
   });
 
   useEffect(() => {
+    if (!clipKey) {
+      navigate("/student/exams/listening_practice", { replace: true });
+      return;
+    }
     if (startedRef.current) return;
     startedRef.current = true;
     mutate();
-  }, [mutate]);
+  }, [clipKey, mutate, navigate]);
+
+  if (!clipKey) {
+    return (
+      <AppShell title="Listening Exam">
+        <p>Redirecting…</p>
+      </AppShell>
+    );
+  }
 
   if (error) {
     return (
@@ -105,8 +210,8 @@ export function ListeningExamStartRedirect() {
               ? error.message
               : "The exam could not be started. Please try again later."}
           </p>
-          <Link to="/student/exams" className="btn-primary">
-            Back to Exams
+          <Link to="/student/exams/listening_practice" className="btn-primary">
+            Back to Listening Exam
           </Link>
         </section>
       </AppShell>
@@ -213,7 +318,7 @@ export function ListeningExamPage() {
     attempt?.clip_title ||
     question?.clip_title ||
     questions[0]?.clip_title ||
-    "Listening Exam 1: Emma's Weekend";
+    "Listening Exam";
 
   useEffect(() => {
     if (!attempt || initializedAttemptRef.current === attempt.id) return;
@@ -567,6 +672,7 @@ export function ListeningExamResultPage() {
       <ExamResultActions
         showReview={(data.questions?.length ?? 0) > 0}
         reviewPath={`/student/exams/listening_practice/results/${attemptId}/review`}
+        backPath="/student/exams/listening_practice"
       />
     </ExamResultShell>
   );
@@ -627,6 +733,7 @@ export function ListeningExamReviewPage() {
       ))}
       <ExamReviewActions
         resultPath={`/student/exams/listening_practice/results/${attemptId}`}
+        backPath="/student/exams/listening_practice"
       />
     </ExamResultShell>
   );

@@ -370,8 +370,15 @@ export const presentPerfectApi = {
 export const listeningApi = {
   config: () => apiFetch<ListeningConfig>("/listening/config"),
   attemptStatus: () => apiFetch<AttemptStatus>("/listening/attempts/status"),
-  startAttempt: () =>
-    apiFetch<PastSimpleAttempt>("/listening/attempts", { method: "POST" }),
+  listExamClips: () =>
+    apiFetch<{ is_available: boolean; items: ListeningClip[] }>(
+      "/listening/exam/clips",
+    ),
+  startAttempt: (clipKey: string) =>
+    apiFetch<PastSimpleAttempt>(
+      `/listening/attempts?clip_key=${encodeURIComponent(clipKey)}`,
+      { method: "POST" },
+    ),
   getAttempt: (id: string) =>
     apiFetch<PastSimpleAttempt>(`/listening/attempts/${id}`),
   saveAnswer: (attemptId: string, questionId: string, answer: string | null) =>

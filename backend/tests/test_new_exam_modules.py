@@ -145,8 +145,23 @@ def test_listening_exam_clip_is_not_in_practice_catalog():
     keys = {item.clip_key for item in LISTENING_CLIPS}
     exam_keys = {item.clip_key for item in LISTENING_EXAM_CLIPS}
     assert "emma-weekend" not in keys
-    assert exam_keys == {"emma-weekend"}
-    emma = LISTENING_EXAM_CLIPS[0]
+    assert "marcus-english" not in keys
+    assert exam_keys == {"emma-weekend", "marcus-english"}
+    emma = next(item for item in LISTENING_EXAM_CLIPS if item.clip_key == "emma-weekend")
     assert emma.title == "Listening Exam 1: Emma's Weekend"
     assert emma.audio_url == "/audio/emma-weekend.mp3"
     assert "Emma" in emma.description or "weekend" in emma.description.lower()
+    marcus = next(item for item in LISTENING_EXAM_CLIPS if item.clip_key == "marcus-english")
+    assert marcus.title == "Listening Exam 2: Learning English"
+    assert marcus.audio_url == "/audio/marcus-english.mp3"
+    assert emma.sort_order < marcus.sort_order
+
+
+def test_listening_exam_seed_covers_marcus_english_clip():
+    items = _listening_questions("marcus-english")
+    assert len(items) >= 20
+    assert len(items) == 22
+    assert all(item.clip_title == "Listening Exam 2: Learning English" for item in items)
+    assert all(item.audio_url == "/audio/marcus-english.mp3" for item in items)
+    topics = {item.topic for item in items}
+    assert {"present_simple", "past_simple", "present_perfect", "detail"} <= topics

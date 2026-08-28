@@ -321,29 +321,61 @@ export function StudentExamsPage() {
               `/student/exams/present_perfect_exam/results/${id}/review`
             }
           />
-          <ExamCard
-            title="Listening Exam"
-            description="Listen to Emma's Weekend and answer questions in Present Simple, Past Simple and Present Perfect."
-            config={listeningConfigQuery.data}
-            status={listeningStatusQuery.data}
-            isLoading={
-              listeningConfigQuery.isLoading || listeningStatusQuery.isLoading
-            }
-            isError={
-              listeningConfigQuery.isError || listeningStatusQuery.isError
-            }
-            onRetry={() => {
-              void listeningConfigQuery.refetch();
-              void listeningStatusQuery.refetch();
-            }}
-            instructionsPath="/student/exams/listening_practice/instructions"
-            examPath={(id) =>
-              `/student/exams/listening_practice/attempts/${id}`
-            }
-            resultPath={(id) =>
-              `/student/exams/listening_practice/results/${id}/review`
-            }
-          />
+          <section className="card flex h-full flex-col">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold">Listening Exam</h2>
+              <span
+                className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                  listeningStatusQuery.data?.is_available
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {listeningStatusQuery.data?.is_available ? "Available" : "Locked"}
+              </span>
+            </div>
+            <p className="mt-2 flex-1 text-sm text-gray-600">
+              Official listening exams with Present Simple, Past Simple and
+              Present Perfect. Each audio is a separate attempt.
+            </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Exams: {listeningConfigQuery.data?.exam_clip_count ?? "—"} · Passing
+              score: {listeningConfigQuery.data?.passing_percentage ?? 70}%
+            </p>
+            {listeningConfigQuery.isLoading || listeningStatusQuery.isLoading ? (
+              <p className="mt-4 text-sm text-gray-600">Loading exam availability…</p>
+            ) : listeningConfigQuery.isError || listeningStatusQuery.isError ? (
+              <button
+                type="button"
+                className="btn-primary mt-4"
+                onClick={() => {
+                  void listeningConfigQuery.refetch();
+                  void listeningStatusQuery.refetch();
+                }}
+              >
+                Try Again
+              </button>
+            ) : !(listeningStatusQuery.data?.is_available ?? false) ? (
+              <p className="mt-4 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
+                This exam is not enabled for your account.
+              </p>
+            ) : listeningStatusQuery.data?.has_open_attempt &&
+              listeningStatusQuery.data.open_attempt_id ? (
+              <Link
+                to={`/student/exams/listening_practice/attempts/${listeningStatusQuery.data.open_attempt_id}`}
+                className="btn-primary mt-4"
+              >
+                Resume Exam
+              </Link>
+            ) : (
+              <Link
+                to="/student/exams/listening_practice"
+                className="btn-primary mt-4"
+              >
+                Open Listening Exam
+              </Link>
+            )}
+          </section>
         </div>
       </div>
     </AppShell>

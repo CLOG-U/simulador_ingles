@@ -51,6 +51,7 @@ export interface PastSimpleConfig {
   exam_question_bank_size?: number;
   exam_clip_title?: string | null;
   clip_count?: number;
+  exam_clip_count?: number;
   passing_percentage: number;
   duration_minutes: number | null;
   review_policy: string;
@@ -70,6 +71,8 @@ export interface ListeningClip {
   has_open_attempt: boolean;
   open_attempt_id: string | null;
   can_start: boolean;
+  last_result_id?: string | null;
+  last_percentage?: number | null;
 }
 
 export interface RequiredField {
@@ -385,4 +388,6 @@ export interface PastSimpleQuestionAdmin {
   explanation: string;
   points: number;
   active: boolean;
+  clip_title?: string | null;
+  clip_key?: string | null;
 }

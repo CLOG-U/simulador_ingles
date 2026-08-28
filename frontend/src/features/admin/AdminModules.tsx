@@ -195,7 +195,7 @@ export function AdminExamsHubPage() {
           />
           <ModuleCard
             title="Listening Exam"
-            description="Evaluación oficial de listening: Emma's Weekend, 22 preguntas de opción múltiple."
+            description="Evaluación oficial de listening: Emma's Weekend y Learning English (Marcus)."
             meta={
               listeningExamConfig.data
                 ? `${listeningExamConfig.data.is_enabled ? "Habilitado" : "Deshabilitado"} · Nota mín. ${listeningExamConfig.data.passing_percentage}% · ${
@@ -1169,6 +1169,7 @@ function PastSimpleQuestionsSection({
     question: string;
     correct_answer: string;
     active: boolean;
+    clip_title?: string | null;
   }[];
   isLoading: boolean;
   isError: boolean;
@@ -1176,6 +1177,7 @@ function PastSimpleQuestionsSection({
   onToggle: (id: string, active: boolean) => void;
 }) {
   const count = questions?.length ?? 0;
+  const showClip = Boolean(questions?.some((item) => item.clip_title));
 
   return (
     <details className="admin-collapsible">
@@ -1204,6 +1206,7 @@ function PastSimpleQuestionsSection({
             <table className="admin-table min-w-[760px]">
               <thead>
                 <tr>
+                  {showClip ? <th>Audio</th> : null}
                   <th>Tema</th>
                   <th>Tipo</th>
                   <th>Pregunta</th>
@@ -1214,6 +1217,9 @@ function PastSimpleQuestionsSection({
               <tbody>
                 {questions?.map((question) => (
                   <tr key={question.id}>
+                    {showClip ? (
+                      <td className="max-w-xs">{question.clip_title}</td>
+                    ) : null}
                     <td>{TOPIC_LABELS[question.topic] ?? question.topic}</td>
                     <td>{question.question_type}</td>
                     <td className="max-w-sm">{question.question}</td>
@@ -1807,15 +1813,14 @@ export function AdminListeningExamPage() {
           <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
             <h2 className="font-semibold">Configuración del examen</h2>
             <p className="mt-1 text-sm text-brand-white/90">
-              Nota mínima y temporizador de Listening Exam 1: Emma's Weekend.
+              Nota mínima y temporizador de Listening Exam (Emma y Marcus).
             </p>
           </div>
           <div className="space-y-4 p-6">
             <p className="text-sm text-gray-600">
-              Banco: {config?.exam_question_bank_size ?? "—"} preguntas · Cada
-              intento toma {config?.question_count ?? 22}. Audio:{" "}
-              {config?.exam_clip_title ?? "Emma's Weekend"}. La práctica se
-              gestiona en el módulo Práctica.
+              Banco: {config?.exam_question_bank_size ?? "—"} preguntas ·{" "}
+              {config?.exam_clip_count ?? 2} examenes. Cada audio usa todas sus
+              preguntas. La práctica se gestiona en el módulo Práctica.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-medium">

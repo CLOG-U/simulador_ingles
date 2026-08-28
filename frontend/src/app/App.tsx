@@ -245,11 +245,19 @@ export function App() {
                 element={<PresentPerfectReviewPage />}
               />
               <Route
+                path="/student/exams/listening_practice"
+                element={<ListeningExamInstructionsPage />}
+              />
+              <Route
                 path="/student/exams/listening_practice/instructions"
                 element={<ListeningExamInstructionsPage />}
               />
               <Route
                 path="/student/exams/listening_practice/start"
+                element={<ListeningExamStartRedirect />}
+              />
+              <Route
+                path="/student/exams/listening_practice/:clipKey/start"
                 element={<ListeningExamStartRedirect />}
               />
               <Route
