@@ -195,7 +195,7 @@ export function AdminExamsHubPage() {
           />
           <ModuleCard
             title="Listening Exam"
-            description="Evaluación oficial de listening: Emma's Weekend y Learning English (Marcus)."
+            description="Evaluación oficial de listening: Emma's Weekend, Learning English (Marcus) y Volleyball (Ryan)."
             meta={
               listeningExamConfig.data
                 ? `${listeningExamConfig.data.is_enabled ? "Habilitado" : "Deshabilitado"} · Nota mín. ${listeningExamConfig.data.passing_percentage}% · ${
@@ -1735,7 +1735,7 @@ export function AdminListeningPracticePage() {
   );
 }
 
-/** Listening Exam: habilitación, temporizador y banco de Emma. */
+/** Listening Exam: habilitación, temporizador y banco de Emma, Marcus y Ryan. */
 export function AdminListeningExamPage() {
   const queryClient = useQueryClient();
   const { data: config } = useQuery({
@@ -1813,13 +1813,13 @@ export function AdminListeningExamPage() {
           <div className="border-b border-brand-primary/10 bg-gradient-to-r from-brand-primary to-brand-sky px-6 py-4 text-brand-white">
             <h2 className="font-semibold">Configuración del examen</h2>
             <p className="mt-1 text-sm text-brand-white/90">
-              Nota mínima y temporizador de Listening Exam (Emma y Marcus).
+              Nota mínima y temporizador de Listening Exam (Emma, Marcus y Ryan).
             </p>
           </div>
           <div className="space-y-4 p-6">
             <p className="text-sm text-gray-600">
               Banco: {config?.exam_question_bank_size ?? "—"} preguntas ·{" "}
-              {config?.exam_clip_count ?? 2} examenes. Cada audio usa todas sus
+              {config?.exam_clip_count ?? 3} examenes. Cada audio usa todas sus
               preguntas. La práctica se gestiona en el módulo Práctica.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">

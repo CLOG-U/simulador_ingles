@@ -146,7 +146,8 @@ def test_listening_exam_clip_is_not_in_practice_catalog():
     exam_keys = {item.clip_key for item in LISTENING_EXAM_CLIPS}
     assert "emma-weekend" not in keys
     assert "marcus-english" not in keys
-    assert exam_keys == {"emma-weekend", "marcus-english"}
+    assert "ryan-volleyball" not in keys
+    assert exam_keys == {"emma-weekend", "marcus-english", "ryan-volleyball"}
     emma = next(item for item in LISTENING_EXAM_CLIPS if item.clip_key == "emma-weekend")
     assert emma.title == "Listening Exam 1: Emma's Weekend"
     assert emma.audio_url == "/audio/emma-weekend.mp3"
@@ -154,7 +155,10 @@ def test_listening_exam_clip_is_not_in_practice_catalog():
     marcus = next(item for item in LISTENING_EXAM_CLIPS if item.clip_key == "marcus-english")
     assert marcus.title == "Listening Exam 2: Learning English"
     assert marcus.audio_url == "/audio/marcus-english.mp3"
-    assert emma.sort_order < marcus.sort_order
+    ryan = next(item for item in LISTENING_EXAM_CLIPS if item.clip_key == "ryan-volleyball")
+    assert ryan.title == "Listening Exam 3: Volleyball"
+    assert ryan.audio_url == "/audio/ryan-volleyball.mp3"
+    assert emma.sort_order < marcus.sort_order < ryan.sort_order
 
 
 def test_listening_exam_seed_covers_marcus_english_clip():
@@ -163,5 +167,15 @@ def test_listening_exam_seed_covers_marcus_english_clip():
     assert len(items) == 22
     assert all(item.clip_title == "Listening Exam 2: Learning English" for item in items)
     assert all(item.audio_url == "/audio/marcus-english.mp3" for item in items)
+    topics = {item.topic for item in items}
+    assert {"present_simple", "past_simple", "present_perfect", "detail"} <= topics
+
+
+def test_listening_exam_seed_covers_ryan_volleyball_clip():
+    items = _listening_questions("ryan-volleyball")
+    assert len(items) >= 20
+    assert len(items) == 22
+    assert all(item.clip_title == "Listening Exam 3: Volleyball" for item in items)
+    assert all(item.audio_url == "/audio/ryan-volleyball.mp3" for item in items)
     topics = {item.topic for item in items}
     assert {"present_simple", "past_simple", "present_perfect", "detail"} <= topics
