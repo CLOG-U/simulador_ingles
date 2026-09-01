@@ -7,6 +7,31 @@ import { ApiError } from "../../lib/api";
 import { adminApi } from "../../lib/endpoints";
 import { roleLabel, type AdminUser, type ExamType } from "../../lib/types";
 import { useAuth } from "../auth/AuthProvider";
+import {
+  applyAccessUpdatesToUsers,
+  bulkAccessUpdates,
+  enabledCountLabel,
+  type AccessUpdate,
+} from "./adminUserAccessCache";
+
+type AdminUsersQueryData = { items: AdminUser[]; total: number };
+
+function patchAdminUsersQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId: string,
+  updates: AccessUpdate[],
+) {
+  queryClient.setQueriesData<AdminUsersQueryData>(
+    { queryKey: ["admin-users"] },
+    (current) =>
+      current
+        ? {
+            ...current,
+            items: applyAccessUpdatesToUsers(current.items, userId, updates),
+          }
+        : current,
+  );
+}
 
 type CredentialModal = {
   type: "created" | "reset" | "updated";
@@ -45,23 +70,44 @@ function formatApiError(err: unknown) {
   return "No se pudo completar la acción.";
 }
 
+function AccessStatusBadge({ enabled }: { enabled: boolean }) {
+  return (
+    <span
+      className={`normal-case rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wide ${
+        enabled
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-rose-100 text-rose-700"
+      }`}
+    >
+      {enabled ? "Hab." : "Bloq."}
+    </span>
+  );
+}
+
 function ActionGroup({
   title,
   children,
+  enabled,
 }: {
   title: string;
   children: ReactNode;
+  enabled?: boolean;
 }) {
   return (
     <details className="admin-panel group w-full min-w-[10.5rem] max-w-[14rem] shrink-0">
       <summary className="admin-panel-title mb-0 cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
         <span className="flex items-center justify-between gap-2">
-          <span>{title}</span>
-          <span
-            className="text-[10px] font-semibold text-brand-sky transition-transform group-open:rotate-180"
-            aria-hidden
-          >
-            ▾
+          <span className="min-w-0 truncate">{title}</span>
+          <span className="flex shrink-0 items-center gap-1">
+            {enabled !== undefined ? (
+              <AccessStatusBadge enabled={enabled} />
+            ) : null}
+            <span
+              className="text-[10px] font-semibold text-brand-sky transition-transform group-open:rotate-180"
+              aria-hidden
+            >
+              ▾
+            </span>
           </span>
         </span>
       </summary>
@@ -73,20 +119,27 @@ function ActionGroup({
 function AttemptInfo({
   title,
   children,
+  enabled,
 }: {
   title: string;
   children: ReactNode;
+  enabled?: boolean;
 }) {
   return (
     <details className="admin-panel group w-full min-w-[9.5rem] max-w-[13rem] shrink-0">
       <summary className="admin-panel-title mb-0 cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
         <span className="flex items-center justify-between gap-2">
-          <span>{title}</span>
-          <span
-            className="text-[10px] font-semibold text-brand-sky transition-transform group-open:rotate-180"
-            aria-hidden
-          >
-            ▾
+          <span className="min-w-0 truncate">{title}</span>
+          <span className="flex shrink-0 items-center gap-1">
+            {enabled !== undefined ? (
+              <AccessStatusBadge enabled={enabled} />
+            ) : null}
+            <span
+              className="text-[10px] font-semibold text-brand-sky transition-transform group-open:rotate-180"
+              aria-hidden
+            >
+              ▾
+            </span>
           </span>
         </span>
       </summary>
@@ -99,10 +152,12 @@ function ModuleGroup({
   title,
   tone = "exam",
   children,
+  badge,
 }: {
   title: string;
   tone?: "exam" | "practice" | "account";
   children: ReactNode;
+  badge?: string;
 }) {
   const toneClass =
     tone === "practice"
@@ -115,12 +170,19 @@ function ModuleGroup({
     <details className={`admin-module group ${toneClass}`}>
       <summary className="admin-module-summary">
         <span className="flex items-center justify-between gap-2">
-          <span>{title}</span>
-          <span
-            className="text-[10px] font-semibold opacity-70 transition-transform group-open:rotate-180"
-            aria-hidden
-          >
-            ▾
+          <span className="min-w-0 truncate">{title}</span>
+          <span className="flex shrink-0 items-center gap-1">
+            {badge ? (
+              <span className="normal-case rounded-full bg-white/80 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-current">
+                {badge}
+              </span>
+            ) : null}
+            <span
+              className="text-[10px] font-semibold opacity-70 transition-transform group-open:rotate-180"
+              aria-hidden
+            >
+              ▾
+            </span>
           </span>
         </span>
       </summary>
@@ -275,8 +337,27 @@ export function AdminUsersPage() {
           ? { practice_enabled: practiceEnabled }
           : {}),
       }),
-    onSuccess: () => {
+    onMutate: async ({ userId, examType, isEnabled, practiceEnabled }) => {
+      await queryClient.cancelQueries({ queryKey: ["admin-users"] });
+      patchAdminUsersQueries(queryClient, userId, [
+        {
+          exam_type: examType,
+          ...(isEnabled !== undefined ? { is_enabled: isEnabled } : {}),
+          ...(practiceEnabled !== undefined
+            ? { practice_enabled: practiceEnabled }
+            : {}),
+        },
+      ]);
+    },
+    onSuccess: (result, variables) => {
       setActionNotice("Acceso actualizado.");
+      patchAdminUsersQueries(queryClient, variables.userId, [
+        {
+          exam_type: result.exam_type,
+          is_enabled: result.is_enabled,
+          practice_enabled: result.practice_enabled,
+        },
+      ]);
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (err) => setActionNotice(formatApiError(err)),
@@ -291,7 +372,15 @@ export function AdminUsersPage() {
       exams?: boolean;
       practices?: boolean;
     }) => adminApi.updateExamAccessBulk(userId, { exams, practices }),
-    onSuccess: (_result, variables) => {
+    onMutate: async ({ userId, exams, practices }) => {
+      await queryClient.cancelQueries({ queryKey: ["admin-users"] });
+      patchAdminUsersQueries(
+        queryClient,
+        userId,
+        bulkAccessUpdates(exams, practices),
+      );
+    },
+    onSuccess: (result, variables) => {
       if (variables.exams === true && variables.practices === true) {
         setActionNotice("Todos los exámenes y prácticas quedaron habilitados.");
       } else if (variables.exams === false && variables.practices === false) {
@@ -305,6 +394,15 @@ export function AdminUsersPage() {
       } else {
         setActionNotice("Toda la práctica quedó bloqueada.");
       }
+      patchAdminUsersQueries(
+        queryClient,
+        variables.userId,
+        result.updated.map((item) => ({
+          exam_type: item.exam_type,
+          is_enabled: item.is_enabled,
+          practice_enabled: item.practice_enabled,
+        })),
+      );
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (err) => setActionNotice(formatApiError(err)),
@@ -734,10 +832,33 @@ export function AdminUsersPage() {
                         const listeningAccess = u.exam_access?.find(
                           (item) => item.exam_type === "listening_practice",
                         );
+                        const examEnabledFlags = [
+                          verbAccess?.is_enabled,
+                          verbBaseAccess?.is_enabled,
+                          pastAccess?.is_enabled,
+                          presentAccess?.is_enabled,
+                          perfectAccess?.is_enabled,
+                          listeningAccess?.is_enabled,
+                        ];
+                        const practiceEnabledFlags = [
+                          verbBaseAccess?.practice_enabled,
+                          verbPastAccess?.practice_enabled,
+                          pastAccess?.practice_enabled,
+                          presentAccess?.practice_enabled,
+                          perfectAccess?.practice_enabled,
+                          listeningAccess?.practice_enabled,
+                        ];
                         return (
                           <div className="flex flex-wrap gap-2">
-                            <ModuleGroup title="Exámenes" tone="exam">
-                              <AttemptInfo title="Verb Exam">
+                            <ModuleGroup
+                              title="Exámenes"
+                              tone="exam"
+                              badge={enabledCountLabel(examEnabledFlags)}
+                            >
+                              <AttemptInfo
+                                title="Verb Exam"
+                                enabled={Boolean(verbAccess?.is_enabled)}
+                              >
                                 <p>
                                   {verbAccess?.is_enabled
                                     ? "Habilitado"
@@ -758,7 +879,10 @@ export function AdminUsersPage() {
                                   pendiente(s)
                                 </p>
                               </AttemptInfo>
-                              <AttemptInfo title="Verb Base Form">
+                              <AttemptInfo
+                                title="Verb Base Form"
+                                enabled={Boolean(verbBaseAccess?.is_enabled)}
+                              >
                                 <p>
                                   {verbBaseAccess?.is_enabled
                                     ? "Habilitado"
@@ -779,7 +903,10 @@ export function AdminUsersPage() {
                                   pendiente(s)
                                 </p>
                               </AttemptInfo>
-                              <AttemptInfo title="Past Simple Examen">
+                              <AttemptInfo
+                                title="Past Simple Examen"
+                                enabled={Boolean(pastAccess?.is_enabled)}
+                              >
                                 <p>
                                   {pastAccess?.is_enabled
                                     ? "Habilitado"
@@ -800,7 +927,10 @@ export function AdminUsersPage() {
                                   pendiente(s)
                                 </p>
                               </AttemptInfo>
-                              <AttemptInfo title="Present Simple Examen">
+                              <AttemptInfo
+                                title="Present Simple Examen"
+                                enabled={Boolean(presentAccess?.is_enabled)}
+                              >
                                 <p>
                                   {presentAccess?.is_enabled
                                     ? "Habilitado"
@@ -822,7 +952,10 @@ export function AdminUsersPage() {
                                 </p>
                               </AttemptInfo>
 
-                              <AttemptInfo title="Present Perfect Examen">
+                              <AttemptInfo
+                                title="Present Perfect Examen"
+                                enabled={Boolean(perfectAccess?.is_enabled)}
+                              >
                                 <p>
                                   {perfectAccess?.is_enabled
                                     ? "Habilitado"
@@ -843,7 +976,10 @@ export function AdminUsersPage() {
                                   pendiente(s)
                                 </p>
                               </AttemptInfo>
-                              <AttemptInfo title="Listening Examen">
+                              <AttemptInfo
+                                title="Listening Examen"
+                                enabled={Boolean(listeningAccess?.is_enabled)}
+                              >
                                 <p>
                                   {listeningAccess?.is_enabled
                                     ? "Habilitado"
@@ -865,8 +1001,15 @@ export function AdminUsersPage() {
                                 </p>
                               </AttemptInfo>
                             </ModuleGroup>
-                            <ModuleGroup title="Práctica" tone="practice">
-                              <AttemptInfo title="Verb Base Form Práctica">
+                            <ModuleGroup
+                              title="Práctica"
+                              tone="practice"
+                              badge={enabledCountLabel(practiceEnabledFlags)}
+                            >
+                              <AttemptInfo
+                                title="Verb Base Form Práctica"
+                                enabled={Boolean(verbBaseAccess?.practice_enabled)}
+                              >
                                 <p>
                                   {verbBaseAccess?.practice_enabled
                                     ? "Habilitada"
@@ -877,7 +1020,10 @@ export function AdminUsersPage() {
                                   sesión(es) completada(s)
                                 </p>
                               </AttemptInfo>
-                              <AttemptInfo title="Verb Past Form Práctica">
+                              <AttemptInfo
+                                title="Verb Past Form Práctica"
+                                enabled={Boolean(verbPastAccess?.practice_enabled)}
+                              >
                                 <p>
                                   {verbPastAccess?.practice_enabled
                                     ? "Habilitada"
@@ -888,7 +1034,10 @@ export function AdminUsersPage() {
                                   sesión(es) completada(s)
                                 </p>
                               </AttemptInfo>
-                              <AttemptInfo title="Past Simple Práctica">
+                              <AttemptInfo
+                                title="Past Simple Práctica"
+                                enabled={Boolean(pastAccess?.practice_enabled)}
+                              >
                                 <p>
                                   {pastAccess?.practice_enabled
                                     ? "Habilitada"
@@ -900,7 +1049,10 @@ export function AdminUsersPage() {
                                 </p>
                               </AttemptInfo>
 
-                              <AttemptInfo title="Present Simple Práctica">
+                              <AttemptInfo
+                                title="Present Simple Práctica"
+                                enabled={Boolean(presentAccess?.practice_enabled)}
+                              >
                                 <p>
                                   {presentAccess?.practice_enabled
                                     ? "Habilitada"
@@ -912,7 +1064,10 @@ export function AdminUsersPage() {
                                 </p>
                               </AttemptInfo>
 
-                              <AttemptInfo title="Present Perfect Práctica">
+                              <AttemptInfo
+                                title="Present Perfect Práctica"
+                                enabled={Boolean(perfectAccess?.practice_enabled)}
+                              >
                                 <p>
                                   {perfectAccess?.practice_enabled
                                     ? "Habilitada"
@@ -923,7 +1078,10 @@ export function AdminUsersPage() {
                                   sesión(es) completada(s)
                                 </p>
                               </AttemptInfo>
-                              <AttemptInfo title="Listening Práctica">
+                              <AttemptInfo
+                                title="Listening Práctica"
+                                enabled={Boolean(listeningAccess?.practice_enabled)}
+                              >
                                 <p>
                                   {listeningAccess?.practice_enabled
                                     ? "Habilitada"
@@ -1054,10 +1212,33 @@ export function AdminUsersPage() {
                           const bulkBusyForUser =
                             bulkAccessMutation.isPending &&
                             bulkAccessMutation.variables?.userId === u.id;
+                          const examEnabledFlags = [
+                            verbAccess?.is_enabled,
+                            verbBaseAccess?.is_enabled,
+                            pastAccess?.is_enabled,
+                            presentAccess?.is_enabled,
+                            perfectAccess?.is_enabled,
+                            listeningAccess?.is_enabled,
+                          ];
+                          const practiceEnabledFlags = [
+                            verbBaseAccess?.practice_enabled,
+                            verbPastAccess?.practice_enabled,
+                            pastAccess?.practice_enabled,
+                            presentAccess?.practice_enabled,
+                            perfectAccess?.practice_enabled,
+                            listeningAccess?.practice_enabled,
+                          ];
 
                           return (
                             <>
-                              <ModuleGroup title="Acceso general" tone="account">
+                              <ModuleGroup
+                                title="Acceso general"
+                                tone="account"
+                                badge={enabledCountLabel([
+                                  ...examEnabledFlags,
+                                  ...practiceEnabledFlags,
+                                ])}
+                              >
                                 <div className="w-full min-w-[15rem] max-w-[18rem] space-y-2">
                                   <p className="text-[11px] leading-snug text-gray-600">
                                     Cambia todos los módulos de este estudiante
@@ -1157,8 +1338,15 @@ export function AdminUsersPage() {
                                   </div>
                                 </div>
                               </ModuleGroup>
-                              <ModuleGroup title="Exámenes" tone="exam">
-                                <ActionGroup title="Verb Exam">
+                              <ModuleGroup
+                                title="Exámenes"
+                                tone="exam"
+                                badge={enabledCountLabel(examEnabledFlags)}
+                              >
+                                <ActionGroup
+                                  title="Verb Exam"
+                                  enabled={Boolean(verbAccess?.is_enabled)}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1215,7 +1403,10 @@ export function AdminUsersPage() {
                                   </button>
                                 </ActionGroup>
 
-                                <ActionGroup title="Verb Base Form">
+                                <ActionGroup
+                                  title="Verb Base Form"
+                                  enabled={Boolean(verbBaseAccess?.is_enabled)}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1281,7 +1472,10 @@ export function AdminUsersPage() {
                                   </button>
                                 </ActionGroup>
 
-                                <ActionGroup title="Past Simple Examen">
+                                <ActionGroup
+                                  title="Past Simple Examen"
+                                  enabled={Boolean(pastAccess?.is_enabled)}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1347,7 +1541,10 @@ export function AdminUsersPage() {
                                   </button>
                                 </ActionGroup>
 
-                                <ActionGroup title="Present Simple Examen">
+                                <ActionGroup
+                                  title="Present Simple Examen"
+                                  enabled={Boolean(presentAccess?.is_enabled)}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1413,7 +1610,10 @@ export function AdminUsersPage() {
                                   </button>
                                 </ActionGroup>
 
-                                <ActionGroup title="Present Perfect Examen">
+                                <ActionGroup
+                                  title="Present Perfect Examen"
+                                  enabled={Boolean(perfectAccess?.is_enabled)}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1479,7 +1679,10 @@ export function AdminUsersPage() {
                                   </button>
                                 </ActionGroup>
 
-                                <ActionGroup title="Listening Examen">
+                                <ActionGroup
+                                  title="Listening Examen"
+                                  enabled={Boolean(listeningAccess?.is_enabled)}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1546,8 +1749,17 @@ export function AdminUsersPage() {
                                 </ActionGroup>
                               </ModuleGroup>
 
-                              <ModuleGroup title="Práctica" tone="practice">
-                                <ActionGroup title="Verb Base Form Práctica">
+                              <ModuleGroup
+                                title="Práctica"
+                                tone="practice"
+                                badge={enabledCountLabel(practiceEnabledFlags)}
+                              >
+                                <ActionGroup
+                                  title="Verb Base Form Práctica"
+                                  enabled={Boolean(
+                                    verbBaseAccess?.practice_enabled,
+                                  )}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1604,7 +1816,12 @@ export function AdminUsersPage() {
                                     Resetear
                                   </button>
                                 </ActionGroup>
-                                <ActionGroup title="Verb Past Form Práctica">
+                                <ActionGroup
+                                  title="Verb Past Form Práctica"
+                                  enabled={Boolean(
+                                    verbPastAccess?.practice_enabled,
+                                  )}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1661,7 +1878,10 @@ export function AdminUsersPage() {
                                     Resetear
                                   </button>
                                 </ActionGroup>
-                                <ActionGroup title="Past Simple Práctica">
+                                <ActionGroup
+                                  title="Past Simple Práctica"
+                                  enabled={Boolean(pastAccess?.practice_enabled)}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1718,7 +1938,12 @@ export function AdminUsersPage() {
                                     Resetear
                                   </button>
                                 </ActionGroup>
-                                <ActionGroup title="Present Simple Práctica">
+                                <ActionGroup
+                                  title="Present Simple Práctica"
+                                  enabled={Boolean(
+                                    presentAccess?.practice_enabled,
+                                  )}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1775,7 +2000,12 @@ export function AdminUsersPage() {
                                     Resetear
                                   </button>
                                 </ActionGroup>
-                                <ActionGroup title="Present Perfect Práctica">
+                                <ActionGroup
+                                  title="Present Perfect Práctica"
+                                  enabled={Boolean(
+                                    perfectAccess?.practice_enabled,
+                                  )}
+                                >
                                   <button
                                     type="button"
                                     className={
@@ -1832,7 +2062,12 @@ export function AdminUsersPage() {
                                     Resetear
                                   </button>
                                 </ActionGroup>
-                                <ActionGroup title="Listening Práctica">
+                                <ActionGroup
+                                  title="Listening Práctica"
+                                  enabled={Boolean(
+                                    listeningAccess?.practice_enabled,
+                                  )}
+                                >
                                   <button
                                     type="button"
                                     className={
