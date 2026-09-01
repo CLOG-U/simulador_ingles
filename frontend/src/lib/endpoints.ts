@@ -233,6 +233,45 @@ export const verbBaseApi = {
     ),
 };
 
+export const verbPastApi = {
+  config: () => apiFetch<ExamConfig>("/verb-past/config"),
+  practiceStatus: () => apiFetch<AttemptStatus>("/verb-past/practice/status"),
+  startPractice: () =>
+    apiFetch<Attempt>("/verb-past/practice/sessions", { method: "POST" }),
+  restartPractice: () =>
+    apiFetch<Attempt>("/verb-past/practice/sessions/restart", {
+      method: "POST",
+    }),
+  abandonPractice: () =>
+    apiFetch<{ abandoned: boolean; abandoned_count: number }>(
+      "/verb-past/practice/sessions/abandon",
+      { method: "POST" },
+    ),
+  getPractice: (id: string) =>
+    apiFetch<Attempt>(`/verb-past/practice/sessions/${id}`),
+  checkPracticeAnswer: (
+    attemptId: string,
+    questionId: string,
+    answer: string | null,
+  ) =>
+    apiFetch<ExamQuestion>(
+      `/verb-past/practice/sessions/${attemptId}/questions/${questionId}/check`,
+      {
+        method: "POST",
+        body: JSON.stringify({ answer }),
+      },
+    ),
+  submitPractice: (attemptId: string) =>
+    apiFetch<VerbBaseResult>(
+      `/verb-past/practice/sessions/${attemptId}/submit`,
+      { method: "POST" },
+    ),
+  practiceResult: (attemptId: string) =>
+    apiFetch<VerbBaseResult>(
+      `/verb-past/practice/sessions/${attemptId}/result`,
+    ),
+};
+
 export const presentSimpleApi = {
   config: () =>
     apiFetch<PresentSimpleConfig>("/present-simple/config"),
@@ -662,6 +701,40 @@ export const adminApi = {
   ) =>
     apiFetch<VerbBaseResult>(
       `/admin/verb-base/attempts/${attemptId}/questions/${questionId}/grade`,
+      { method: "PATCH", body: JSON.stringify({ correct }) },
+    ),
+  getVerbPastConfig: () =>
+    apiFetch<ExamConfig & { title?: string; review_policy: string }>(
+      "/admin/verb-past/config",
+    ),
+  updateVerbPastConfig: (
+    data: Partial<
+      Pick<
+        ExamConfig,
+        | "is_enabled"
+        | "practice_enabled"
+        | "passing_percentage"
+        | "duration_minutes"
+      >
+    > & { review_policy?: string },
+  ) =>
+    apiFetch<ExamConfig>("/admin/verb-past/config", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  listVerbPastAttempts: (mode: "exam" | "practice" = "practice") =>
+    apiFetch<{ items: AdminAttemptListItem[]; total: number }>(
+      `/admin/verb-past/attempts?mode=${mode}`,
+    ),
+  verbPastAttemptReport: (attemptId: string) =>
+    apiFetch<VerbBaseResult>(`/admin/verb-past/attempts/${attemptId}`),
+  overrideVerbPastGrade: (
+    attemptId: string,
+    questionId: string,
+    correct: boolean,
+  ) =>
+    apiFetch<VerbBaseResult>(
+      `/admin/verb-past/attempts/${attemptId}/questions/${questionId}/grade`,
       { method: "PATCH", body: JSON.stringify({ correct }) },
     ),
   getPresentSimpleConfig: () =>

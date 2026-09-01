@@ -23,6 +23,7 @@ from app.models import (
     User,
     UserRole,
     VerbBaseAttempt,
+    VerbPastAttempt,
 )
 from app.schemas.past_simple import ExamAccessUpdate, PastSimpleConfigUpdate
 from app.services import (
@@ -34,6 +35,7 @@ from app.services import (
     present_simple_service,
     user_service,
     verb_base_service,
+    verb_past_service,
 )
 from app.services.audit_service import log_audit
 
@@ -329,6 +331,29 @@ async def get_user_exam_access(
                     )
                 )
             ).scalar_one()
+        elif exam_type == ExamType.VERB_PAST_EXAM:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(VerbPastAttempt)
+                    .where(
+                        VerbPastAttempt.user_id == user_id,
+                        VerbPastAttempt.mode == verb_past_service.MODE_EXAM,
+                        VerbPastAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
+            practice_submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(VerbPastAttempt)
+                    .where(
+                        VerbPastAttempt.user_id == user_id,
+                        VerbPastAttempt.mode == verb_past_service.MODE_PRACTICE,
+                        VerbPastAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
         elif exam_type == ExamType.PRESENT_SIMPLE_EXAM:
             submitted = (
                 await db.execute(
@@ -532,6 +557,18 @@ async def allow_new_attempt(
                     )
                 )
             ).scalar_one()
+        elif parsed_type == ExamType.VERB_PAST_EXAM:
+            submitted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(VerbPastAttempt)
+                    .where(
+                        VerbPastAttempt.user_id == user_id,
+                        VerbPastAttempt.mode == verb_past_service.MODE_EXAM,
+                        VerbPastAttempt.status == AttemptStatus.SUBMITTED,
+                    )
+                )
+            ).scalar_one()
         elif parsed_type == ExamType.PRESENT_SIMPLE_EXAM:
             submitted = (
                 await db.execute(
@@ -637,6 +674,14 @@ async def reset_exam_progress(
             mode=mode,
         )
         action = "VERB_BASE_PROGRESS_RESET"
+    elif parsed_type == ExamType.VERB_PAST_EXAM:
+        result = await verb_past_service.reset_student_progress(
+            db,
+            user_id=user_id,
+            actor_id=admin.id,
+            mode=mode,
+        )
+        action = "VERB_PAST_PROGRESS_RESET"
     elif parsed_type == ExamType.PRESENT_SIMPLE_EXAM:
         result = await present_simple_service.reset_student_progress(
             db,

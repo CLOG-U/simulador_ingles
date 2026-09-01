@@ -14,6 +14,7 @@ import {
   presentPerfectApi,
   presentSimpleApi,
   verbBaseApi,
+  verbPastApi,
 } from "../src/lib/endpoints";
 
 vi.mock("../src/features/auth/AuthProvider", () => ({
@@ -35,6 +36,10 @@ vi.mock("../src/lib/endpoints", () => ({
   verbBaseApi: {
     config: vi.fn(),
     attemptStatus: vi.fn(),
+    practiceStatus: vi.fn(),
+  },
+  verbPastApi: {
+    config: vi.fn(),
     practiceStatus: vi.fn(),
   },
   pastSimpleApi: {
@@ -118,6 +123,28 @@ describe("Student modules", () => {
     });
     vi.mocked(verbBaseApi.practiceStatus).mockResolvedValue({
       exam_type: "verb_base_exam",
+      mode: "practice",
+      is_available: true,
+      has_open_attempt: false,
+      open_attempt_id: null,
+      submitted_count: 0,
+      max_attempts: null,
+      can_start_new: true,
+      question_bank_size: 50,
+      last_submitted: null,
+    });
+    vi.mocked(verbPastApi.config).mockResolvedValue({
+      exam_type: "verb_past_exam",
+      is_enabled: false,
+      practice_enabled: true,
+      question_count: 20,
+      passing_percentage: 70,
+      duration_minutes: null,
+      max_attempts: 1,
+      review_policy: "FULL",
+    });
+    vi.mocked(verbPastApi.practiceStatus).mockResolvedValue({
+      exam_type: "verb_past_exam",
       mode: "practice",
       is_available: true,
       has_open_attempt: false,
@@ -306,10 +333,13 @@ describe("Student modules", () => {
     expect(screen.queryByText("Start Practice")).not.toBeInTheDocument();
   });
 
-  it("lists Verb Base, Past Simple, Present Simple, Present Perfect and Listening practice in the Práctica module", async () => {
+  it("lists Verb Base, Verb Past, Past Simple, Present Simple, Present Perfect and Listening practice in the Práctica module", async () => {
     renderAt("/student/practice");
     expect(
       await screen.findByRole("heading", { name: "Verb Base Form Practice" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Verb Past Form Practice" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Past Simple Practice" }),
@@ -325,7 +355,7 @@ describe("Student modules", () => {
     ).toBeInTheDocument();
     expect(
       await screen.findAllByRole("link", { name: "Start Practice" }),
-    ).toHaveLength(4);
+    ).toHaveLength(5);
     expect(screen.getByRole("link", { name: "Open Listening" })).toHaveAttribute(
       "href",
       "/student/practice/listening",

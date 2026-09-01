@@ -296,6 +296,10 @@ export function AdminUsersPage() {
           ? "Verb Exam"
           : result.exam_type === "verb_base_exam"
             ? "Verb Base Form"
+            : result.exam_type === "verb_past_exam"
+              ? result.mode === "practice"
+                ? "Verb Past Form práctica"
+                : "Verb Past Form"
             : result.exam_type === "present_simple_exam"
               ? "Present Simple examen"
               : result.exam_type === "present_perfect_exam"
@@ -686,6 +690,9 @@ export function AdminUsersPage() {
                         const verbBaseAccess = u.exam_access?.find(
                           (item) => item.exam_type === "verb_base_exam",
                         );
+                        const verbPastAccess = u.exam_access?.find(
+                          (item) => item.exam_type === "verb_past_exam",
+                        );
                         const pastAccess = u.exam_access?.find(
                           (item) => item.exam_type === "past_simple_exam",
                         );
@@ -841,6 +848,17 @@ export function AdminUsersPage() {
                                   sesión(es) completada(s)
                                 </p>
                               </AttemptInfo>
+                              <AttemptInfo title="Verb Past Form Práctica">
+                                <p>
+                                  {verbPastAccess?.practice_enabled
+                                    ? "Habilitada"
+                                    : "Bloqueada"}
+                                </p>
+                                <p>
+                                  {verbPastAccess?.practice_submitted_attempts ?? 0}{" "}
+                                  sesión(es) completada(s)
+                                </p>
+                              </AttemptInfo>
                               <AttemptInfo title="Past Simple Práctica">
                                 <p>
                                   {pastAccess?.practice_enabled
@@ -959,6 +977,9 @@ export function AdminUsersPage() {
                           );
                           const verbBaseAccess = u.exam_access?.find(
                             (item) => item.exam_type === "verb_base_exam",
+                          );
+                          const verbPastAccess = u.exam_access?.find(
+                            (item) => item.exam_type === "verb_past_exam",
                           );
                           const pastAccess = u.exam_access?.find(
                             (item) => item.exam_type === "past_simple_exam",
@@ -1443,6 +1464,63 @@ export function AdminUsersPage() {
                                         resetModuleMutation.mutate({
                                           userId: u.id,
                                           examType: "verb_base_exam",
+                                          mode: "practice",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Resetear
+                                  </button>
+                                </ActionGroup>
+                                <ActionGroup title="Verb Past Form Práctica">
+                                  <button
+                                    type="button"
+                                    className={
+                                      verbPastAccess?.practice_enabled
+                                        ? "btn-admin-muted"
+                                        : "btn-admin-success"
+                                    }
+                                    disabled={busyAccess(
+                                      "verb_past_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() =>
+                                      accessMutation.mutate({
+                                        userId: u.id,
+                                        examType: "verb_past_exam",
+                                        practiceEnabled:
+                                          !verbPastAccess?.practice_enabled,
+                                      })
+                                    }
+                                  >
+                                    {verbPastAccess?.practice_enabled
+                                      ? "Bloquear"
+                                      : "Habilitar"}
+                                  </button>
+                                  <Link
+                                    to={`/admin/students/${u.id}/practice/verb-past`}
+                                    className="btn-admin-secondary"
+                                  >
+                                    Ver sesiones (
+                                    {verbPastAccess?.practice_submitted_attempts ??
+                                      0}
+                                    )
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="btn-admin-danger"
+                                    disabled={busyReset(
+                                      "verb_past_exam",
+                                      "practice",
+                                    )}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `¿Resetear la PRÁCTICA Verb Past Form de ${u.username}?\n\nSe eliminarán solo las sesiones de práctica.`,
+                                      );
+                                      if (confirmed) {
+                                        resetModuleMutation.mutate({
+                                          userId: u.id,
+                                          examType: "verb_past_exam",
                                           mode: "practice",
                                         });
                                       }

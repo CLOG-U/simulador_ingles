@@ -13,11 +13,13 @@ from app.models import (
     PresentPerfectConfig,
     PresentSimpleConfig,
     VerbBaseConfig,
+    VerbPastConfig,
 )
 
 _CONFIG_MODEL = {
     ExamType.VERB_EXAM: ExamConfig,
     ExamType.VERB_BASE_EXAM: VerbBaseConfig,
+    ExamType.VERB_PAST_EXAM: VerbPastConfig,
     ExamType.PAST_SIMPLE_EXAM: PastSimpleConfig,
     ExamType.PRESENT_SIMPLE_EXAM: PresentSimpleConfig,
     ExamType.PRESENT_PERFECT_EXAM: PresentPerfectConfig,
@@ -26,6 +28,7 @@ _CONFIG_MODEL = {
 
 _PRACTICE_EXAMS = {
     ExamType.VERB_BASE_EXAM,
+    ExamType.VERB_PAST_EXAM,
     ExamType.PAST_SIMPLE_EXAM,
     ExamType.PRESENT_SIMPLE_EXAM,
     ExamType.PRESENT_PERFECT_EXAM,
@@ -144,8 +147,8 @@ async def set_student_access(
         if exam_type not in _PRACTICE_EXAMS:
             raise AppError(
                 "INVALID_EXAM_TYPE",
-                "La práctica solo aplica a Verb Base Form, Past Simple, "
-                "Present Simple, Present Perfect y Listening.",
+                "La práctica solo aplica a Verb Base Form, Verb Past Form, "
+                "Past Simple, Present Simple, Present Perfect y Listening.",
                 status_code=400,
             )
         access.practice_enabled = practice_enabled

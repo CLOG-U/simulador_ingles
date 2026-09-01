@@ -12,6 +12,7 @@ export function roleLabel(role: UserRole): string {
 export type ExamType =
   | "verb_exam"
   | "verb_base_exam"
+  | "verb_past_exam"
   | "past_simple_exam"
   | "present_simple_exam"
   | "present_perfect_exam"
@@ -119,7 +120,7 @@ export interface Attempt {
 }
 
 export interface VerbBaseResult extends Attempt {
-  exam_type: "verb_base_exam";
+  exam_type: "verb_base_exam" | "verb_past_exam";
   correct_answers: number | null;
   incorrect_answers: number | null;
   unanswered_answers: number | null;
@@ -252,6 +253,8 @@ export interface AdminStudentReport {
   past_simple_practice_attempts?: PastSimpleAttemptSummary[];
   verb_base_attempts?: AdminAttemptSummary[];
   verb_base_practice_attempts?: AdminAttemptSummary[];
+  verb_past_attempts?: AdminAttemptSummary[];
+  verb_past_practice_attempts?: AdminAttemptSummary[];
   present_simple_attempts?: PastSimpleAttemptSummary[];
   present_simple_practice_attempts?: PastSimpleAttemptSummary[];
   present_perfect_attempts?: PastSimpleAttemptSummary[];
@@ -262,7 +265,7 @@ export interface AdminStudentReport {
 }
 
 export interface AdminAttemptReport extends AttemptResult {
-  exam_type: "verb_exam" | "verb_base_exam";
+  exam_type: "verb_exam" | "verb_base_exam" | "verb_past_exam";
   exam_name: string;
   student_id: string;
   student_username: string;

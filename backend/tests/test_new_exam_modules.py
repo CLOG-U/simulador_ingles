@@ -9,6 +9,7 @@ from app.services.present_perfect_engine import (
 )
 from app.services.present_simple_engine import select_balanced_questions
 from app.services.verb_base_service import MODE_EXAM, MODE_PRACTICE, build_base_prompt_types
+from app.services.verb_past_service import build_past_prompt_types
 from seed.listening_data import LISTENING_CLIPS, LISTENING_EXAM_CLIPS, LISTENING_QUESTIONS
 from seed.present_perfect_data import PRESENT_PERFECT_QUESTIONS
 from seed.present_simple_data import PRESENT_SIMPLE_QUESTIONS
@@ -17,6 +18,7 @@ from seed.present_simple_data import PRESENT_SIMPLE_QUESTIONS
 def test_exam_types_include_new_modules():
     values = {item.value for item in ExamType}
     assert "verb_base_exam" in values
+    assert "verb_past_exam" in values
     assert "present_simple_exam" in values
     assert "present_perfect_exam" in values
     assert "listening_practice" in values
@@ -29,6 +31,14 @@ def test_verb_base_practice_modes():
 
 def test_verb_base_prompt_types_balanced():
     types = build_base_prompt_types(20)
+    assert len(types) == 20
+    assert types.count("FROM_SPANISH") == 10
+    assert types.count("FROM_BASE") == 10
+    assert "FROM_PAST" not in types
+
+
+def test_verb_past_prompt_types_balanced():
+    types = build_past_prompt_types(20)
     assert len(types) == 20
     assert types.count("FROM_SPANISH") == 10
     assert types.count("FROM_BASE") == 10

@@ -364,6 +364,12 @@ export function AdminStudentReportPage() {
                   tone="practice"
                 />
                 <ModuleReportCard
+                  title="Verb Past Form Practice"
+                  summary={`${data.verb_past_practice_attempts?.length ?? 0} sesión(es) registradas`}
+                  to={`/admin/students/${userId}/practice/verb-past`}
+                  tone="practice"
+                />
+                <ModuleReportCard
                   title="Past Simple Practice"
                   summary={`${data.past_simple_practice_attempts?.length ?? 0} sesión(es) registradas`}
                   to={`/admin/students/${userId}/practice/past-simple`}
@@ -400,6 +406,7 @@ type StudentModuleKey =
   | "verb"
   | "verb-base"
   | "verb-base-practice"
+  | "verb-past-practice"
   | "past-simple-exam"
   | "present-simple-exam"
   | "present-perfect-exam"
@@ -426,6 +433,7 @@ export function AdminStudentModuleReportPage({
     verb: "Reporte Verb Exam",
     "verb-base": "Reporte Verb Base Form",
     "verb-base-practice": "Reporte Verb Base Form Practice",
+    "verb-past-practice": "Reporte Verb Past Form Practice",
     "past-simple-exam": "Reporte Past Simple Exam",
     "present-simple-exam": "Reporte Present Simple Exam",
     "present-perfect-exam": "Reporte Present Perfect Exam",
@@ -439,6 +447,7 @@ export function AdminStudentModuleReportPage({
     verb: "/admin/exams/verb",
     "verb-base": "/admin/exams/verb-base",
     "verb-base-practice": "/admin/practice/verb-base",
+    "verb-past-practice": "/admin/practice/verb-past",
     "past-simple-exam": "/admin/exams/past-simple",
     "present-simple-exam": "/admin/exams/present-simple",
     "present-perfect-exam": "/admin/exams/present-perfect",
@@ -565,6 +574,55 @@ export function AdminStudentModuleReportPage({
                             <td className="py-2">
                               <Link
                                 to={`/admin/exams/verb-base/reports/${a.id}`}
+                                className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
+                              >
+                                Ver reporte
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {module === "verb-past-practice" && (
+              <section className="card">
+                <h3 className="mb-3 font-semibold">
+                  Historial de Verb Past Form Practice
+                </h3>
+                {(data.verb_past_practice_attempts?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-gray-600">Sin sesiones todavía.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[640px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="py-2">Inicio</th>
+                          <th className="py-2">Entrega</th>
+                          <th className="py-2">Estado</th>
+                          <th className="py-2">Nota</th>
+                          <th className="py-2">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.verb_past_practice_attempts?.map((a) => (
+                          <tr key={a.id} className="border-b">
+                            <td className="py-2">{formatDate(a.started_at)}</td>
+                            <td className="py-2">{formatDate(a.submitted_at)}</td>
+                            <td className="py-2">
+                              {STATUS_LABELS[a.status] ?? a.status}
+                            </td>
+                            <td className="py-2">
+                              {a.percentage != null
+                                ? `${a.percentage.toFixed(1)}%`
+                                : "—"}
+                            </td>
+                            <td className="py-2">
+                              <Link
+                                to={`/admin/practice/verb-past/reports/${a.id}`}
                                 className="btn-admin-primary inline-flex w-auto min-w-[8.5rem] px-4"
                               >
                                 Ver reporte

@@ -27,10 +27,14 @@ from app.models.entities import (
     VerbBaseAttempt,
     VerbBaseAttemptQuestion,
     VerbBaseConfig,
+    VerbPastAttempt,
+    VerbPastAttemptQuestion,
+    VerbPastConfig,
 )
 from app.models.enums import (
     AttemptStatus,
     BaseFormPromptType,
+    PastFormPromptType,
     ExamType,
     PastSimpleQuestionType,
     PastSimpleTopic,
@@ -50,6 +54,7 @@ __all__ = [
     "AuditLog",
     "AttemptStatus",
     "BaseFormPromptType",
+    "PastFormPromptType",
     "ExamAccess",
     "ExamConfig",
     "ExamType",
@@ -86,4 +91,7 @@ __all__ = [
     "VerbBaseAttempt",
     "VerbBaseAttemptQuestion",
     "VerbBaseConfig",
+    "VerbPastAttempt",
+    "VerbPastAttemptQuestion",
+    "VerbPastConfig",
 ]

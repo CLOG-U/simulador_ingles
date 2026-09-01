@@ -8,6 +8,7 @@ import {
   presentPerfectApi,
   presentSimpleApi,
   verbBaseApi,
+  verbPastApi,
 } from "../../lib/endpoints";
 import type { AttemptStatus } from "../../lib/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -382,7 +383,7 @@ export function StudentExamsPage() {
   );
 }
 
-/** Práctica: Verb Base, Past Simple, Present Simple, Present Perfect y Listening. */
+/** Práctica: Verb Base, Verb Past, Past Simple, Present Simple, Present Perfect y Listening. */
 export function StudentPracticePage() {
   const verbBaseConfigQuery = useQuery({
     queryKey: ["exam-config", "verb_base_exam"],
@@ -391,6 +392,14 @@ export function StudentPracticePage() {
   const verbBasePracticeStatusQuery = useQuery({
     queryKey: ["attempt-status", "verb_base_practice"],
     queryFn: verbBaseApi.practiceStatus,
+  });
+  const verbPastConfigQuery = useQuery({
+    queryKey: ["exam-config", "verb_past_exam"],
+    queryFn: verbPastApi.config,
+  });
+  const verbPastPracticeStatusQuery = useQuery({
+    queryKey: ["attempt-status", "verb_past_practice"],
+    queryFn: verbPastApi.practiceStatus,
   });
   const pastConfigQuery = useQuery({
     queryKey: ["exam-config", "past_simple_exam"],
@@ -451,6 +460,12 @@ export function StudentPracticePage() {
     verbBasePracticeStatusQuery.data?.has_open_attempt &&
     verbBasePracticeStatusQuery.data.open_attempt_id;
   const verbBaseSubmitted = verbBasePracticeStatusQuery.data?.submitted_count ?? 0;
+
+  const verbPastAvailable = verbPastPracticeStatusQuery.data?.is_available ?? false;
+  const verbPastOpen =
+    verbPastPracticeStatusQuery.data?.has_open_attempt &&
+    verbPastPracticeStatusQuery.data.open_attempt_id;
+  const verbPastSubmitted = verbPastPracticeStatusQuery.data?.submitted_count ?? 0;
 
   return (
     <AppShell title="Práctica" nav={studentNav}>
@@ -518,6 +533,69 @@ export function StudentPracticePage() {
             ) : (
               <Link
                 to="/student/practice/verb_base"
+                className="btn-primary mt-4"
+              >
+                Start Practice
+              </Link>
+            )}
+          </section>
+          <section className="card flex h-full flex-col">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold">Verb Past Form Practice</h2>
+              <span
+                className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                  verbPastAvailable
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {verbPastAvailable ? "Available" : "Locked"}
+              </span>
+            </div>
+            <p className="mt-2 flex-1 text-sm text-gray-600">
+              Practice the past form of verbs. We show you Spanish or the base
+              form; you write the past. Immediate feedback. Each session picks
+              20 verbs from the same bank as the exam.
+            </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Bank: {verbPastConfigQuery.data?.question_bank_size ?? "—"} verbs ·
+              Session: {verbPastConfigQuery.data?.question_count ?? 20}
+            </p>
+            <p className="mt-1 text-sm text-gray-600">
+              Sessions completed: {verbPastSubmitted}
+            </p>
+            {verbPastPracticeStatusQuery.isLoading ? (
+              <p className="mt-4 text-sm text-gray-600">Loading practice…</p>
+            ) : verbPastPracticeStatusQuery.isError ? (
+              <button
+                type="button"
+                className="btn-primary mt-4"
+                onClick={() => void verbPastPracticeStatusQuery.refetch()}
+              >
+                Try Again
+              </button>
+            ) : !verbPastAvailable ? (
+              <p className="mt-4 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700">
+                Practice is not enabled for your account.
+              </p>
+            ) : verbPastOpen ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  to={`/student/practice/verb_past/sessions/${verbPastPracticeStatusQuery.data!.open_attempt_id}`}
+                  className="btn-primary"
+                >
+                  Resume Practice
+                </Link>
+                <Link
+                  to="/student/practice/verb_past/start?fresh=1"
+                  className="inline-flex min-h-11 items-center rounded-xl border px-4 font-semibold"
+                >
+                  Start New Session
+                </Link>
+              </div>
+            ) : (
+              <Link
+                to="/student/practice/verb_past"
                 className="btn-primary mt-4"
               >
                 Start Practice

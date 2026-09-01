@@ -10,6 +10,7 @@ class UserRole(StrEnum):
 class ExamType(StrEnum):
     VERB_EXAM = "verb_exam"
     VERB_BASE_EXAM = "verb_base_exam"
+    VERB_PAST_EXAM = "verb_past_exam"
     PAST_SIMPLE_EXAM = "past_simple_exam"
     PRESENT_SIMPLE_EXAM = "present_simple_exam"
     PRESENT_PERFECT_EXAM = "present_perfect_exam"
@@ -104,6 +105,13 @@ class PromptType(StrEnum):
 
 class BaseFormPromptType(StrEnum):
     """Tipos de pista del Verb Base Form: español ↔ forma base (sin pasado)."""
+
+    FROM_SPANISH = "FROM_SPANISH"
+    FROM_BASE = "FROM_BASE"
+
+
+class PastFormPromptType(StrEnum):
+    """Tipos de pista del Verb Past Form: español o forma base → pasado."""
 
     FROM_SPANISH = "FROM_SPANISH"
     FROM_BASE = "FROM_BASE"

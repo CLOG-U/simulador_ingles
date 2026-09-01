@@ -18,6 +18,7 @@ from app.models import (
     User,
     UserRole,
     VerbBaseAttempt,
+    VerbPastAttempt,
 )
 from app.schemas.user import (
     AdminResetPasswordRequest,
@@ -70,6 +71,8 @@ async def list_users(
 
     verb_base_exam_counts: dict = {}
     verb_base_practice_counts: dict = {}
+    verb_past_exam_counts: dict = {}
+    verb_past_practice_counts: dict = {}
     if student_ids:
         verb_base_counts_result = await db.execute(
             select(VerbBaseAttempt.user_id, VerbBaseAttempt.mode, func.count())
@@ -84,6 +87,19 @@ async def list_users(
                 verb_base_practice_counts[user_id] = count
             else:
                 verb_base_exam_counts[user_id] = count
+        verb_past_counts_result = await db.execute(
+            select(VerbPastAttempt.user_id, VerbPastAttempt.mode, func.count())
+            .where(
+                VerbPastAttempt.user_id.in_(student_ids),
+                VerbPastAttempt.status == AttemptStatus.SUBMITTED,
+            )
+            .group_by(VerbPastAttempt.user_id, VerbPastAttempt.mode)
+        )
+        for user_id, mode, count in verb_past_counts_result.all():
+            if mode == "practice":
+                verb_past_practice_counts[user_id] = count
+            else:
+                verb_past_exam_counts[user_id] = count
 
     present_exam_counts: dict = {}
     present_practice_counts: dict = {}
@@ -149,6 +165,8 @@ async def list_users(
             return verb_used
         if exam_type == ExamType.VERB_BASE_EXAM.value:
             return verb_base_exam_counts.get(user_id, 0)
+        if exam_type == ExamType.VERB_PAST_EXAM.value:
+            return verb_past_exam_counts.get(user_id, 0)
         if exam_type == ExamType.PRESENT_SIMPLE_EXAM.value:
             return present_exam_counts.get(user_id, 0)
         if exam_type == ExamType.PRESENT_PERFECT_EXAM.value:
@@ -199,6 +217,9 @@ async def list_users(
                                 else verb_base_practice_counts.get(user.id, 0)
                                 if access.exam_type
                                 == ExamType.VERB_BASE_EXAM.value
+                                else verb_past_practice_counts.get(user.id, 0)
+                                if access.exam_type
+                                == ExamType.VERB_PAST_EXAM.value
                                 else 0
                             ),
                         }
@@ -289,6 +310,25 @@ async def student_report(
         .order_by(VerbBaseAttempt.started_at.desc())
     )
     verb_base_practice_attempts = verb_base_practice_result.scalars().all()
+
+    verb_past_result = await db.execute(
+        select(VerbPastAttempt)
+        .where(
+            VerbPastAttempt.user_id == user_id,
+            VerbPastAttempt.mode == "exam",
+        )
+        .order_by(VerbPastAttempt.started_at.desc())
+    )
+    verb_past_attempts = verb_past_result.scalars().all()
+    verb_past_practice_result = await db.execute(
+        select(VerbPastAttempt)
+        .where(
+            VerbPastAttempt.user_id == user_id,
+            VerbPastAttempt.mode == "practice",
+        )
+        .order_by(VerbPastAttempt.started_at.desc())
+    )
+    verb_past_practice_attempts = verb_past_practice_result.scalars().all()
 
     present_result = await db.execute(
         select(PresentSimpleAttempt)
@@ -385,10 +425,15 @@ async def student_report(
             "total_questions": attempt.total_questions,
         }
 
-    def _serialize_verb_base(attempt: VerbBaseAttempt, *, exam_name: str) -> dict:
+    def _serialize_verb_module(
+        attempt: VerbBaseAttempt | VerbPastAttempt,
+        *,
+        exam_type: str,
+        exam_name: str,
+    ) -> dict:
         return {
             "id": str(attempt.id),
-            "exam_type": ExamType.VERB_BASE_EXAM.value,
+            "exam_type": exam_type,
             "mode": attempt.mode,
             "exam_name": exam_name,
             "status": attempt.status.value,
@@ -424,12 +469,36 @@ async def student_report(
             for a in attempts
         ],
         "verb_base_attempts": [
-            _serialize_verb_base(attempt, exam_name="Verb Base Form")
+            _serialize_verb_module(
+                attempt,
+                exam_type=ExamType.VERB_BASE_EXAM.value,
+                exam_name="Verb Base Form",
+            )
             for attempt in verb_base_attempts
         ],
         "verb_base_practice_attempts": [
-            _serialize_verb_base(attempt, exam_name="Verb Base Form Practice")
+            _serialize_verb_module(
+                attempt,
+                exam_type=ExamType.VERB_BASE_EXAM.value,
+                exam_name="Verb Base Form Practice",
+            )
             for attempt in verb_base_practice_attempts
+        ],
+        "verb_past_attempts": [
+            _serialize_verb_module(
+                attempt,
+                exam_type=ExamType.VERB_PAST_EXAM.value,
+                exam_name="Verb Past Form",
+            )
+            for attempt in verb_past_attempts
+        ],
+        "verb_past_practice_attempts": [
+            _serialize_verb_module(
+                attempt,
+                exam_type=ExamType.VERB_PAST_EXAM.value,
+                exam_name="Verb Past Form Practice",
+            )
+            for attempt in verb_past_practice_attempts
         ],
         "past_simple_attempts": [
             _serialize_past_simple(
@@ -518,6 +587,11 @@ async def student_report(
         + sum(
             1
             for attempt in verb_base_practice_attempts
+            if attempt.status == AttemptStatus.SUBMITTED
+        )
+        + sum(
+            1
+            for attempt in verb_past_practice_attempts
             if attempt.status == AttemptStatus.SUBMITTED
         ),
     }

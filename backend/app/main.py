@@ -12,6 +12,7 @@ from app.api.admin_present_perfect import router as admin_present_perfect_router
 from app.api.admin_present_simple import router as admin_present_simple_router
 from app.api.admin_users import router as admin_users_router
 from app.api.admin_verb_base import router as admin_verb_base_router
+from app.api.admin_verb_past import router as admin_verb_past_router
 from app.api.auth import router as auth_router
 from app.api.exam import router as exam_router
 from app.api.health import router as health_router
@@ -20,6 +21,7 @@ from app.api.past_simple_exam import router as past_simple_exam_router
 from app.api.present_perfect_exam import router as present_perfect_exam_router
 from app.api.present_simple_exam import router as present_simple_exam_router
 from app.api.verb_base_exam import router as verb_base_exam_router
+from app.api.verb_past_exam import router as verb_past_exam_router
 from app.core.config import settings
 from app.core.errors import AppError, app_error_handler
 from app.core.logging import RequestIdFilter, new_request_id, request_id_ctx, setup_logging
@@ -63,6 +65,7 @@ app.include_router(health_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(exam_router, prefix="/api/v1")
 app.include_router(verb_base_exam_router, prefix="/api/v1")
+app.include_router(verb_past_exam_router, prefix="/api/v1")
 app.include_router(past_simple_exam_router, prefix="/api/v1")
 app.include_router(present_simple_exam_router, prefix="/api/v1")
 app.include_router(present_perfect_exam_router, prefix="/api/v1")
@@ -74,5 +77,6 @@ app.include_router(admin_past_simple_router, prefix="/api/v1")
 app.include_router(admin_present_simple_router, prefix="/api/v1")
 app.include_router(admin_present_perfect_router, prefix="/api/v1")
 app.include_router(admin_verb_base_router, prefix="/api/v1")
+app.include_router(admin_verb_past_router, prefix="/api/v1")
 app.include_router(admin_listening_router, prefix="/api/v1")
 app.include_router(admin_audit_router, prefix="/api/v1")

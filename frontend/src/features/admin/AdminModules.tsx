@@ -221,6 +221,10 @@ export function AdminPracticeHubPage() {
     queryKey: ["admin-verb-base-config"],
     queryFn: adminApi.getVerbBaseConfig,
   });
+  const verbPastConfig = useQuery({
+    queryKey: ["admin-verb-past-config"],
+    queryFn: adminApi.getVerbPastConfig,
+  });
   const pastConfig = useQuery({
     queryKey: ["admin-past-simple-config"],
     queryFn: adminApi.getPastSimpleConfig,
@@ -258,6 +262,18 @@ export function AdminPracticeHubPage() {
             }
             to="/admin/practice/verb-base"
             cta="Abrir Verb Base Form Practice"
+            tone="practice"
+          />
+          <ModuleCard
+            title="Verb Past Form Practice"
+            description="Español o forma base → pasado. Feedback inmediato y sin cupo de intentos."
+            meta={
+              verbPastConfig.data
+                ? `${verbPastConfig.data.practice_enabled ? "Habilitada" : "Deshabilitada"} · Banco: ${verbPastConfig.data.question_bank_size ?? "—"} verbos`
+                : "Cargando…"
+            }
+            to="/admin/practice/verb-past"
+            cta="Abrir Verb Past Form Practice"
             tone="practice"
           />
           <ModuleCard
@@ -732,6 +748,90 @@ export function AdminVerbBasePracticePage() {
           error={reportsQuery.error}
           items={reportsQuery.data?.items ?? []}
           detailPath={(id) => `/admin/practice/verb-base/reports/${id}`}
+          emptyMessage="Aún no hay sesiones de práctica."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+/** Verb Past Form Practice: habilitación + reportes. */
+export function AdminVerbPastPracticePage() {
+  const queryClient = useQueryClient();
+  const { data: config } = useQuery({
+    queryKey: ["admin-verb-past-config"],
+    queryFn: adminApi.getVerbPastConfig,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["admin-attempts", "verb_past_practice"],
+    queryFn: () => adminApi.listVerbPastAttempts("practice"),
+  });
+  const [notice, setNotice] = useState("");
+
+  const togglePractice = async () => {
+    if (!config) return;
+    await adminApi.updateVerbPastConfig({
+      practice_enabled: !config.practice_enabled,
+    });
+    setNotice(
+      !config.practice_enabled
+        ? "Verb Past Form Practice habilitada globalmente."
+        : "Verb Past Form Practice deshabilitada.",
+    );
+    void queryClient.invalidateQueries({ queryKey: ["admin-verb-past-config"] });
+  };
+
+  return (
+    <AppShell title="Verb Past Form Practice" nav={adminNav} wide>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BackLink to="/admin/practice" label="← Práctica" />
+          <button
+            type="button"
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              config?.practice_enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            disabled={!config}
+            onClick={() => void togglePractice()}
+          >
+            {config?.practice_enabled
+              ? "Práctica habilitada"
+              : "Práctica deshabilitada"}
+          </button>
+        </div>
+
+        <section className="overflow-hidden rounded-[var(--radius-card)] border border-brand-sky/30 bg-white shadow-sm">
+          <div className="border-b border-brand-sky/20 bg-gradient-to-r from-brand-sky to-brand-primary px-6 py-4 text-brand-white">
+            <h2 className="font-semibold">Configuración de la práctica</h2>
+            <p className="mt-1 text-sm text-brand-white/90">
+              Entrenamiento con feedback. No usa nota mínima ni temporizador.
+            </p>
+          </div>
+          <div className="space-y-3 p-6">
+            <p className="text-sm text-gray-600">
+              Banco compartido con Verb Exam / Verb Base Form:{" "}
+              {config?.question_bank_size ?? "—"} verbos activos · Cada sesión
+              toma {config?.question_count ?? 20}. Sin cupo de intentos; también
+              se habilita por estudiante en Usuarios.
+            </p>
+            {notice && (
+              <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-success">
+                {notice}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <ModuleReportsSection
+          title="Reportes de Verb Past Form Practice"
+          description="Sesiones de práctica. Entra al reporte específico de cada sesión."
+          isLoading={reportsQuery.isLoading}
+          isError={reportsQuery.isError}
+          error={reportsQuery.error}
+          items={reportsQuery.data?.items ?? []}
+          detailPath={(id) => `/admin/practice/verb-past/reports/${id}`}
           emptyMessage="Aún no hay sesiones de práctica."
         />
       </div>
