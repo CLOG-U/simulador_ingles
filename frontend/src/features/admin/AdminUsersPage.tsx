@@ -279,6 +279,35 @@ export function AdminUsersPage() {
       setActionNotice("Acceso actualizado.");
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
+    onError: (err) => setActionNotice(formatApiError(err)),
+  });
+  const bulkAccessMutation = useMutation({
+    mutationFn: ({
+      userId,
+      exams,
+      practices,
+    }: {
+      userId: string;
+      exams?: boolean;
+      practices?: boolean;
+    }) => adminApi.updateExamAccessBulk(userId, { exams, practices }),
+    onSuccess: (_result, variables) => {
+      if (variables.exams === true && variables.practices === true) {
+        setActionNotice("Todos los exámenes y prácticas quedaron habilitados.");
+      } else if (variables.exams === false && variables.practices === false) {
+        setActionNotice("Todos los exámenes y prácticas quedaron bloqueados.");
+      } else if (variables.exams === true) {
+        setActionNotice("Todos los exámenes quedaron habilitados.");
+      } else if (variables.exams === false) {
+        setActionNotice("Todos los exámenes quedaron bloqueados.");
+      } else if (variables.practices === true) {
+        setActionNotice("Toda la práctica quedó habilitada.");
+      } else {
+        setActionNotice("Toda la práctica quedó bloqueada.");
+      }
+      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err) => setActionNotice(formatApiError(err)),
   });
   const resetModuleMutation = useMutation({
     mutationFn: ({
@@ -1022,9 +1051,112 @@ export function AdminUsersPage() {
                             resetModuleMutation.variables?.examType === examType &&
                             (resetModuleMutation.variables?.mode ?? "exam") ===
                               mode;
+                          const bulkBusyForUser =
+                            bulkAccessMutation.isPending &&
+                            bulkAccessMutation.variables?.userId === u.id;
 
                           return (
                             <>
+                              <ModuleGroup title="Acceso general" tone="account">
+                                <div className="w-full min-w-[15rem] max-w-[18rem] space-y-2">
+                                  <p className="text-[11px] leading-snug text-gray-600">
+                                    Cambia todos los módulos de este estudiante
+                                    de una vez. Luego puedes activar solo uno.
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                      type="button"
+                                      className="btn-admin-success"
+                                      disabled={bulkBusyForUser}
+                                      onClick={() =>
+                                        bulkAccessMutation.mutate({
+                                          userId: u.id,
+                                          exams: true,
+                                          practices: true,
+                                        })
+                                      }
+                                    >
+                                      Habilitar todo
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn-admin-muted"
+                                      disabled={bulkBusyForUser}
+                                      onClick={() =>
+                                        bulkAccessMutation.mutate({
+                                          userId: u.id,
+                                          exams: false,
+                                          practices: false,
+                                        })
+                                      }
+                                    >
+                                      Bloquear todo
+                                    </button>
+                                  </div>
+                                  <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-brand-primary/80">
+                                    Solo exámenes
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                      type="button"
+                                      className="btn-admin-success"
+                                      disabled={bulkBusyForUser}
+                                      onClick={() =>
+                                        bulkAccessMutation.mutate({
+                                          userId: u.id,
+                                          exams: true,
+                                        })
+                                      }
+                                    >
+                                      Habilitar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn-admin-muted"
+                                      disabled={bulkBusyForUser}
+                                      onClick={() =>
+                                        bulkAccessMutation.mutate({
+                                          userId: u.id,
+                                          exams: false,
+                                        })
+                                      }
+                                    >
+                                      Bloquear
+                                    </button>
+                                  </div>
+                                  <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-brand-primary/80">
+                                    Solo práctica
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                      type="button"
+                                      className="btn-admin-success"
+                                      disabled={bulkBusyForUser}
+                                      onClick={() =>
+                                        bulkAccessMutation.mutate({
+                                          userId: u.id,
+                                          practices: true,
+                                        })
+                                      }
+                                    >
+                                      Habilitar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn-admin-muted"
+                                      disabled={bulkBusyForUser}
+                                      onClick={() =>
+                                        bulkAccessMutation.mutate({
+                                          userId: u.id,
+                                          practices: false,
+                                        })
+                                      }
+                                    >
+                                      Bloquear
+                                    </button>
+                                  </div>
+                                </div>
+                              </ModuleGroup>
                               <ModuleGroup title="Exámenes" tone="exam">
                                 <ActionGroup title="Verb Exam">
                                   <button

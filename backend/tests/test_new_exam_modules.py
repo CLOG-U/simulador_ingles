@@ -8,6 +8,7 @@ from app.services.present_perfect_engine import (
     select_balanced_questions as select_present_perfect,
 )
 from app.services.present_simple_engine import select_balanced_questions
+from app.services.exam_access_service import _EXAM_ACCESS_TYPES, _PRACTICE_EXAMS
 from app.services.verb_base_service import MODE_EXAM, MODE_PRACTICE, build_base_prompt_types
 from app.services.verb_past_service import build_past_prompt_types
 from seed.listening_data import LISTENING_CLIPS, LISTENING_EXAM_CLIPS, LISTENING_QUESTIONS
@@ -22,6 +23,28 @@ def test_exam_types_include_new_modules():
     assert "present_simple_exam" in values
     assert "present_perfect_exam" in values
     assert "listening_practice" in values
+
+
+def test_student_bulk_access_covers_exam_and_practice_modules():
+    exam_values = {item.value for item in _EXAM_ACCESS_TYPES}
+    practice_values = {item.value for item in _PRACTICE_EXAMS}
+    assert exam_values == {
+        "verb_exam",
+        "verb_base_exam",
+        "past_simple_exam",
+        "present_simple_exam",
+        "present_perfect_exam",
+        "listening_practice",
+    }
+    assert practice_values == {
+        "verb_base_exam",
+        "verb_past_exam",
+        "past_simple_exam",
+        "present_simple_exam",
+        "present_perfect_exam",
+        "listening_practice",
+    }
+    assert "verb_past_exam" not in exam_values
 
 
 def test_verb_base_practice_modes():

@@ -552,6 +552,19 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
+  updateExamAccessBulk: (
+    userId: string,
+    data: { exams?: boolean; practices?: boolean },
+  ) =>
+    apiFetch<{
+      status: string;
+      exams: boolean | null;
+      practices: boolean | null;
+      updated: ExamAccess[];
+    }>(`/admin/users/${userId}/exam-access`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
   authorizeNewAttempt: (
     userId: string,
     examType: ExamType,

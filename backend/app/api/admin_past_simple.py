@@ -25,7 +25,11 @@ from app.models import (
     VerbBaseAttempt,
     VerbPastAttempt,
 )
-from app.schemas.past_simple import ExamAccessUpdate, PastSimpleConfigUpdate
+from app.schemas.past_simple import (
+    ExamAccessBulkUpdate,
+    ExamAccessUpdate,
+    PastSimpleConfigUpdate,
+)
 from app.services import (
     exam_access_service,
     exam_service,
@@ -505,6 +509,35 @@ async def update_user_exam_access(
         "practice_enabled": access.practice_enabled,
         "allowed_attempts": access.allowed_attempts,
     }
+
+
+@router.patch("/users/{user_id}/exam-access")
+async def update_user_exam_access_bulk(
+    user_id: uuid.UUID,
+    body: ExamAccessBulkUpdate,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await user_service.get_user(db, user_id)
+    if user.role != UserRole.STUDENT:
+        raise AppError("NOT_FOUND", "Estudiante no encontrado.", status_code=404)
+    result = await exam_access_service.set_student_access_bulk(
+        db,
+        user_id=user_id,
+        actor_id=admin.id,
+        exams=body.exams,
+        practices=body.practices,
+    )
+    await log_audit(
+        db,
+        actor_user_id=admin.id,
+        action="EXAM_ACCESS_BULK_UPDATED",
+        target_type="user",
+        target_id=str(user_id),
+        metadata={"exams": body.exams, "practices": body.practices},
+    )
+    await db.commit()
+    return {"status": "ok", **result}
 
 
 @router.post("/users/{user_id}/exams/{exam_type}/allow-new-attempt")

@@ -35,6 +35,15 @@ _PRACTICE_EXAMS = {
     ExamType.LISTENING_PRACTICE,
 }
 
+_EXAM_ACCESS_TYPES = {
+    ExamType.VERB_EXAM,
+    ExamType.VERB_BASE_EXAM,
+    ExamType.PAST_SIMPLE_EXAM,
+    ExamType.PRESENT_SIMPLE_EXAM,
+    ExamType.PRESENT_PERFECT_EXAM,
+    ExamType.LISTENING_PRACTICE,
+}
+
 
 async def _global_exam_enabled(session: AsyncSession, exam_type: ExamType) -> bool:
     model = _CONFIG_MODEL[exam_type]
@@ -155,6 +164,49 @@ async def set_student_access(
     access.updated_by = actor_id
     await session.flush()
     return access
+
+
+async def set_student_access_bulk(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    exams: bool | None = None,
+    practices: bool | None = None,
+) -> dict:
+    if exams is None and practices is None:
+        raise AppError(
+            "INVALID_ACCESS_UPDATE",
+            "Debes indicar si cambian los exámenes, las prácticas o ambos.",
+            status_code=400,
+        )
+
+    updated: list[dict] = []
+    for exam_type in ExamType:
+        is_enabled = exams if exam_type in _EXAM_ACCESS_TYPES else None
+        practice_enabled = practices if exam_type in _PRACTICE_EXAMS else None
+        if is_enabled is None and practice_enabled is None:
+            continue
+        access = await set_student_access(
+            session,
+            user_id=user_id,
+            exam_type=exam_type,
+            actor_id=actor_id,
+            is_enabled=is_enabled,
+            practice_enabled=practice_enabled,
+        )
+        updated.append(
+            {
+                "exam_type": access.exam_type,
+                "is_enabled": access.is_enabled,
+                "practice_enabled": access.practice_enabled,
+            }
+        )
+    return {
+        "exams": exams,
+        "practices": practices,
+        "updated": updated,
+    }
 
 
 async def authorize_new_attempt(

@@ -38,3 +38,14 @@ class ExamAccessUpdate(BaseModel):
         if self.is_enabled is None and self.practice_enabled is None:
             raise ValueError("Debes indicar is_enabled o practice_enabled")
         return self
+
+
+class ExamAccessBulkUpdate(BaseModel):
+    exams: bool | None = None
+    practices: bool | None = None
+
+    @model_validator(mode="after")
+    def require_at_least_one_scope(self):
+        if self.exams is None and self.practices is None:
+            raise ValueError("Debes indicar exams o practices")
+        return self
