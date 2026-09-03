@@ -26,12 +26,29 @@ from app.schemas.user import (
     AdminUserCreateResponse,
     AdminUserResponse,
     AdminUserUpdate,
+    OnlineUserResponse,
+    OnlineUsersResponse,
     PaginatedUsersResponse,
     ResetPasswordResponse,
 )
-from app.services import exam_access_service, exam_service, user_service
+from app.services import exam_access_service, exam_service, presence_service, user_service
 
 router = APIRouter(prefix="/admin/users", tags=["admin-users"])
+
+
+@router.get("/online", response_model=OnlineUsersResponse)
+async def list_online_users(
+    role: UserRole | None = None,
+    _admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    users = await presence_service.list_online_users(db, role=role)
+    return OnlineUsersResponse(
+        count=len(users),
+        student_count=sum(1 for user in users if user.role == UserRole.STUDENT),
+        threshold_minutes=presence_service.THRESHOLD_MINUTES,
+        items=[OnlineUserResponse.model_validate(user) for user in users],
+    )
 
 
 @router.get("", response_model=PaginatedUsersResponse)

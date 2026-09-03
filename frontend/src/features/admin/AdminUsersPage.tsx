@@ -218,6 +218,12 @@ export function AdminUsersPage() {
     queryKey: ["admin-users", search],
     queryFn: () => adminApi.listUsers({ search: search || undefined }),
   });
+  const { data: onlineUsers } = useQuery({
+    queryKey: ["admin-online-users"],
+    queryFn: adminApi.onlineUsers,
+    refetchInterval: 20_000,
+  });
+  const onlineIds = new Set(onlineUsers?.items.map((item) => item.id));
 
   const canCreateAdmins = currentUser?.role === "SUPERADMIN";
 
@@ -802,6 +808,12 @@ export function AdminUsersPage() {
                     >
                       {u.is_active ? "Activo" : "Inactivo"}
                     </span>
+                    {(u.is_online || onlineIds.has(u.id)) && (
+                      <span className="mt-1 flex w-fit items-center gap-1 rounded-lg bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        En línea
+                      </span>
+                    )}
                     {u.must_change_password && (
                       <span className="mt-1 block w-fit rounded-lg bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                         Debe cambiar clave

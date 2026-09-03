@@ -41,6 +41,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, [queryClient]);
 
+  useEffect(() => {
+    if (!user) return;
+    const ping = () => {
+      if (document.visibilityState !== "visible") return;
+      void authApi.presence().catch(() => undefined);
+    };
+    ping();
+    const interval = window.setInterval(ping, 60_000);
+    document.addEventListener("visibilitychange", ping);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", ping);
+    };
+  }, [user?.id]);
+
   const logout = async () => {
     try {
       await authApi.logout();

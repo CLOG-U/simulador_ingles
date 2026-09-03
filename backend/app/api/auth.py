@@ -93,6 +93,11 @@ async def me(current_user: User = Depends(get_current_user)):
     return UserMeResponse.model_validate(current_user)
 
 
+@router.post("/presence")
+async def presence(current_user: User = Depends(get_current_user)):
+    return {"status": "ok", "last_seen_at": current_user.last_seen_at}
+
+
 @router.post("/change-password", response_model=RefreshResponse)
 async def change_password(
     body: ChangePasswordRequest,

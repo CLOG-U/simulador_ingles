@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
+import { OnlinePresenceWidget } from "../features/admin/OnlinePresence";
 import { useAuth } from "../features/auth/AuthProvider";
+import { isStaffRole } from "../lib/types";
 import { AcademyLogo } from "./AcademyLogo";
 
 interface AppShellProps {
@@ -27,6 +29,7 @@ export function AppShell({ children, nav = [], wide = false }: AppShellProps) {
             </div>
           </div>
           <div className="flex items-center gap-3 text-sm">
+            {isStaffRole(user?.role) ? <OnlinePresenceWidget /> : null}
             <span className="hidden rounded-lg bg-white/10 px-3 py-1.5 sm:inline">
               {user?.full_name}
             </span>

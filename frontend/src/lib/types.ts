@@ -28,6 +28,21 @@ export interface UserMe {
   last_login_at: string | null;
 }
 
+export interface OnlineUser {
+  id: string;
+  username: string;
+  full_name: string;
+  role: UserRole;
+  last_seen_at: string;
+}
+
+export interface OnlineUsersData {
+  count: number;
+  student_count: number;
+  threshold_minutes: number;
+  items: OnlineUser[];
+}
+
 export interface ExamConfig {
   exam_type?: ExamType;
   title?: string;
@@ -188,6 +203,8 @@ export interface AdminUser {
   must_change_password: boolean;
   created_at: string;
   last_login_at: string | null;
+  last_seen_at?: string | null;
+  is_online?: boolean;
   attempts_used?: number | null;
   attempts_max?: number | null;
   attempts_remaining?: number | null;

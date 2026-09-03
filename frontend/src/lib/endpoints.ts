@@ -26,6 +26,7 @@ import type {
   ListeningQuestion,
   ListeningQuestionAdmin,
   ListeningResult,
+  OnlineUsersData,
   UserMe,
   VerbBaseResult,
   VerbItem,
@@ -91,6 +92,10 @@ export const authApi = {
     setAuthTokens(result.access_token, result.refresh_token);
     return result;
   },
+  presence: () =>
+    apiFetch<{ status: string; last_seen_at: string | null }>("/auth/presence", {
+      method: "POST",
+    }),
 };
 
 export const examApi = {
@@ -493,6 +498,7 @@ export const adminApi = {
       past_simple_average_percentage: number | null;
       past_simple_passed_count: number;
     }>("/admin/dashboard"),
+  onlineUsers: () => apiFetch<OnlineUsersData>("/admin/users/online"),
   listUsers: (params?: {
     search?: string;
     page?: number;

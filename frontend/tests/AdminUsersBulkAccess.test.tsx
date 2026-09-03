@@ -23,6 +23,12 @@ vi.mock("../src/lib/endpoints", () => ({
     listUsers: vi.fn(),
     updateExamAccessBulk: vi.fn(),
     updateExamAccess: vi.fn(),
+    onlineUsers: vi.fn().mockResolvedValue({
+      count: 0,
+      student_count: 0,
+      threshold_minutes: 3,
+      items: [],
+    }),
   },
 }));
 

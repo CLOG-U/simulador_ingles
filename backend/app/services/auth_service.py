@@ -59,6 +59,7 @@ async def login(
     user.failed_login_count = 0
     user.locked_until = None
     user.last_login_at = now
+    user.last_seen_at = now
 
     access_token = create_access_token(user_id=str(user.id), role=user.role.value)
     refresh_token = generate_refresh_token()
@@ -113,6 +114,7 @@ async def refresh_tokens(
             ip_address=ip_address,
         )
     )
+    user.last_seen_at = now
     access_token = create_access_token(user_id=str(user.id), role=user.role.value)
     await session.commit()
     await session.refresh(user)
@@ -132,6 +134,12 @@ async def logout(session: AsyncSession, *, refresh_token: str | None) -> None:
     refresh_session = result.scalar_one_or_none()
     if refresh_session:
         refresh_session.revoked_at = datetime.now(UTC)
+        user_result = await session.execute(
+            select(User).where(User.id == refresh_session.user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        if user is not None:
+            user.last_seen_at = None
         await session.commit()
 
 

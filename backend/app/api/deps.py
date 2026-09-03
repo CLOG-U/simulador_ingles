@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.errors import AppError
 from app.models import User, UserRole
+from app.services import presence_service
 from app.services.auth_service import user_from_access_token
 
 
@@ -22,6 +23,7 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if user is None or not user.is_active:
         raise AppError("UNAUTHORIZED", "No autorizado", status_code=401)
+    await presence_service.touch_last_seen(db, user)
     return user
 
 

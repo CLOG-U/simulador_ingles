@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AppShell, adminNav } from "../../components/AppShell";
 import { QueryState } from "../../components/QueryState";
 import { adminApi } from "../../lib/endpoints";
+import { OnlinePresenceBoard } from "./OnlinePresence";
 
 export function AdminDashboard() {
   const { data, isLoading, isError, error } = useQuery({
@@ -36,6 +37,8 @@ export function AdminDashboard() {
             </p>
           </Link>
         </section>
+
+        <OnlinePresenceBoard />
 
         <QueryState isLoading={isLoading} isError={isError} error={error}>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

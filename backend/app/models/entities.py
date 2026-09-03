@@ -47,6 +47,9 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
 
     refresh_sessions: Mapped[list["RefreshSession"]] = relationship(back_populates="user")
     attempts: Mapped[list["Attempt"]] = relationship(back_populates="user")
