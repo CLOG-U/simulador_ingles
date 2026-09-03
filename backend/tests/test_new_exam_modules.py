@@ -4,11 +4,11 @@ from collections import Counter
 from types import SimpleNamespace
 
 from app.models.enums import ExamType, PresentPerfectTopic, PresentSimpleTopic
+from app.services.exam_access_service import _EXAM_ACCESS_TYPES, _PRACTICE_EXAMS
 from app.services.present_perfect_engine import (
     select_balanced_questions as select_present_perfect,
 )
 from app.services.present_simple_engine import select_balanced_questions
-from app.services.exam_access_service import _EXAM_ACCESS_TYPES, _PRACTICE_EXAMS
 from app.services.verb_base_service import MODE_EXAM, MODE_PRACTICE, build_base_prompt_types
 from app.services.verb_past_service import build_past_prompt_types
 from seed.listening_data import LISTENING_CLIPS, LISTENING_EXAM_CLIPS, LISTENING_QUESTIONS

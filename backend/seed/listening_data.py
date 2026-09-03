@@ -804,7 +804,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         ],
         correct_answer="Tuesdays and Thursdays",
         accepted_answers=["Tuesday and Thursday", "on Tuesdays and Thursdays"],
-        explanation="On Tuesdays and Thursdays, Emma plays volleyball with some friends from school.",
+        explanation=(
+            "On Tuesdays and Thursdays, Emma plays volleyball "
+            "with some friends from school."
+        ),
         audio_url=EMMA_WEEKEND_AUDIO_URL,
         clip_key=EMMA_WEEKEND_CLIP_KEY,
         clip_title=EMMA_WEEKEND_CLIP_TITLE,
@@ -826,7 +829,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
             "no activities after class",
             "She does not have any activities after class.",
         ],
-        explanation="Friday is her favorite day because she doesn't have any activities after class.",
+        explanation=(
+            "Friday is her favorite day because she doesn't have "
+            "any activities after class."
+        ),
         audio_url=EMMA_WEEKEND_AUDIO_URL,
         clip_key=EMMA_WEEKEND_CLIP_KEY,
         clip_title=EMMA_WEEKEND_CLIP_TITLE,
@@ -1078,7 +1084,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         ],
         correct_answer="No, she has never traveled outside the country.",
         accepted_answers=["No", "never", "She has never traveled abroad."],
-        explanation="Emma has visited many places in her country, but she has never traveled outside the country.",
+        explanation=(
+            "Emma has visited many places in her country, "
+            "but she has never traveled outside the country."
+        ),
         audio_url=EMMA_WEEKEND_AUDIO_URL,
         clip_key=EMMA_WEEKEND_CLIP_KEY,
         clip_title=EMMA_WEEKEND_CLIP_TITLE,
@@ -1134,7 +1143,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         options=["sports", "cooking", "technology", "music"],
         correct_answer="technology",
         accepted_answers=["Technology is one of his biggest interests."],
-        explanation="Marcus says technology is one of his biggest interests, but English is also very important to him.",
+        explanation=(
+            "Marcus says technology is one of his biggest interests, "
+            "but English is also very important to him."
+        ),
         audio_url=MARCUS_ENGLISH_AUDIO_URL,
         clip_key=MARCUS_ENGLISH_CLIP_KEY,
         clip_title=MARCUS_ENGLISH_CLIP_TITLE,
@@ -1172,7 +1184,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         ],
         correct_answer="He has breakfast and takes a bus to the university.",
         accepted_answers=["have breakfast and take a bus", "breakfast and a bus"],
-        explanation="He usually wakes up at seven, has breakfast, and takes a bus to the university.",
+        explanation=(
+            "He usually wakes up at seven, has breakfast, "
+            "and takes a bus to the university."
+        ),
         audio_url=MARCUS_ENGLISH_AUDIO_URL,
         clip_key=MARCUS_ENGLISH_CLIP_KEY,
         clip_title=MARCUS_ENGLISH_CLIP_TITLE,
@@ -1248,7 +1263,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         ],
         correct_answer="He studies, completes assignments, or works on programming projects.",
         accepted_answers=["study, complete assignments, or work on programming projects"],
-        explanation="He goes to the library to study, complete assignments, or work on programming projects.",
+        explanation=(
+            "He goes to the library to study, complete assignments, "
+            "or work on programming projects."
+        ),
         audio_url=MARCUS_ENGLISH_AUDIO_URL,
         clip_key=MARCUS_ENGLISH_CLIP_KEY,
         clip_title=MARCUS_ENGLISH_CLIP_TITLE,
@@ -1300,7 +1318,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         options=["grammar", "listening", "programming", "reading"],
         correct_answer="listening",
         accepted_answers=["listening was a big problem", "listening comprehension"],
-        explanation="At first, grammar was not very difficult for him, but listening was a big problem.",
+        explanation=(
+            "At first, grammar was not very difficult for him, "
+            "but listening was a big problem."
+        ),
         audio_url=MARCUS_ENGLISH_AUDIO_URL,
         clip_key=MARCUS_ENGLISH_CLIP_KEY,
         clip_title=MARCUS_ENGLISH_CLIP_TITLE,
@@ -1338,7 +1359,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         ],
         correct_answer="because Marcus was the only person in the group who could speak English",
         accepted_answers=["he was the only person who could speak English"],
-        explanation="His friends asked him to talk to the tourist because he was the only person in the group who could speak English.",
+        explanation=(
+            "His friends asked him to talk to the tourist because he was "
+            "the only person in the group who could speak English."
+        ),
         audio_url=MARCUS_ENGLISH_AUDIO_URL,
         clip_key=MARCUS_ENGLISH_CLIP_KEY,
         clip_title=MARCUS_ENGLISH_CLIP_TITLE,
@@ -1400,7 +1424,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         topic="present_perfect",
         question_type="multiple_choice",
         instruction="Listen and choose the correct answer.",
-        question="How many other foreign visitors has Marcus spoken English with since that experience?",
+        question=(
+            "How many other foreign visitors has Marcus spoken English "
+            "with since that experience?"
+        ),
         options=["none", "one", "three", "many"],
         correct_answer="three",
         accepted_answers=["3", "three other foreign visitors"],
@@ -1442,7 +1469,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         ],
         correct_answer="No, he has never visited an English-speaking country.",
         accepted_answers=["No", "never"],
-        explanation="He has studied English for about three years, but he has never visited an English-speaking country.",
+        explanation=(
+            "He has studied English for about three years, "
+            "but he has never visited an English-speaking country."
+        ),
         audio_url=MARCUS_ENGLISH_AUDIO_URL,
         clip_key=MARCUS_ENGLISH_CLIP_KEY,
         clip_title=MARCUS_ENGLISH_CLIP_TITLE,
@@ -1479,7 +1509,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
             "use English every day",
             "work for an international technology company",
         ],
-        explanation="One of his goals is to travel abroad and use English every day. He also wants to work for an international technology company.",
+        explanation=(
+            "One of his goals is to travel abroad and use English every day. "
+            "He also wants to work for an international technology company."
+        ),
         audio_url=MARCUS_ENGLISH_AUDIO_URL,
         clip_key=MARCUS_ENGLISH_CLIP_KEY,
         clip_title=MARCUS_ENGLISH_CLIP_TITLE,
@@ -1640,7 +1673,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         ],
         correct_answer="on Mondays, Wednesdays, and Fridays",
         accepted_answers=["Mondays, Wednesdays, and Fridays", "Monday, Wednesday and Friday"],
-        explanation="On Mondays, Wednesdays, and Fridays, he practices volleyball with his school team.",
+        explanation=(
+            "On Mondays, Wednesdays, and Fridays, he practices volleyball "
+            "with his school team."
+        ),
         audio_url=RYAN_VOLLEYBALL_AUDIO_URL,
         clip_key=RYAN_VOLLEYBALL_CLIP_KEY,
         clip_title=RYAN_VOLLEYBALL_CLIP_TITLE,
@@ -1678,7 +1714,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         ],
         correct_answer="He goes running with his brother.",
         accepted_answers=["go running with his brother", "running with Jason"],
-        explanation="On Tuesdays, he sometimes goes running with his brother. He normally rests on Sundays.",
+        explanation=(
+            "On Tuesdays, he sometimes goes running with his brother. "
+            "He normally rests on Sundays."
+        ),
         audio_url=RYAN_VOLLEYBALL_AUDIO_URL,
         clip_key=RYAN_VOLLEYBALL_CLIP_KEY,
         clip_title=RYAN_VOLLEYBALL_CLIP_TITLE,
@@ -1753,7 +1792,11 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
             "He couldn't serve the ball correctly",
             "he made many mistakes",
         ],
-        explanation="At first, he didn't like it because he thought it was too difficult. He couldn't serve the ball correctly, and he made many mistakes.",
+        explanation=(
+            "At first, he didn't like it because he thought it was too "
+            "difficult. He couldn't serve the ball correctly, and he "
+            "made many mistakes."
+        ),
         audio_url=RYAN_VOLLEYBALL_AUDIO_URL,
         clip_key=RYAN_VOLLEYBALL_CLIP_KEY,
         clip_title=RYAN_VOLLEYBALL_CLIP_TITLE,
@@ -1823,8 +1866,15 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
             "Only Ryan received a medal.",
         ],
         correct_answer="They lost three sets to one and finished in second place.",
-        accepted_answers=["lost three sets to one", "second place", "every player received a medal"],
-        explanation="They lost three sets to one, finished in second place, and every player received a medal.",
+        accepted_answers=[
+            "lost three sets to one",
+            "second place",
+            "every player received a medal",
+        ],
+        explanation=(
+            "They lost three sets to one, finished in second place, "
+            "and every player received a medal."
+        ),
         audio_url=RYAN_VOLLEYBALL_AUDIO_URL,
         clip_key=RYAN_VOLLEYBALL_CLIP_KEY,
         clip_title=RYAN_VOLLEYBALL_CLIP_TITLE,
@@ -1862,7 +1912,10 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         ],
         correct_answer="No, he has never played in another country.",
         accepted_answers=["No", "never", "He has traveled to several cities."],
-        explanation="He has traveled to several cities because of volleyball, but he has never played in another country.",
+        explanation=(
+            "He has traveled to several cities because of volleyball, "
+            "but he has never played in another country."
+        ),
         audio_url=RYAN_VOLLEYBALL_AUDIO_URL,
         clip_key=RYAN_VOLLEYBALL_CLIP_KEY,
         clip_title=RYAN_VOLLEYBALL_CLIP_TITLE,
@@ -1875,17 +1928,26 @@ LISTENING_QUESTIONS: list[ListeningQuestionSeed] = [
         question="What have sports taught Ryan?",
         options=[
             "how to serve the ball perfectly every time",
-            "how to work with other people, stay calm under pressure, and continue after making mistakes",
+            (
+                "how to work with other people, stay calm under pressure, "
+                "and continue after making mistakes"
+            ),
             "how to stop playing after a difficult match",
             "how to travel to another country",
         ],
-        correct_answer="how to work with other people, stay calm under pressure, and continue after making mistakes",
+        correct_answer=(
+            "how to work with other people, stay calm under pressure, "
+            "and continue after making mistakes"
+        ),
         accepted_answers=[
             "work with other people",
             "stay calm under pressure",
             "continue after making mistakes",
         ],
-        explanation="Sports have taught him how to work with other people, stay calm under pressure, and continue after making mistakes.",
+        explanation=(
+            "Sports have taught him how to work with other people, "
+            "stay calm under pressure, and continue after making mistakes."
+        ),
         audio_url=RYAN_VOLLEYBALL_AUDIO_URL,
         clip_key=RYAN_VOLLEYBALL_CLIP_KEY,
         clip_title=RYAN_VOLLEYBALL_CLIP_TITLE,
